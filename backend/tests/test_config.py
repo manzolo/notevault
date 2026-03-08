@@ -15,8 +15,19 @@ def test_master_key_bytes_valid():
     assert s.master_key_bytes == b"a" * 32
 
 
-def test_master_key_bytes_fallback():
-    # A key with non-base64 chars (!) triggers the fallback path → padded to 32 bytes
+def test_master_key_bytes_fallback_non_base64():
+    # Non-base64 chars (!) → fallback path → SHA-256 → 32 bytes
     s = Settings(master_key="not-valid-b64!!", secret_key="test")
-    result = s.master_key_bytes
-    assert len(result) == 32
+    assert len(s.master_key_bytes) == 32
+
+
+def test_master_key_bytes_fallback_short_base64():
+    # "changeme" is valid base64 but decodes to only 6 bytes → SHA-256 → 32 bytes
+    s = Settings(master_key="changeme", secret_key="test")
+    assert len(s.master_key_bytes) == 32
+
+
+def test_master_key_bytes_deterministic():
+    # Same input always produces the same key
+    s = Settings(master_key="changeme", secret_key="test")
+    assert s.master_key_bytes == s.master_key_bytes

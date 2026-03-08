@@ -1,4 +1,5 @@
 import base64
+import hashlib
 from typing import List
 from pydantic_settings import BaseSettings
 from functools import lru_cache
@@ -32,9 +33,13 @@ class Settings(BaseSettings):
     @property
     def master_key_bytes(self) -> bytes:
         try:
-            return base64.b64decode(self.master_key)
+            key = base64.b64decode(self.master_key)
         except Exception:
-            return self.master_key.encode()[:32].ljust(32, b'\x00')
+            key = self.master_key.encode()
+        # AES-256-GCM requires exactly 32 bytes; derive via SHA-256 if needed
+        if len(key) != 32:
+            key = hashlib.sha256(key).digest()
+        return key
 
     model_config = {"env_file": ".env", "case_sensitive": False, "env_prefix": ""}
 
