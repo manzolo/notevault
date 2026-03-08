@@ -114,7 +114,7 @@ export default function BookmarkForm({ initial, availableTags = [], onSubmit, on
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex gap-2">
-        <Button type="submit" loading={saving} disabled={!url.trim() || saving}>
+        <Button variant="secondary" type="submit" loading={saving} disabled={!url.trim() || saving}>
           {saving ? t('saving') : t('save')}
         </Button>
         <Button type="button" variant="secondary" onClick={onCancel}>

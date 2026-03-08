@@ -78,7 +78,7 @@ export default function SecretForm({ onSubmit }: SecretFormProps) {
           placeholder="Secret value..."
         />
       </div>
-      <Button type="submit" loading={loading} className="w-full">
+      <Button variant="secondary" type="submit" loading={loading} className="w-full">
         {loading ? t('creating') : t('create')}
       </Button>
     </form>

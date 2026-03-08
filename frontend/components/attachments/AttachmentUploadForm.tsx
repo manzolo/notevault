@@ -118,7 +118,7 @@ export default function AttachmentUploadForm({ onUpload, availableTags = [], ini
       )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <Button type="submit" loading={uploading} disabled={!file || uploading}>
+      <Button variant="secondary" type="submit" loading={uploading} disabled={!file || uploading}>
         {uploading ? t('uploading') : t('upload')}
       </Button>
     </form>

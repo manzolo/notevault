@@ -274,7 +274,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
               <Button variant="secondary" size="sm" onClick={handlePasteCancel} disabled={pasteUploading}>
                 {tCommon('cancel')}
               </Button>
-              <Button size="sm" onClick={handlePasteConfirm} loading={pasteUploading} disabled={!pasteName.trim()}>
+              <Button variant="secondary" size="sm" onClick={handlePasteConfirm} loading={pasteUploading} disabled={!pasteName.trim()}>
                 {pasteUploading ? tAttachments('pasteImageUploading') : tAttachments('pasteImageSave')}
               </Button>
             </div>
