@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Attachment } from '@/lib/types';
 import Button from '@/components/common/Button';
+import { ArrowDownTrayIcon, EyeIcon, TrashIcon } from '@/components/common/Icons';
 
 interface Props {
   attachment: Attachment;
@@ -20,15 +21,12 @@ function formatBytes(bytes: number): string {
 }
 
 function FileIcon({ mime }: { mime: string }) {
-  // image
   if (mime.startsWith('image/')) return (
     <svg className="w-8 h-8 text-purple-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
         d="M4 16l4-4a3 3 0 014 0l4 4M14 12l2-2a3 3 0 014 0l2 2M3 20h18a1 1 0 001-1V5a1 1 0 00-1-1H3a1 1 0 00-1 1v14a1 1 0 001 1z" />
     </svg>
   );
-
-  // PDF
   if (mime === 'application/pdf') return (
     <svg className="w-8 h-8 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -36,8 +34,6 @@ function FileIcon({ mime }: { mime: string }) {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 12h4M10 16h4M10 8h2" />
     </svg>
   );
-
-  // Word
   if (mime === 'application/msword' ||
       mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
       mime === 'application/vnd.oasis.opendocument.text') return (
@@ -47,8 +43,6 @@ function FileIcon({ mime }: { mime: string }) {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13l2 4 2-4M9 9h6" />
     </svg>
   );
-
-  // Excel / Spreadsheet
   if (mime === 'application/vnd.ms-excel' ||
       mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
       mime === 'application/vnd.oasis.opendocument.spreadsheet') return (
@@ -58,8 +52,6 @@ function FileIcon({ mime }: { mime: string }) {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 9h6v6H9zM9 15h6M12 9v6" />
     </svg>
   );
-
-  // PowerPoint / Presentation
   if (mime === 'application/vnd.ms-powerpoint' ||
       mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
       mime === 'application/vnd.oasis.opendocument.presentation') return (
@@ -69,8 +61,6 @@ function FileIcon({ mime }: { mime: string }) {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 11a2 2 0 104 0 2 2 0 00-4 0zM13 11l2 4" />
     </svg>
   );
-
-  // Markdown
   if (mime === 'text/markdown') return (
     <svg className="w-8 h-8 text-gray-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -78,16 +68,12 @@ function FileIcon({ mime }: { mime: string }) {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13l1.5 2L12 13l1.5 2L15 13M9 9h6" />
     </svg>
   );
-
-  // Archive (zip / tar / gz)
   if (mime === 'application/zip' || mime === 'application/x-tar' || mime === 'application/gzip') return (
     <svg className="w-8 h-8 text-yellow-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
         d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8M10 12h4" />
     </svg>
   );
-
-  // Default
   return (
     <svg className="w-8 h-8 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -121,21 +107,24 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
         )}
       </div>
 
-      <div className="flex gap-2 shrink-0">
+      <div className="flex gap-1.5 shrink-0">
         {canPreview && (
           <Button size="sm" variant="secondary" onClick={() => onPreview(attachment)}>
+            <EyeIcon />
             {t('preview')}
           </Button>
         )}
         <Button size="sm" variant="secondary" onClick={() => onDownload(attachment)}>
+          <ArrowDownTrayIcon />
           {t('download')}
         </Button>
         <Button
           size="sm"
-          variant="danger"
+          variant="ghost-danger"
+          title={t('delete')}
           onClick={() => { if (confirm(t('deleteConfirm'))) onDelete(attachment.id); }}
         >
-          {t('delete')}
+          <TrashIcon />
         </Button>
       </div>
     </div>

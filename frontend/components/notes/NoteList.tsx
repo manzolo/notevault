@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Note } from '@/lib/types';
+import { MatchingAttachment, Note } from '@/lib/types';
 import NoteCard from './NoteCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -15,9 +15,11 @@ interface NoteListProps {
   loading: boolean;
   onDelete: (id: number) => void;
   matchMap?: Map<number, MatchInfo>;
+  matchingAttachmentsMap?: Map<number, MatchingAttachment[]>;
+  onPreviewAttachment?: (noteId: number, attachment: MatchingAttachment) => void;
 }
 
-export default function NoteList({ notes, loading, onDelete, matchMap }: NoteListProps) {
+export default function NoteList({ notes, loading, onDelete, matchMap, matchingAttachmentsMap, onPreviewAttachment }: NoteListProps) {
   const t = useTranslations('notes');
 
   if (loading) return <LoadingSpinner className="py-12" />;
@@ -40,6 +42,8 @@ export default function NoteList({ notes, loading, onDelete, matchMap }: NoteLis
             onDelete={onDelete}
             matchInAttachment={match?.attachment ?? false}
             matchInBookmark={match?.bookmark ?? false}
+            matchingAttachments={matchingAttachmentsMap?.get(note.id)}
+            onPreviewAttachment={onPreviewAttachment}
           />
         );
       })}

@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Bookmark } from '@/lib/types';
 import Button from '@/components/common/Button';
+import { PencilIcon, TrashIcon } from '@/components/common/Icons';
 
 interface Props {
   bookmark: Bookmark;
@@ -52,16 +53,18 @@ export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
         )}
       </div>
 
-      <div className="flex gap-2 shrink-0">
+      <div className="flex gap-1.5 shrink-0">
         <Button size="sm" variant="secondary" onClick={() => onEdit(bookmark)}>
+          <PencilIcon />
           {t('edit')}
         </Button>
         <Button
           size="sm"
-          variant="danger"
+          variant="ghost-danger"
+          title={t('delete')}
           onClick={() => { if (confirm(t('deleteConfirm'))) onDelete(bookmark.id); }}
         >
-          {t('delete')}
+          <TrashIcon />
         </Button>
       </div>
     </div>

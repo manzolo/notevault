@@ -2,20 +2,25 @@
 
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import { Note } from '@/lib/types';
+import { MatchingAttachment, Note } from '@/lib/types';
 import { formatRelative, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
+import { EyeIcon, TrashIcon } from '@/components/common/Icons';
+
+const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
 
 interface NoteCardProps {
   note: Note;
   onDelete: (id: number) => void;
   matchInAttachment?: boolean;
   matchInBookmark?: boolean;
+  matchingAttachments?: MatchingAttachment[];
+  onPreviewAttachment?: (noteId: number, attachment: MatchingAttachment) => void;
 }
 
 function PaperclipIcon() {
   return (
-    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
         d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
     </svg>
@@ -31,10 +36,11 @@ function GlobeIcon() {
   );
 }
 
-export default function NoteCard({ note, onDelete, matchInAttachment, matchInBookmark }: NoteCardProps) {
+export default function NoteCard({ note, onDelete, matchInAttachment, matchInBookmark, matchingAttachments, onPreviewAttachment }: NoteCardProps) {
   const locale = useLocale();
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
+  const tAtt = useTranslations('attachments');
 
   return (
     <div className="group bg-white dark:bg-gray-800 rounded-xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all border border-gray-200 dark:border-gray-700 p-4">
@@ -60,14 +66,35 @@ export default function NoteCard({ note, onDelete, matchInAttachment, matchInBoo
             ))}
             <span className="text-xs text-gray-400">{formatRelative(note.updated_at)}</span>
           </div>
+
           {(matchInAttachment || matchInBookmark) && (
-            <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <div className="mt-2 flex flex-col gap-1.5">
               {matchInAttachment && (
-                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-start gap-1.5 flex-wrap">
                   <PaperclipIcon />
-                  <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
-                    {tSearch('foundInAttachment')}
-                  </span>
+                  {matchingAttachments && matchingAttachments.length > 0 ? (
+                    matchingAttachments.map((att) => (
+                      <span
+                        key={att.id}
+                        className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs"
+                      >
+                        <span className="truncate max-w-[150px]">{att.filename}</span>
+                        {INLINE_MIMES.has(att.mime_type) && onPreviewAttachment && (
+                          <button
+                            onClick={() => onPreviewAttachment(note.id, att)}
+                            className="inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap ml-0.5"
+                          >
+                            <EyeIcon className="h-3 w-3" />
+                            {tAtt('preview')}
+                          </button>
+                        )}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs">
+                      {tSearch('foundInAttachment')}
+                    </span>
+                  )}
                 </div>
               )}
               {matchInBookmark && (
@@ -81,15 +108,14 @@ export default function NoteCard({ note, onDelete, matchInAttachment, matchInBoo
             </div>
           )}
         </div>
+
         <Button
-          variant="danger"
+          variant="ghost-danger"
           size="sm"
-          className="transition-opacity"
-          onClick={() => {
-            if (confirm(t('deleteConfirm'))) onDelete(note.id);
-          }}
+          title={t('delete')}
+          onClick={() => { if (confirm(t('deleteConfirm'))) onDelete(note.id); }}
         >
-          {t('delete')}
+          <TrashIcon />
         </Button>
       </div>
     </div>

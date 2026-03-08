@@ -118,9 +118,17 @@ export interface TokenResponse {
   token_type: string;
 }
 
+export interface MatchingAttachment {
+  id: number;
+  note_id: number;
+  filename: string;
+  mime_type: string;
+}
+
 export interface SearchNote extends Note {
   match_in_attachment?: boolean;
   match_in_bookmark?: boolean;
+  matching_attachments?: MatchingAttachment[];
 }
 
 export interface SearchResponse {

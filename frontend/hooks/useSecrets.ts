@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import api from '@/lib/api';
 import { Secret, SecretCreate, SecretReveal } from '@/lib/types';
+import { copyToClipboard } from '@/lib/utils';
 
 const AUTO_HIDE_SECONDS = 30;
 
@@ -75,6 +76,12 @@ export function useSecrets(noteId: number) {
     setSecrets((prev) => prev.filter((s) => s.id !== secretId));
   }, [noteId, hideSecret]);
 
+  // Reveal, copy to clipboard, and immediately hide — value never shown in UI
+  const copySecret = useCallback(async (secretId: number): Promise<void> => {
+    const response = await api.post<SecretReveal>(`/api/notes/${noteId}/secrets/${secretId}/reveal`);
+    await copyToClipboard(response.data.value);
+  }, [noteId]);
+
   return {
     secrets,
     revealedSecrets,
@@ -85,5 +92,6 @@ export function useSecrets(noteId: number) {
     revealSecret,
     hideSecret,
     deleteSecret,
+    copySecret,
   };
 }

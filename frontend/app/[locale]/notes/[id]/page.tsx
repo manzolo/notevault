@@ -21,6 +21,7 @@ import BookmarkForm from '@/components/bookmarks/BookmarkForm';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { KeyIcon, LinkIcon, PaperclipUploadIcon, PencilIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
 import api from '@/lib/api';
 
 const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
@@ -35,7 +36,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const noteId = parseInt(params.id);
 
   const { getNote, updateNote, deleteNote } = useNotes();
-  const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret } = useSecrets(noteId);
+  const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret } = useSecrets(noteId);
   const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, deleteAttachment, previewAttachment } = useAttachments(noteId);
   const { bookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark } = useBookmarks(noteId);
 
@@ -153,9 +154,11 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{note.title}</h1>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={() => setEditing(!editing)}>
+            {editing ? <XMarkIcon /> : <PencilIcon />}
             {editing ? 'Cancel' : 'Edit'}
           </Button>
           <Button variant="danger" size="sm" onClick={handleDelete}>
+            <TrashIcon />
             {t('delete')}
           </Button>
         </div>
@@ -190,7 +193,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{tSecrets('secrets')}</h2>
-          <Button size="sm" onClick={() => setShowSecretModal(true)}>
+          <Button size="sm" variant="secondary" onClick={() => setShowSecretModal(true)}>
+            <KeyIcon />
             {tSecrets('addSecret')}
           </Button>
         </div>
@@ -202,6 +206,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           onReveal={revealSecret}
           onHide={hideSecret}
           onDelete={deleteSecret}
+          onCopyDirect={copySecret}
         />
       </div>
 
@@ -209,7 +214,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{tAttachments('attachments')}</h2>
-          <Button size="sm" onClick={() => setShowUploadModal(true)}>
+          <Button size="sm" variant="secondary" onClick={() => setShowUploadModal(true)}>
+            <PaperclipUploadIcon />
             {tAttachments('upload')}
           </Button>
         </div>
@@ -226,7 +232,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{tBookmarks('bookmarks')}</h2>
-          <Button size="sm" onClick={() => setShowBookmarkModal(true)}>
+          <Button size="sm" variant="secondary" onClick={() => setShowBookmarkModal(true)}>
+            <LinkIcon />
             {tBookmarks('add')}
           </Button>
         </div>

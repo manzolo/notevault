@@ -13,10 +13,11 @@ interface SecretListProps {
   onReveal: (id: number) => void;
   onHide: (id: number) => void;
   onDelete: (id: number) => void;
+  onCopyDirect?: (id: number) => Promise<void>;
 }
 
 export default function SecretList({
-  secrets, revealedSecrets, countdown, loading, onReveal, onHide, onDelete,
+  secrets, revealedSecrets, countdown, loading, onReveal, onHide, onDelete, onCopyDirect,
 }: SecretListProps) {
   const t = useTranslations('secrets');
 
@@ -36,6 +37,7 @@ export default function SecretList({
           onReveal={() => onReveal(secret.id)}
           onHide={() => onHide(secret.id)}
           onDelete={() => onDelete(secret.id)}
+          onCopyDirect={onCopyDirect ? () => onCopyDirect(secret.id) : undefined}
         />
       ))}
     </div>
