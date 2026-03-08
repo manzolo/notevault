@@ -2,6 +2,17 @@
 import pyotp
 import pytest
 from httpx import AsyncClient
+from app.config import get_settings
+
+
+@pytest.fixture(autouse=True)
+def force_totp_required():
+    """Force totp_required=True for all tests in this module."""
+    settings = get_settings()
+    original = settings.totp_required
+    settings.totp_required = True
+    yield
+    settings.totp_required = original
 
 
 @pytest.fixture
