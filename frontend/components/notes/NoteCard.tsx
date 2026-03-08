@@ -6,6 +6,7 @@ import { MatchingAttachment, Note } from '@/lib/types';
 import { formatRelative, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
 import { EyeIcon, TrashIcon } from '@/components/common/Icons';
+import { useConfirm } from '@/hooks/useConfirm';
 
 const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
 
@@ -41,83 +42,86 @@ export default function NoteCard({ note, onDelete, matchInAttachment, matchInBoo
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
   const tAtt = useTranslations('attachments');
+  const { confirm, dialog } = useConfirm();
+
+  const handleDelete = async () => {
+    if (await confirm(t('deleteConfirm'))) onDelete(note.id);
+  };
 
   return (
-    <div className="group bg-white dark:bg-gray-800 rounded-xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all border border-gray-200 dark:border-gray-700 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            {note.is_pinned && (
-              <span className="text-indigo-600 text-xs font-medium">📌 {t('pinned')}</span>
-            )}
-            <Link
-              href={`/${locale}/notes/${note.id}`}
-              className="text-gray-900 dark:text-gray-100 font-semibold hover:text-indigo-600 dark:hover:text-indigo-400 truncate block"
-            >
-              {note.title}
-            </Link>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{truncate(note.content, 120)}</p>
-          <div className="flex items-center gap-2 flex-wrap">
-            {note.tags.map((tag) => (
-              <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full">
-                {tag.name}
-              </span>
-            ))}
-            <span className="text-xs text-gray-400">{formatRelative(note.updated_at)}</span>
-          </div>
-
-          {(matchInAttachment || matchInBookmark) && (
-            <div className="mt-2 flex flex-col gap-1.5">
-              {matchInAttachment && (
-                <div className="flex items-start gap-1.5 flex-wrap">
-                  <PaperclipIcon />
-                  {matchingAttachments && matchingAttachments.length > 0 ? (
-                    matchingAttachments.map((att) => (
-                      <span
-                        key={att.id}
-                        className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs"
-                      >
-                        <span className="truncate max-w-[150px]">{att.filename}</span>
-                        {INLINE_MIMES.has(att.mime_type) && onPreviewAttachment && (
-                          <button
-                            onClick={() => onPreviewAttachment(note.id, att)}
-                            className="inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap ml-0.5"
-                          >
-                            <EyeIcon className="h-3 w-3" />
-                            {tAtt('preview')}
-                          </button>
-                        )}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs">
-                      {tSearch('foundInAttachment')}
-                    </span>
-                  )}
-                </div>
+    <>
+      {dialog}
+      <div className="group bg-white dark:bg-gray-800 rounded-xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              {note.is_pinned && (
+                <span className="text-indigo-600 text-xs font-medium">📌 {t('pinned')}</span>
               )}
-              {matchInBookmark && (
-                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                  <GlobeIcon />
-                  <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
-                    {tSearch('foundInBookmark')}
-                  </span>
-                </div>
-              )}
+              <Link
+                href={`/${locale}/notes/${note.id}`}
+                className="text-gray-900 dark:text-gray-100 font-semibold hover:text-indigo-600 dark:hover:text-indigo-400 truncate block"
+              >
+                {note.title}
+              </Link>
             </div>
-          )}
-        </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{truncate(note.content, 120)}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {note.tags.map((tag) => (
+                <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full">
+                  {tag.name}
+                </span>
+              ))}
+              <span className="text-xs text-gray-400">{formatRelative(note.updated_at)}</span>
+            </div>
 
-        <Button
-          variant="ghost-danger"
-          size="sm"
-          title={t('delete')}
-          onClick={() => { if (confirm(t('deleteConfirm'))) onDelete(note.id); }}
-        >
-          <TrashIcon />
-        </Button>
+            {(matchInAttachment || matchInBookmark) && (
+              <div className="mt-2 flex flex-col gap-1.5">
+                {matchInAttachment && (
+                  <div className="flex items-start gap-1.5 flex-wrap">
+                    <PaperclipIcon />
+                    {matchingAttachments && matchingAttachments.length > 0 ? (
+                      matchingAttachments.map((att) => (
+                        <span
+                          key={att.id}
+                          className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs"
+                        >
+                          <span className="truncate max-w-[150px]">{att.filename}</span>
+                          {INLINE_MIMES.has(att.mime_type) && onPreviewAttachment && (
+                            <button
+                              onClick={() => onPreviewAttachment(note.id, att)}
+                              className="inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap ml-0.5"
+                            >
+                              <EyeIcon className="h-3 w-3" />
+                              {tAtt('preview')}
+                            </button>
+                          )}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs">
+                        {tSearch('foundInAttachment')}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {matchInBookmark && (
+                  <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                    <GlobeIcon />
+                    <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
+                      {tSearch('foundInBookmark')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Button variant="ghost-danger" size="sm" title={t('delete')} onClick={handleDelete}>
+            <TrashIcon />
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

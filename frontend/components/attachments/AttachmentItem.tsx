@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Attachment } from '@/lib/types';
 import Button from '@/components/common/Button';
 import { ArrowDownTrayIcon, EyeIcon, TrashIcon } from '@/components/common/Icons';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface Props {
   attachment: Attachment;
@@ -84,49 +85,52 @@ function FileIcon({ mime }: { mime: string }) {
 
 export default function AttachmentItem({ attachment, onPreview, onDownload, onDelete }: Props) {
   const t = useTranslations('attachments');
+  const { confirm, dialog } = useConfirm();
   const canPreview = INLINE_MIMES.has(attachment.mime_type);
 
+  const handleDelete = async () => {
+    if (await confirm(t('deleteConfirm'))) onDelete(attachment.id);
+  };
+
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-      <FileIcon mime={attachment.mime_type} />
+    <>
+      {dialog}
+      <div className="flex items-center gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
+        <FileIcon mime={attachment.mime_type} />
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{attachment.filename}</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{formatBytes(attachment.size_bytes)}</p>
-        {attachment.description && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{attachment.description}</p>
-        )}
-        {attachment.tags.length > 0 && (
-          <div className="flex gap-1 mt-1 flex-wrap">
-            {attachment.tags.map((tag) => (
-              <span key={tag.id} className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-1.5 py-0.5 rounded-full">
-                {tag.name}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{attachment.filename}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{formatBytes(attachment.size_bytes)}</p>
+          {attachment.description && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{attachment.description}</p>
+          )}
+          {attachment.tags.length > 0 && (
+            <div className="flex gap-1 mt-1 flex-wrap">
+              {attachment.tags.map((tag) => (
+                <span key={tag.id} className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-1.5 py-0.5 rounded-full">
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
-      <div className="flex gap-1.5 shrink-0">
-        {canPreview && (
-          <Button size="sm" variant="secondary" onClick={() => onPreview(attachment)}>
-            <EyeIcon />
-            {t('preview')}
+        <div className="flex gap-1.5 shrink-0">
+          {canPreview && (
+            <Button size="sm" variant="secondary" onClick={() => onPreview(attachment)}>
+              <EyeIcon />
+              {t('preview')}
+            </Button>
+          )}
+          <Button size="sm" variant="secondary" onClick={() => onDownload(attachment)}>
+            <ArrowDownTrayIcon />
+            {t('download')}
           </Button>
-        )}
-        <Button size="sm" variant="secondary" onClick={() => onDownload(attachment)}>
-          <ArrowDownTrayIcon />
-          {t('download')}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost-danger"
-          title={t('delete')}
-          onClick={() => { if (confirm(t('deleteConfirm'))) onDelete(attachment.id); }}
-        >
-          <TrashIcon />
-        </Button>
+          <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
+            <TrashIcon />
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

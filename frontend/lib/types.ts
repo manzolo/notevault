@@ -62,6 +62,7 @@ export interface Secret {
   id: number;
   name: string;
   secret_type: SecretType;
+  username?: string;
   note_id: number;
   created_at: string;
   updated_at: string;
@@ -75,6 +76,7 @@ export interface SecretCreate {
   name: string;
   secret_type?: SecretType;
   value: string;
+  username?: string;
 }
 
 export interface Attachment {

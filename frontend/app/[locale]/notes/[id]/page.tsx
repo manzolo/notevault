@@ -22,6 +22,7 @@ import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { KeyIcon, LinkIcon, PaperclipUploadIcon, PencilIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
+import { useConfirm } from '@/hooks/useConfirm';
 import api from '@/lib/api';
 
 const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
@@ -36,6 +37,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const noteId = parseInt(params.id);
 
   const { getNote, updateNote, deleteNote } = useNotes();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret } = useSecrets(noteId);
   const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, deleteAttachment, previewAttachment } = useAttachments(noteId);
   const { bookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark } = useBookmarks(noteId);
@@ -86,7 +88,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   };
 
   const handleDelete = async () => {
-    if (!confirm(t('deleteConfirm'))) return;
+    if (!await confirm(t('deleteConfirm'))) return;
     await deleteNote(noteId);
     router.push(`/${locale}/dashboard`);
   };
@@ -150,6 +152,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{note.title}</h1>
         <div className="flex gap-2">

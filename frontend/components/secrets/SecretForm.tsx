@@ -17,15 +17,22 @@ export default function SecretForm({ onSubmit }: SecretFormProps) {
   const [name, setName] = useState('');
   const [secretType, setSecretType] = useState<SecretType>('password');
   const [value, setValue] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await onSubmit({ name, secret_type: secretType, value });
+      await onSubmit({
+        name,
+        secret_type: secretType,
+        value,
+        username: username.trim() || undefined,
+      });
       setName('');
       setValue('');
+      setUsername('');
     } finally {
       setLoading(false);
     }
@@ -52,6 +59,14 @@ export default function SecretForm({ onSubmit }: SecretFormProps) {
           ))}
         </select>
       </div>
+      {secretType === 'password' && (
+        <Input
+          label={t('username')}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder={t('usernamePlaceholder')}
+        />
+      )}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('secretValue')}</label>
         <textarea

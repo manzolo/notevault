@@ -150,3 +150,75 @@ async def test_get_secret_not_found(client, auth_headers, note_id):
 async def test_secrets_on_nonexistent_note(client, auth_headers):
     response = await client.get("/api/notes/99999/secrets", headers=auth_headers)
     assert response.status_code == 404
+
+
+# ── username field ────────────────────────────────────────────────────────────
+
+async def test_create_password_secret_with_username(client, auth_headers, note_id):
+    response = await client.post(f"/api/notes/{note_id}/secrets", json={
+        "name": "Gmail",
+        "secret_type": "password",
+        "value": "hunter2",
+        "username": "user@example.com",
+    }, headers=auth_headers)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["username"] == "user@example.com"
+    assert "value" not in data
+
+
+async def test_create_secret_without_username_returns_null(client, auth_headers, note_id):
+    response = await client.post(f"/api/notes/{note_id}/secrets", json={
+        "name": "API Key",
+        "secret_type": "api_key",
+        "value": "sk-abc123",
+    }, headers=auth_headers)
+    assert response.status_code == 201
+    assert response.json()["username"] is None
+
+
+async def test_reveal_secret_includes_username(client, auth_headers, note_id):
+    create = await client.post(f"/api/notes/{note_id}/secrets", json={
+        "name": "SSH",
+        "secret_type": "ssh_key",
+        "value": "ssh-private-key",
+        "username": "root",
+    }, headers=auth_headers)
+    secret_id = create.json()["id"]
+
+    reveal = await client.post(
+        f"/api/notes/{note_id}/secrets/{secret_id}/reveal",
+        headers=auth_headers,
+    )
+    assert reveal.status_code == 200
+    data = reveal.json()
+    assert data["value"] == "ssh-private-key"
+    assert data["username"] == "root"
+
+
+async def test_list_secrets_includes_username(client, auth_headers, note_id):
+    await client.post(f"/api/notes/{note_id}/secrets", json={
+        "name": "DB",
+        "secret_type": "password",
+        "value": "pass123",
+        "username": "admin",
+    }, headers=auth_headers)
+
+    response = await client.get(f"/api/notes/{note_id}/secrets", headers=auth_headers)
+    assert response.status_code == 200
+    secrets = response.json()
+    db_secret = next((s for s in secrets if s["name"] == "DB"), None)
+    assert db_secret is not None
+    assert db_secret["username"] == "admin"
+    assert "value" not in db_secret
+
+
+async def test_create_secret_empty_username_stored_as_null(client, auth_headers, note_id):
+    response = await client.post(f"/api/notes/{note_id}/secrets", json={
+        "name": "Token",
+        "secret_type": "token",
+        "value": "tok-xyz",
+        "username": "",
+    }, headers=auth_headers)
+    assert response.status_code == 201
+    assert response.json()["username"] is None

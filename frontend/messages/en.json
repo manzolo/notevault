@@ -49,6 +49,8 @@
     "secretName": "Secret Name",
     "secretType": "Type",
     "secretValue": "Value",
+    "username": "Username",
+    "usernamePlaceholder": "e.g. admin@example.com",
     "creating": "Creating...",
     "create": "Create Secret",
     "delete": "Delete",

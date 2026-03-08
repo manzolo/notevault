@@ -49,6 +49,8 @@
     "secretName": "Nome Segreto",
     "secretType": "Tipo",
     "secretValue": "Valore",
+    "username": "Username",
+    "usernamePlaceholder": "es. admin@example.com",
     "creating": "Creazione...",
     "create": "Crea Segreto",
     "delete": "Elimina",
