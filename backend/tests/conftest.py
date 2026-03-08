@@ -1,4 +1,5 @@
 import os
+import tempfile
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -33,6 +34,24 @@ BEFORE INSERT OR UPDATE ON notes
 FOR EACH ROW EXECUTE FUNCTION notes_fts_trigger_func()
 """
 
+_ATTACHMENT_FTS_FUNCTION = """
+CREATE OR REPLACE FUNCTION attachments_fts_trigger_func()
+RETURNS trigger AS $$
+BEGIN
+    NEW.fts_vector :=
+        setweight(to_tsvector('english', coalesce(NEW.filename, '')), 'A') ||
+        setweight(to_tsvector('english', coalesce(NEW.extracted_text, '')), 'B');
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql
+"""
+
+_ATTACHMENT_FTS_TRIGGER = """
+CREATE OR REPLACE TRIGGER attachments_fts_update
+BEFORE INSERT OR UPDATE ON attachments
+FOR EACH ROW EXECUTE FUNCTION attachments_fts_trigger_func()
+"""
+
 
 @pytest_asyncio.fixture(scope="session")
 async def engine():
@@ -42,10 +61,20 @@ async def engine():
         await conn.run_sync(Base.metadata.create_all)
         await conn.execute(text(_FTS_FUNCTION))
         await conn.execute(text(_FTS_TRIGGER))
+        await conn.execute(text(_ATTACHMENT_FTS_FUNCTION))
+        await conn.execute(text(_ATTACHMENT_FTS_TRIGGER))
     yield eng
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await eng.dispose()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def override_upload_dir(tmp_path_factory):
+    """Point uploads to a temp dir for tests."""
+    tmp = tmp_path_factory.mktemp("uploads")
+    settings.upload_dir = str(tmp)
+    yield str(tmp)
 
 
 @pytest_asyncio.fixture(autouse=True)

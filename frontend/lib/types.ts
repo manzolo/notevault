@@ -77,6 +77,16 @@ export interface SecretCreate {
   value: string;
 }
 
+export interface Attachment {
+  id: number;
+  note_id: number;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  tags: Tag[];
+  created_at: string;
+}
+
 export interface TokenResponse {
   access_token: string;
   token_type: string;

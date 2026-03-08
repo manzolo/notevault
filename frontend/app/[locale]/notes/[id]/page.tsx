@@ -8,10 +8,13 @@ import remarkGfm from 'remark-gfm';
 import toast from 'react-hot-toast';
 import { useNotes } from '@/hooks/useNotes';
 import { useSecrets } from '@/hooks/useSecrets';
-import { Note } from '@/lib/types';
+import { useAttachments } from '@/hooks/useAttachments';
+import { Attachment, Note } from '@/lib/types';
 import NoteEditor from '@/components/notes/NoteEditor';
 import SecretList from '@/components/secrets/SecretList';
 import SecretForm from '@/components/secrets/SecretForm';
+import AttachmentList from '@/components/attachments/AttachmentList';
+import AttachmentUploadForm from '@/components/attachments/AttachmentUploadForm';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -19,18 +22,21 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 export default function NotePage({ params }: { params: { id: string; locale: string } }) {
   const t = useTranslations('notes');
   const tSecrets = useTranslations('secrets');
+  const tAttachments = useTranslations('attachments');
   const locale = useLocale();
   const router = useRouter();
   const noteId = parseInt(params.id);
 
   const { getNote, updateNote, deleteNote } = useNotes();
   const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret } = useSecrets(noteId);
+  const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, deleteAttachment, previewAttachment } = useAttachments(noteId);
 
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showSecretModal, setShowSecretModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -38,6 +44,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         const n = await getNote(noteId);
         setNote(n);
         await fetchSecrets();
+        await fetchAttachments();
       } catch {
         router.push(`/${locale}/dashboard`);
       } finally {
@@ -71,6 +78,21 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     await createSecret(data);
     setShowSecretModal(false);
     toast.success('Secret saved!');
+  };
+
+  const handleUpload = async (file: File, tagIds: number[]) => {
+    await uploadAttachment(file, tagIds);
+    setShowUploadModal(false);
+    toast.success('File uploaded!');
+  };
+
+  const handlePreview = async (attachment: Attachment) => {
+    try {
+      const url = await previewAttachment(attachment.id);
+      window.open(url, '_blank');
+    } catch {
+      toast.error('Failed to preview file');
+    }
   };
 
   if (loading) return <LoadingSpinner className="py-12" />;
@@ -134,12 +156,36 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         />
       </div>
 
+      {/* Attachments Section */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">{tAttachments('attachments')}</h2>
+          <Button size="sm" onClick={() => setShowUploadModal(true)}>
+            {tAttachments('upload')}
+          </Button>
+        </div>
+        <AttachmentList
+          attachments={attachments}
+          loading={attachmentsLoading}
+          onPreview={handlePreview}
+          onDelete={deleteAttachment}
+        />
+      </div>
+
       <Modal
         isOpen={showSecretModal}
         onClose={() => setShowSecretModal(false)}
         title={tSecrets('addSecret')}
       >
         <SecretForm onSubmit={handleCreateSecret} />
+      </Modal>
+
+      <Modal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        title={tAttachments('upload')}
+      >
+        <AttachmentUploadForm onUpload={handleUpload} />
       </Modal>
     </div>
   );

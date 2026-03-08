@@ -51,7 +51,25 @@
     "secretValue": "Valore",
     "creating": "Creazione...",
     "create": "Crea Segreto",
+    "delete": "Elimina",
     "deleteConfirm": "Sei sicuro di voler eliminare questo segreto?"
+  },
+  "attachments": {
+    "attachments": "Allegati",
+    "upload": "Carica file",
+    "uploading": "Caricamento...",
+    "noAttachments": "Nessun allegato per questa nota.",
+    "preview": "Anteprima",
+    "download": "Scarica",
+    "delete": "Elimina",
+    "deleteConfirm": "Sei sicuro di voler eliminare questo allegato?",
+    "fileName": "Nome file",
+    "fileSize": "Dimensione",
+    "tags": "Tag",
+    "selectFile": "Seleziona file",
+    "maxSize": "Max 10 MB",
+    "unsupportedType": "Tipo di file non supportato",
+    "fileTooLarge": "Il file supera il limite di 10 MB"
   },
   "search": {
     "placeholder": "Cerca note...",

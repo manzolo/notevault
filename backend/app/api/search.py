@@ -1,10 +1,10 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, text
+from sqlalchemy import or_, exists, select, func, text
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Note, Tag, NoteTag, User
+from app.models.database import Attachment, Note, Tag, NoteTag, User
 from app.schemas.search import SearchResponse
 from app.security.dependencies import get_current_user
 
@@ -20,15 +20,22 @@ async def search_notes(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    tsquery = func.plainto_tsquery("english", q)
     query = (
         select(Note)
         .options(selectinload(Note.tags))
         .where(
             Note.user_id == current_user.id,
-            Note.fts_vector.op("@@")(func.plainto_tsquery("english", q)),
+            or_(
+                Note.fts_vector.op("@@")(tsquery),
+                exists().where(
+                    Attachment.note_id == Note.id,
+                    Attachment.fts_vector.op("@@")(tsquery),
+                ),
+            ),
         )
         .order_by(
-            func.ts_rank(Note.fts_vector, func.plainto_tsquery("english", q)).desc()
+            func.ts_rank(Note.fts_vector, tsquery).desc()
         )
     )
 

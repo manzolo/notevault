@@ -56,6 +56,7 @@ class Note(Base):
     category = relationship("Category", back_populates="notes")
     tags = relationship("Tag", secondary="note_tags", back_populates="notes")
     secrets = relationship("Secret", back_populates="note", cascade="all, delete-orphan")
+    attachments = relationship("Attachment", back_populates="note", cascade="all, delete-orphan")
 
 
 class Tag(Base):
@@ -69,6 +70,7 @@ class Tag(Base):
     __table_args__ = (UniqueConstraint("name", "user_id", name="uq_tag_name_user"),)
 
     notes = relationship("Note", secondary="note_tags", back_populates="tags")
+    attachments = relationship("Attachment", secondary="attachment_tags", back_populates="tags")
 
 
 class NoteTag(Base):
@@ -113,3 +115,27 @@ class SecretAccessLog(Base):
 
     secret = relationship("Secret", back_populates="access_logs")
     user = relationship("User")
+
+
+class Attachment(Base):
+    __tablename__ = "attachments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
+    filename = Column(String(255), nullable=False)
+    stored_filename = Column(String(255), nullable=False)
+    mime_type = Column(String(100), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    extracted_text = Column(Text, nullable=True)
+    fts_vector = Column(TSVECTOR)  # populated by DB trigger only
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    note = relationship("Note", back_populates="attachments")
+    tags = relationship("Tag", secondary="attachment_tags", back_populates="attachments")
+
+
+class AttachmentTag(Base):
+    __tablename__ = "attachment_tags"
+
+    attachment_id = Column(Integer, ForeignKey("attachments.id", ondelete="CASCADE"), primary_key=True)
+    tag_id = Column(Integer, ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True)

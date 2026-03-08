@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # CORS — stored as str to avoid pydantic-settings JSON-parsing list fields from env
     cors_origins: str = "http://localhost:3000"
 
+    # Uploads
+    upload_dir: str = "/app/data/uploads"
+    max_upload_bytes: int = 10 * 1024 * 1024
+
     # App
     app_name: str = "NoteVault"
     debug: bool = False
