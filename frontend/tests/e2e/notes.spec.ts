@@ -66,8 +66,10 @@ test.describe('Notes', () => {
     // Locate the specific note card by its link href, then find its delete button
     const noteLink = page.locator(`a[href="/it/notes/${id}"]`);
     const card = noteLink.locator('xpath=ancestor::div[contains(@class,"rounded-xl")][1]');
-    page.once('dialog', (dialog) => dialog.accept());
     await card.getByRole('button', { name: /Elimina|Delete/i }).click();
+
+    // Custom ConfirmDialog: click the confirm button
+    await page.getByRole('button', { name: /Conferma|Confirm/i }).click();
 
     await expect(page.locator('text=Note To Delete')).not.toBeVisible({ timeout: 10_000 });
   });
