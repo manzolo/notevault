@@ -69,13 +69,34 @@
     "selectFile": "Seleziona file",
     "maxSize": "Max 10 MB",
     "unsupportedType": "Tipo di file non supportato",
-    "fileTooLarge": "Il file supera il limite di 10 MB"
+    "fileTooLarge": "Il file supera il limite di 10 MB",
+    "description": "Descrizione",
+    "descriptionPlaceholder": "Descrizione opzionale..."
+  },
+  "bookmarks": {
+    "bookmarks": "Segnalibri",
+    "add": "Aggiungi Segnalibro",
+    "edit": "Modifica Segnalibro",
+    "noBookmarks": "Nessun segnalibro per questa nota.",
+    "url": "URL",
+    "title": "Titolo",
+    "titlePlaceholder": "Titolo della pagina...",
+    "description": "Descrizione",
+    "descriptionPlaceholder": "Descrizione opzionale...",
+    "tags": "Tag",
+    "save": "Salva",
+    "saving": "Salvataggio...",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "deleteConfirm": "Sei sicuro di voler eliminare questo segnalibro?",
+    "saveFailed": "Impossibile salvare il segnalibro"
   },
   "search": {
     "placeholder": "Cerca note...",
     "results": "Risultati di ricerca ({count})",
     "noResults": "Nessuna nota trovata per la tua ricerca.",
-    "foundInAttachment": "Trovato nell'allegato"
+    "foundInAttachment": "Trovato nell'allegato",
+    "foundInBookmark": "Trovato nel segnalibro"
   },
   "common": {
     "loading": "Caricamento...",

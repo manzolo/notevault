@@ -40,7 +40,8 @@ RETURNS trigger AS $$
 BEGIN
     NEW.fts_vector :=
         setweight(to_tsvector('english', coalesce(NEW.filename, '')), 'A') ||
-        setweight(to_tsvector('english', coalesce(NEW.extracted_text, '')), 'B');
+        setweight(to_tsvector('english', coalesce(NEW.extracted_text, '')), 'B') ||
+        setweight(to_tsvector('english', coalesce(NEW.description, '')), 'C');
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql
@@ -50,6 +51,25 @@ _ATTACHMENT_FTS_TRIGGER = """
 CREATE OR REPLACE TRIGGER attachments_fts_update
 BEFORE INSERT OR UPDATE ON attachments
 FOR EACH ROW EXECUTE FUNCTION attachments_fts_trigger_func()
+"""
+
+_BOOKMARK_FTS_FUNCTION = """
+CREATE OR REPLACE FUNCTION bookmarks_fts_trigger_func()
+RETURNS trigger AS $$
+BEGIN
+    NEW.fts_vector :=
+        setweight(to_tsvector('english', coalesce(NEW.title, '')), 'A') ||
+        setweight(to_tsvector('english', coalesce(NEW.url, '')), 'B') ||
+        setweight(to_tsvector('english', coalesce(NEW.description, '')), 'C');
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql
+"""
+
+_BOOKMARK_FTS_TRIGGER = """
+CREATE OR REPLACE TRIGGER bookmarks_fts_update
+BEFORE INSERT OR UPDATE ON bookmarks
+FOR EACH ROW EXECUTE FUNCTION bookmarks_fts_trigger_func()
 """
 
 
@@ -63,6 +83,8 @@ async def engine():
         await conn.execute(text(_FTS_TRIGGER))
         await conn.execute(text(_ATTACHMENT_FTS_FUNCTION))
         await conn.execute(text(_ATTACHMENT_FTS_TRIGGER))
+        await conn.execute(text(_BOOKMARK_FTS_FUNCTION))
+        await conn.execute(text(_BOOKMARK_FTS_TRIGGER))
     yield eng
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

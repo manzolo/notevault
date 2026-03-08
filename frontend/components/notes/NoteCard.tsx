@@ -10,6 +10,7 @@ interface NoteCardProps {
   note: Note;
   onDelete: (id: number) => void;
   matchInAttachment?: boolean;
+  matchInBookmark?: boolean;
 }
 
 function PaperclipIcon() {
@@ -21,22 +22,31 @@ function PaperclipIcon() {
   );
 }
 
-export default function NoteCard({ note, onDelete, matchInAttachment }: NoteCardProps) {
+function GlobeIcon() {
+  return (
+    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+    </svg>
+  );
+}
+
+export default function NoteCard({ note, onDelete, matchInAttachment, matchInBookmark }: NoteCardProps) {
   const locale = useLocale();
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
+    <div className="group bg-white dark:bg-gray-800 rounded-xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all border border-gray-200 dark:border-gray-700 p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             {note.is_pinned && (
-              <span className="text-blue-600 text-xs font-medium">📌 {t('pinned')}</span>
+              <span className="text-indigo-600 text-xs font-medium">📌 {t('pinned')}</span>
             )}
             <Link
               href={`/${locale}/notes/${note.id}`}
-              className="text-gray-900 dark:text-gray-100 font-semibold hover:text-blue-600 truncate block"
+              className="text-gray-900 dark:text-gray-100 font-semibold hover:text-indigo-600 dark:hover:text-indigo-400 truncate block"
             >
               {note.title}
             </Link>
@@ -44,24 +54,37 @@ export default function NoteCard({ note, onDelete, matchInAttachment }: NoteCard
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{truncate(note.content, 120)}</p>
           <div className="flex items-center gap-2 flex-wrap">
             {note.tags.map((tag) => (
-              <span key={tag.id} className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full">
+              <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full">
                 {tag.name}
               </span>
             ))}
             <span className="text-xs text-gray-400">{formatRelative(note.updated_at)}</span>
           </div>
-          {matchInAttachment && (
-            <div className="mt-2 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-              <PaperclipIcon />
-              <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
-                {tSearch('foundInAttachment')}
-              </span>
+          {(matchInAttachment || matchInBookmark) && (
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              {matchInAttachment && (
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <PaperclipIcon />
+                  <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
+                    {tSearch('foundInAttachment')}
+                  </span>
+                </div>
+              )}
+              {matchInBookmark && (
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <GlobeIcon />
+                  <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
+                    {tSearch('foundInBookmark')}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
         <Button
           variant="danger"
           size="sm"
+          className="opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={() => {
             if (confirm(t('deleteConfirm'))) onDelete(note.id);
           }}

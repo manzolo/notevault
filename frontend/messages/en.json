@@ -69,13 +69,34 @@
     "selectFile": "Select file",
     "maxSize": "Max 10 MB",
     "unsupportedType": "Unsupported file type",
-    "fileTooLarge": "File exceeds 10 MB limit"
+    "fileTooLarge": "File exceeds 10 MB limit",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional description..."
+  },
+  "bookmarks": {
+    "bookmarks": "Bookmarks",
+    "add": "Add Bookmark",
+    "edit": "Edit Bookmark",
+    "noBookmarks": "No bookmarks for this note.",
+    "url": "URL",
+    "title": "Title",
+    "titlePlaceholder": "Page title...",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional description...",
+    "tags": "Tags",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this bookmark?",
+    "saveFailed": "Failed to save bookmark"
   },
   "search": {
     "placeholder": "Search notes...",
     "results": "Search Results ({count})",
     "noResults": "No notes found for your search.",
-    "foundInAttachment": "Found in attachment"
+    "foundInAttachment": "Found in attachment",
+    "foundInBookmark": "Found in bookmark"
   },
   "common": {
     "loading": "Loading...",

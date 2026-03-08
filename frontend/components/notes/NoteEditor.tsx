@@ -38,7 +38,7 @@ export default function NoteEditor({ initialTitle = '', initialContent = '', onS
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={12}
-          className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           placeholder="Write your note in Markdown..."
         />
       </div>

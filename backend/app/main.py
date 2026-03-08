@@ -6,7 +6,7 @@ from slowapi.errors import RateLimitExceeded
 from app.config import get_settings
 from app.middleware.logging import AuditLoggingMiddleware
 from app.security.rate_limit import limiter
-from app.api import auth, notes, tags, categories, secrets, search, attachments
+from app.api import auth, notes, tags, categories, secrets, search, attachments, bookmarks
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +45,7 @@ app.include_router(categories.router)
 app.include_router(secrets.router)
 app.include_router(search.router)
 app.include_router(attachments.router)
+app.include_router(bookmarks.router)
 
 
 @app.get("/health")

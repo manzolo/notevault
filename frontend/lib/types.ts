@@ -83,8 +83,34 @@ export interface Attachment {
   filename: string;
   mime_type: string;
   size_bytes: number;
+  description?: string;
   tags: Tag[];
   created_at: string;
+}
+
+export interface Bookmark {
+  id: number;
+  note_id: number;
+  url: string;
+  title?: string;
+  description?: string;
+  tags: Tag[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookmarkCreate {
+  url: string;
+  title?: string;
+  description?: string;
+  tag_ids?: number[];
+}
+
+export interface BookmarkUpdate {
+  url?: string;
+  title?: string;
+  description?: string;
+  tag_ids?: number[];
 }
 
 export interface TokenResponse {
@@ -94,10 +120,14 @@ export interface TokenResponse {
 
 export interface SearchNote extends Note {
   match_in_attachment?: boolean;
+  match_in_bookmark?: boolean;
 }
 
 export interface SearchResponse {
   items: SearchNote[];
   total: number;
   query: string;
+  page: number;
+  per_page: number;
+  pages: number;
 }

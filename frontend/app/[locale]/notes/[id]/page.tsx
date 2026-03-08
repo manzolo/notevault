@@ -9,15 +9,19 @@ import toast from 'react-hot-toast';
 import { useNotes } from '@/hooks/useNotes';
 import { useSecrets } from '@/hooks/useSecrets';
 import { useAttachments } from '@/hooks/useAttachments';
-import { Attachment, Note } from '@/lib/types';
+import { useBookmarks } from '@/hooks/useBookmarks';
+import { Attachment, Bookmark, Note, Tag } from '@/lib/types';
 import NoteEditor from '@/components/notes/NoteEditor';
 import SecretList from '@/components/secrets/SecretList';
 import SecretForm from '@/components/secrets/SecretForm';
 import AttachmentList from '@/components/attachments/AttachmentList';
 import AttachmentUploadForm from '@/components/attachments/AttachmentUploadForm';
+import BookmarkList from '@/components/bookmarks/BookmarkList';
+import BookmarkForm from '@/components/bookmarks/BookmarkForm';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import api from '@/lib/api';
 
 const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
 
@@ -25,6 +29,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const t = useTranslations('notes');
   const tSecrets = useTranslations('secrets');
   const tAttachments = useTranslations('attachments');
+  const tBookmarks = useTranslations('bookmarks');
   const locale = useLocale();
   const router = useRouter();
   const noteId = parseInt(params.id);
@@ -32,13 +37,17 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const { getNote, updateNote, deleteNote } = useNotes();
   const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret } = useSecrets(noteId);
   const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, deleteAttachment, previewAttachment } = useAttachments(noteId);
+  const { bookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark } = useBookmarks(noteId);
 
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showBookmarkModal, setShowBookmarkModal] = useState(false);
+  const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [previewState, setPreviewState] = useState<{ attachment: Attachment; url: string } | null>(null);
 
   useEffect(() => {
@@ -48,6 +57,10 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         setNote(n);
         await fetchSecrets();
         await fetchAttachments();
+        await fetchBookmarks();
+        // Fetch available tags for forms
+        const tagsResp = await api.get<Tag[]>('/api/tags');
+        setAvailableTags(tagsResp.data);
       } catch {
         router.push(`/${locale}/dashboard`);
       } finally {
@@ -83,8 +96,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     toast.success('Secret saved!');
   };
 
-  const handleUpload = async (file: File, tagIds: number[]) => {
-    await uploadAttachment(file, tagIds);
+  const handleUpload = async (file: File, tagIds: number[], description?: string) => {
+    await uploadAttachment(file, tagIds, description);
     setShowUploadModal(false);
     toast.success('File uploaded!');
   };
@@ -118,6 +131,19 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     }
   };
 
+  const handleCreateBookmark = async (data: any) => {
+    await createBookmark(data);
+    setShowBookmarkModal(false);
+    toast.success('Bookmark saved!');
+  };
+
+  const handleUpdateBookmark = async (data: any) => {
+    if (!editingBookmark) return;
+    await updateBookmark(editingBookmark.id, data);
+    setEditingBookmark(null);
+    toast.success('Bookmark updated!');
+  };
+
   if (loading) return <LoadingSpinner className="py-12" />;
   if (!note) return null;
 
@@ -145,7 +171,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           />
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 prose prose-sm max-w-none dark:prose-invert">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-indigo-500 border border-gray-200 dark:border-gray-700 p-6 prose prose-sm max-w-none dark:prose-invert">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.content || '*No content*'}</ReactMarkdown>
         </div>
       )}
@@ -153,7 +179,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       {note.tags.length > 0 && (
         <div className="flex gap-2 flex-wrap">
           {note.tags.map((tag) => (
-            <span key={tag.id} className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full">
+            <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-1 rounded-full">
               {tag.name}
             </span>
           ))}
@@ -196,6 +222,22 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         />
       </div>
 
+      {/* Bookmarks Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">{tBookmarks('bookmarks')}</h2>
+          <Button size="sm" onClick={() => setShowBookmarkModal(true)}>
+            {tBookmarks('add')}
+          </Button>
+        </div>
+        <BookmarkList
+          bookmarks={bookmarks}
+          loading={bookmarksLoading}
+          onEdit={(bm) => setEditingBookmark(bm)}
+          onDelete={deleteBookmark}
+        />
+      </div>
+
       <Modal
         isOpen={showSecretModal}
         onClose={() => setShowSecretModal(false)}
@@ -209,7 +251,34 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         onClose={() => setShowUploadModal(false)}
         title={tAttachments('upload')}
       >
-        <AttachmentUploadForm onUpload={handleUpload} />
+        <AttachmentUploadForm onUpload={handleUpload} availableTags={availableTags} />
+      </Modal>
+
+      <Modal
+        isOpen={showBookmarkModal}
+        onClose={() => setShowBookmarkModal(false)}
+        title={tBookmarks('add')}
+      >
+        <BookmarkForm
+          availableTags={availableTags}
+          onSubmit={handleCreateBookmark}
+          onCancel={() => setShowBookmarkModal(false)}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={!!editingBookmark}
+        onClose={() => setEditingBookmark(null)}
+        title={tBookmarks('edit')}
+      >
+        {editingBookmark && (
+          <BookmarkForm
+            initial={editingBookmark}
+            availableTags={availableTags}
+            onSubmit={handleUpdateBookmark}
+            onCancel={() => setEditingBookmark(null)}
+          />
+        )}
       </Modal>
 
       {/* Inline preview modal */}

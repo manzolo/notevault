@@ -107,6 +107,9 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{attachment.filename}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400">{formatBytes(attachment.size_bytes)}</p>
+        {attachment.description && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{attachment.description}</p>
+        )}
         {attachment.tags.length > 0 && (
           <div className="flex gap-1 mt-1 flex-wrap">
             {attachment.tags.map((tag) => (

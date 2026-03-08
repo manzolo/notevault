@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import or_, exists, select, func
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Attachment, Note, NoteTag, User
+from app.models.database import Attachment, Bookmark, Note, NoteTag, User
 from app.schemas.search import SearchResponse, SearchNoteResponse
 from app.security.dependencies import get_current_user
 
@@ -33,6 +33,17 @@ async def search_notes(
         .label("match_in_attachment")
     )
 
+    # Correlated subquery: True if the note has matching bookmarks
+    bookmark_match = (
+        exists()
+        .where(
+            Bookmark.note_id == Note.id,
+            Bookmark.fts_vector.op("@@")(tsquery),
+        )
+        .correlate(Note)
+        .label("match_in_bookmark")
+    )
+
     base_where = [
         Note.user_id == current_user.id,
         or_(
@@ -40,6 +51,10 @@ async def search_notes(
             exists().where(
                 Attachment.note_id == Note.id,
                 Attachment.fts_vector.op("@@")(tsquery),
+            ),
+            exists().where(
+                Bookmark.note_id == Note.id,
+                Bookmark.fts_vector.op("@@")(tsquery),
             ),
         ),
     ]
@@ -54,9 +69,11 @@ async def search_notes(
         await db.execute(select(func.count()).select_from(count_subq.subquery()))
     ).scalar()
 
-    # Main query with attachment_match column
+    pages = max(1, -(-total // per_page))  # ceiling division
+
+    # Main query with attachment_match and bookmark_match columns
     query = (
-        select(Note, attachment_match)
+        select(Note, attachment_match, bookmark_match)
         .options(selectinload(Note.tags))
         .where(*base_where)
         .order_by(func.ts_rank(Note.fts_vector, tsquery).desc())
@@ -71,9 +88,10 @@ async def search_notes(
     rows = (await db.execute(query)).all()
 
     items = []
-    for note, match_bool in rows:
+    for note, match_attachment, match_bookmark in rows:
         item = SearchNoteResponse.model_validate(note)
-        item.match_in_attachment = bool(match_bool)
+        item.match_in_attachment = bool(match_attachment)
+        item.match_in_bookmark = bool(match_bookmark)
         items.append(item)
 
-    return SearchResponse(items=items, total=total, query=q)
+    return SearchResponse(items=items, total=total, query=q, page=page, per_page=per_page, pages=pages)

@@ -1,13 +1,16 @@
+import os
+import shutil
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Note, Tag, NoteTag
+from app.models.database import Note, Tag, NoteTag, Attachment
 from app.schemas.note import NoteCreate, NoteUpdate, NoteResponse, NoteListResponse
 from app.security.dependencies import get_current_user
 from app.models.database import User
+from app.config import get_settings
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
 
@@ -154,4 +157,25 @@ async def delete_note(
     note = result.scalar_one_or_none()
     if not note:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+    # Delete attachment files from disk before removing the DB record
+    settings = get_settings()
+    att_result = await db.execute(
+        select(Attachment).where(Attachment.note_id == note_id)
+    )
+    attachments = att_result.scalars().all()
+    for att in attachments:
+        upload_dir = os.path.join(settings.upload_dir, str(current_user.id), str(note_id))
+        full_path = os.path.join(upload_dir, att.stored_filename)
+        try:
+            os.remove(full_path)
+        except FileNotFoundError:
+            pass
+    # Remove the per-note upload directory if empty
+    note_upload_dir = os.path.join(settings.upload_dir, str(current_user.id), str(note_id))
+    try:
+        shutil.rmtree(note_upload_dir, ignore_errors=True)
+    except Exception:
+        pass
+
     await db.delete(note)

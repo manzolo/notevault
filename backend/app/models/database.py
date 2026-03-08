@@ -57,6 +57,7 @@ class Note(Base):
     tags = relationship("Tag", secondary="note_tags", back_populates="notes")
     secrets = relationship("Secret", back_populates="note", cascade="all, delete-orphan")
     attachments = relationship("Attachment", back_populates="note", cascade="all, delete-orphan")
+    bookmarks = relationship("Bookmark", back_populates="note", cascade="all, delete-orphan")
 
 
 class Tag(Base):
@@ -71,6 +72,7 @@ class Tag(Base):
 
     notes = relationship("Note", secondary="note_tags", back_populates="tags")
     attachments = relationship("Attachment", secondary="attachment_tags", back_populates="tags")
+    bookmarks = relationship("Bookmark", secondary="bookmark_tags", back_populates="tags")
 
 
 class NoteTag(Base):
@@ -127,6 +129,7 @@ class Attachment(Base):
     mime_type = Column(String(100), nullable=False)
     size_bytes = Column(Integer, nullable=False)
     extracted_text = Column(Text, nullable=True)
+    description = Column(Text, nullable=True)
     fts_vector = Column(TSVECTOR)  # populated by DB trigger only
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -138,4 +141,27 @@ class AttachmentTag(Base):
     __tablename__ = "attachment_tags"
 
     attachment_id = Column(Integer, ForeignKey("attachments.id", ondelete="CASCADE"), primary_key=True)
+    tag_id = Column(Integer, ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True)
+
+
+class Bookmark(Base):
+    __tablename__ = "bookmarks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
+    url = Column(Text, nullable=False)
+    title = Column(String(500), nullable=True)
+    description = Column(Text, nullable=True)
+    fts_vector = Column(TSVECTOR)  # populated by DB trigger only
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    note = relationship("Note", back_populates="bookmarks")
+    tags = relationship("Tag", secondary="bookmark_tags", back_populates="bookmarks")
+
+
+class BookmarkTag(Base):
+    __tablename__ = "bookmark_tags"
+
+    bookmark_id = Column(Integer, ForeignKey("bookmarks.id", ondelete="CASCADE"), primary_key=True)
     tag_id = Column(Integer, ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True)

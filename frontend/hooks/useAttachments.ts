@@ -19,10 +19,11 @@ export function useAttachments(noteId: number) {
   }, [noteId]);
 
   const uploadAttachment = useCallback(
-    async (file: File, tagIds: number[] = []): Promise<Attachment> => {
+    async (file: File, tagIds: number[] = [], description?: string): Promise<Attachment> => {
       const formData = new FormData();
       formData.append('file', file);
       tagIds.forEach((id) => formData.append('tag_ids', String(id)));
+      if (description) formData.append('description', description);
 
       const response = await api.post<Attachment>(
         `/api/notes/${noteId}/attachments`,

@@ -22,14 +22,24 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-modal w-full max-w-md overflow-hidden">
+          <div className="border-t-4 border-t-indigo-500 px-6 py-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
             <button
               onClick={onClose}
@@ -41,7 +51,9 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
               </svg>
             </button>
           </div>
-          {children}
+          <div className="p-6">
+            {children}
+          </div>
         </div>
       </div>
     </div>

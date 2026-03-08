@@ -33,12 +33,12 @@ export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+    <nav className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 shadow-sm">
       <div className="container mx-auto px-4 max-w-5xl">
         <div className="flex items-center justify-between h-14">
           <Link
             href={`/${locale}/dashboard`}
-            className="text-lg font-bold text-blue-600 hover:text-blue-700"
+            className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent hover:from-indigo-700 hover:to-violet-700"
           >
             {t('brand')}
           </Link>
@@ -78,7 +78,7 @@ export default function Navbar() {
                 <Link href={`/${locale}/login`} className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                   Login
                 </Link>
-                <Link href={`/${locale}/register`} className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                <Link href={`/${locale}/register`} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
                   Register
                 </Link>
               </>

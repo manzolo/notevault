@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 from urllib.parse import quote
 from uuid import uuid4
 
@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 from app.config import get_settings
 from app.database.connection import get_db
 from app.models.database import Attachment, AttachmentTag, Note, Tag, User
-from app.schemas.attachment import AttachmentResponse, AttachmentTagUpdate
+from app.schemas.attachment import AttachmentResponse, AttachmentTagUpdate, AttachmentUpdate
 from app.security.dependencies import get_current_user
 from app.security.file_validation import sanitize_filename, validate
 from app.services.text_extraction import extract_text
@@ -58,6 +58,7 @@ async def upload_attachment(
     note_id: int,
     file: UploadFile,
     tag_ids: List[int] = Form(default=[]),
+    description: Optional[str] = Form(default=None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -102,6 +103,7 @@ async def upload_attachment(
         mime_type=mime_type,
         size_bytes=total,
         extracted_text=extracted,
+        description=description,
     )
     db.add(attachment)
     await db.flush()
@@ -209,6 +211,50 @@ async def update_attachment_tags(
         for tid in body.tag_ids:
             if tid in owned_tag_ids:
                 db.add(AttachmentTag(attachment_id=attachment.id, tag_id=tid))
+
+    await db.flush()
+
+    # Reload with updated tags (populate_existing bypasses identity-map cache)
+    result = await db.execute(
+        select(Attachment)
+        .options(selectinload(Attachment.tags))
+        .where(Attachment.id == attachment.id)
+        .execution_options(populate_existing=True)
+    )
+    return result.scalar_one()
+
+
+@router.patch("/{note_id}/attachments/{attachment_id}", response_model=AttachmentResponse)
+async def update_attachment(
+    note_id: int,
+    attachment_id: int,
+    body: AttachmentUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_owned_note(note_id, current_user, db)
+    attachment = await _get_attachment(attachment_id, note_id, db)
+
+    # Update description if provided
+    if body.description is not None:
+        attachment.description = body.description
+
+    # Update tags if provided
+    if body.tag_ids is not None:
+        existing_result = await db.execute(
+            select(AttachmentTag).where(AttachmentTag.attachment_id == attachment.id)
+        )
+        for at in existing_result.scalars().all():
+            await db.delete(at)
+
+        if body.tag_ids:
+            owned_tags_result = await db.execute(
+                select(Tag).where(Tag.id.in_(body.tag_ids), Tag.user_id == current_user.id)
+            )
+            owned_tag_ids = {t.id for t in owned_tags_result.scalars().all()}
+            for tid in body.tag_ids:
+                if tid in owned_tag_ids:
+                    db.add(AttachmentTag(attachment_id=attachment.id, tag_id=tid))
 
     await db.flush()
 
