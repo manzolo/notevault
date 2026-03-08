@@ -40,7 +40,11 @@
     "newTag": "Nome nuovo tag",
     "createTag": "Crea",
     "write": "Scrivi",
-    "preview": "Anteprima"
+    "preview": "Anteprima",
+    "filterByDate": "Filtra per data",
+    "dateFrom": "Da",
+    "dateTo": "A",
+    "clearDate": "Cancella"
   },
   "secrets": {
     "secrets": "Segreti",
@@ -116,6 +120,8 @@
     "cancel": "Annulla",
     "confirm": "Conferma",
     "back": "Indietro",
-    "actions": "Azioni"
+    "actions": "Azioni",
+    "createdAt": "Creato",
+    "updatedAt": "Modificato"
   }
 }

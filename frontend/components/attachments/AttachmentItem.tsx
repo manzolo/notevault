@@ -5,6 +5,7 @@ import { Attachment } from '@/lib/types';
 import Button from '@/components/common/Button';
 import { ArrowDownTrayIcon, EyeIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
+import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
 interface Props {
   attachment: Attachment;
@@ -104,15 +105,14 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
           {attachment.description && (
             <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{attachment.description}</p>
           )}
-          {attachment.tags.length > 0 && (
-            <div className="flex gap-1 mt-1 flex-wrap">
-              {attachment.tags.map((tag) => (
-                <span key={tag.id} className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-1.5 py-0.5 rounded-full">
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {attachment.tags.map((tag) => (
+              <span key={tag.id} className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-1.5 py-0.5 rounded-full">
+                {tag.name}
+              </span>
+            ))}
+            <DateInfoTooltip createdAt={attachment.created_at} updatedAt={attachment.updated_at} />
+          </div>
         </div>
 
         <div className="flex gap-1.5 shrink-0">

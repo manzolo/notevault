@@ -5,6 +5,7 @@ import { Bookmark } from '@/lib/types';
 import Button from '@/components/common/Button';
 import { PencilIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
+import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
 interface Props {
   bookmark: Bookmark;
@@ -50,15 +51,14 @@ export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
           {bookmark.description && (
             <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{bookmark.description}</p>
           )}
-          {bookmark.tags.length > 0 && (
-            <div className="flex gap-1 mt-1 flex-wrap">
-              {bookmark.tags.map((tag) => (
-                <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-1.5 py-0.5 rounded-full">
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {bookmark.tags.map((tag) => (
+              <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-1.5 py-0.5 rounded-full">
+                {tag.name}
+              </span>
+            ))}
+            <DateInfoTooltip createdAt={bookmark.created_at} updatedAt={bookmark.updated_at} />
+          </div>
         </div>
 
         <div className="flex gap-1.5 shrink-0">

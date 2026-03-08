@@ -88,6 +88,7 @@ export interface Attachment {
   description?: string;
   tags: Tag[];
   created_at: string;
+  updated_at: string;
 }
 
 export interface Bookmark {

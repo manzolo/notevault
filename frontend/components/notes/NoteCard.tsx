@@ -7,6 +7,7 @@ import { formatRelative, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
 import { EyeIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
+import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
 const INLINE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
@@ -77,6 +78,7 @@ export default function NoteCard({ note, onDelete, matchInAttachment, matchInBoo
                 </span>
               ))}
               <span className="text-xs text-gray-400">{formatRelative(note.updated_at)}</span>
+              <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
             </div>
 
             {(matchInAttachment || matchInBookmark) && (

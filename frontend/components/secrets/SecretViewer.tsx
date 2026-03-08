@@ -7,6 +7,7 @@ import { copyToClipboard } from '@/lib/utils';
 import Button from '@/components/common/Button';
 import { ClipboardCheckIcon, ClipboardIcon, EyeIcon, EyeOffIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
+import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
 interface SecretViewerProps {
   secret: Secret;
@@ -65,6 +66,7 @@ export default function SecretViewer({
                   {secret.username}
                 </span>
               )}
+              <DateInfoTooltip createdAt={secret.created_at} updatedAt={secret.updated_at} />
             </div>
             {revealed && (
               <div className="mt-2">

@@ -24,6 +24,7 @@ import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { KeyIcon, LinkIcon, PaperclipUploadIcon, PencilIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
+import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
 const INLINE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
@@ -282,8 +283,11 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       )}
 
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{note.title}</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">{note.title}</h1>
+          <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
+        </div>
+        <div className="flex gap-2 shrink-0">
           <Button variant="secondary" size="sm" onClick={() => setEditing(!editing)}>
             {editing ? <XMarkIcon /> : <PencilIcon />}
             {editing ? 'Cancel' : 'Edit'}
@@ -294,6 +298,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           </Button>
         </div>
       </div>
+
 
       {editing ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">

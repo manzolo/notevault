@@ -13,6 +13,7 @@ class AttachmentResponse(BaseModel):
     description: Optional[str] = None
     tags: List[TagResponse] = []
     created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True

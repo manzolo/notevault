@@ -1,5 +1,6 @@
 import os
 import shutil
+from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +21,10 @@ async def list_notes(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     tag_id: Optional[int] = Query(None),
+    created_after: Optional[datetime] = Query(None),
+    created_before: Optional[datetime] = Query(None),
+    updated_after: Optional[datetime] = Query(None),
+    updated_before: Optional[datetime] = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -33,6 +38,15 @@ async def list_notes(
             .scalar_subquery()
         )
         base_filter = base_filter & Note.id.in_(tag_subq)
+
+    if created_after is not None:
+        base_filter = base_filter & (Note.created_at >= created_after)
+    if created_before is not None:
+        base_filter = base_filter & (Note.created_at <= created_before)
+    if updated_after is not None:
+        base_filter = base_filter & (Note.updated_at >= updated_after)
+    if updated_before is not None:
+        base_filter = base_filter & (Note.updated_at <= updated_before)
 
     count_result = await db.execute(select(func.count(Note.id)).where(base_filter))
     total = count_result.scalar()

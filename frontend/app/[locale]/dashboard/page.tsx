@@ -25,6 +25,8 @@ export default function DashboardPage() {
   const { tags, fetchTags } = useTags();
   const [page, setPage] = useState(1);
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
@@ -47,12 +49,20 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      fetchNotes(page, PER_PAGE, selectedTagId).then(() => {});
+      const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
+      const before = dateTo ? `${dateTo}T23:59:59` : undefined;
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before).then(() => {});
     }
-  }, [user, page, selectedTagId]);
+  }, [user, page, selectedTagId, dateFrom, dateTo]);
 
   const handleTagSelect = (tagId: number | null) => {
     setSelectedTagId(tagId);
+    setPage(1);
+  };
+
+  const handleDateChange = (from: string, to: string) => {
+    setDateFrom(from);
+    setDateTo(to);
     setPage(1);
   };
 
@@ -140,9 +150,44 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {!searchResults && tags.length > 0 && (
-        <div className="mb-4">
-          <TagFilter tags={tags} selectedTagId={selectedTagId} onSelect={handleTagSelect} />
+      {!searchResults && (
+        <div className="mb-4 flex flex-col gap-2">
+          {tags.length > 0 && (
+            <TagFilter tags={tags} selectedTagId={selectedTagId} onSelect={handleTagSelect} />
+          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('filterByDate')}:</span>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-gray-500 dark:text-gray-400">{t('dateFrom')}</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => handleDateChange(e.target.value, dateTo)}
+                className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1
+                           bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
+                           focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-gray-500 dark:text-gray-400">{t('dateTo')}</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => handleDateChange(dateFrom, e.target.value)}
+                className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1
+                           bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
+                           focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              />
+            </div>
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => handleDateChange('', '')}
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                {t('clearDate')}
+              </button>
+            )}
+          </div>
         </div>
       )}
 

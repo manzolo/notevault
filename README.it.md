@@ -6,6 +6,7 @@
 ![Database: PostgreSQL 15](https://img.shields.io/badge/Database-PostgreSQL%2015-336791.svg)
 ![Cifratura: AES-256-GCM](https://img.shields.io/badge/Cifratura-AES--256--GCM-critical.svg)
 ![Docker Hub](https://img.shields.io/badge/Docker%20Hub-manzolo%2Fnotevault-blue.svg)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow.svg)](https://buymeacoffee.com/manzolo)
 
 NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un editor di note in Markdown a una cassaforte per segreti completamente cifrata. Le note sono organizzate con tag, ricercabili tramite la ricerca full-text di PostgreSQL, e possono avere allegati e segnalibri URL. Tutti i valori sensibili sono memorizzati cifrati a riposo con AES-256-GCM. L'intero stack gira in Docker ed è gestito tramite un unico `Makefile`.
 

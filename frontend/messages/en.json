@@ -40,7 +40,11 @@
     "newTag": "New tag name",
     "createTag": "Create",
     "write": "Write",
-    "preview": "Preview"
+    "preview": "Preview",
+    "filterByDate": "Filter by date",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "clearDate": "Clear"
   },
   "secrets": {
     "secrets": "Secrets",
@@ -116,6 +120,8 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "back": "Back",
-    "actions": "Actions"
+    "actions": "Actions",
+    "createdAt": "Created",
+    "updatedAt": "Modified"
   }
 }

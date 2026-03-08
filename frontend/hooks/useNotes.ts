@@ -10,12 +10,20 @@ export function useNotes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchNotes = useCallback(async (page = 1, perPage = 20, tagId?: number | null) => {
+  const fetchNotes = useCallback(async (
+    page = 1,
+    perPage = 20,
+    tagId?: number | null,
+    createdAfter?: string | null,
+    createdBefore?: string | null,
+  ) => {
     setLoading(true);
     setError(null);
     try {
       const params: Record<string, any> = { page, per_page: perPage };
       if (tagId != null) params.tag_id = tagId;
+      if (createdAfter) params.created_after = createdAfter;
+      if (createdBefore) params.created_before = createdBefore;
       const response = await api.get<NoteListResponse>('/api/notes', { params });
       setNotes(response.data.items);
       setTotal(response.data.total);
