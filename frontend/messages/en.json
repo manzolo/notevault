@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "newNote": "New Note",
+    "settings": "Settings",
     "logout": "Logout",
     "brand": "NoteVault"
   },
@@ -19,7 +20,34 @@
     "loggingIn": "Logging in...",
     "registering": "Registering...",
     "welcomeBack": "Welcome back",
-    "createAccount": "Create your account"
+    "createAccount": "Create your account",
+    "totpTitle": "Two-factor authentication",
+    "totpHint": "Enter the 6-digit code from your authenticator app.",
+    "totpCode": "Authentication code",
+    "totpVerify": "Verify",
+    "totpInvalid": "Invalid code. Please try again.",
+    "backToLogin": "Back to login"
+  },
+  "settings": {
+    "title": "Settings",
+    "totpTitle": "Two-factor authentication (TOTP)",
+    "totpDesc": "Protect your account with an authenticator app (Google Authenticator, Aegis, etc.).",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "setupTotp": "Set up 2FA",
+    "scanQr": "Scan the QR code with your authenticator app, then enter the 6-digit code to confirm.",
+    "manualEntry": "Can't scan? Enter the secret key manually",
+    "verifyCode": "Verification code",
+    "activate": "Activate",
+    "cancel": "Cancel",
+    "disableTotp": "Disable 2FA",
+    "confirmDisable": "Enter your password to confirm disabling two-factor authentication.",
+    "currentPassword": "Current password",
+    "setupFailed": "Failed to generate setup. Try again.",
+    "enabledSuccess": "Two-factor authentication enabled!",
+    "disabledSuccess": "Two-factor authentication disabled.",
+    "invalidCode": "Invalid code. Please try again.",
+    "invalidPassword": "Invalid password."
   },
   "notes": {
     "myNotes": "My Notes",

@@ -3,6 +3,7 @@ export interface User {
   username: string;
   email: string;
   is_active: boolean;
+  totp_enabled: boolean;
   created_at: string;
 }
 
@@ -119,6 +120,18 @@ export interface BookmarkUpdate {
 export interface TokenResponse {
   access_token: string;
   token_type: string;
+}
+
+export interface LoginResponse {
+  access_token: string | null;
+  token_type: string;
+  totp_required: boolean;
+  partial_token: string | null;
+}
+
+export interface TotpSetupData {
+  secret: string;
+  otpauth_url: string;
 }
 
 export interface MatchingAttachment {

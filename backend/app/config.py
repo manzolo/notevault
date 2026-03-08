@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     upload_dir: str = "/app/data/uploads"
     max_upload_bytes: int = 10 * 1024 * 1024
 
+    # TOTP — set TOTP_REQUIRED=false to disable 2FA enforcement (e.g. local dev)
+    totp_required: bool = True
+
     # App
     app_name: str = "NoteVault"
     debug: bool = False
