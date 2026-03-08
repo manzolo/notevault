@@ -19,6 +19,8 @@ import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
+const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
+
 export default function NotePage({ params }: { params: { id: string; locale: string } }) {
   const t = useTranslations('notes');
   const tSecrets = useTranslations('secrets');
@@ -37,6 +39,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [saving, setSaving] = useState(false);
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [previewState, setPreviewState] = useState<{ attachment: Attachment; url: string } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -86,12 +89,29 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     toast.success('File uploaded!');
   };
 
+  const handleClosePreview = () => {
+    if (previewState) URL.revokeObjectURL(previewState.url);
+    setPreviewState(null);
+  };
+
   const handlePreview = async (attachment: Attachment) => {
     try {
       const url = await previewAttachment(attachment.id);
-      window.open(url, '_blank');
+      if (INLINE_MIMES.has(attachment.mime_type)) {
+        // Show inline inside a modal — filename appears as modal title
+        setPreviewState({ attachment, url });
+      } else {
+        // Download: anchor trick preserves original filename
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = attachment.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     } catch {
-      toast.error('Failed to preview file');
+      toast.error('Failed to load file');
     }
   };
 
@@ -187,6 +207,29 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       >
         <AttachmentUploadForm onUpload={handleUpload} />
       </Modal>
+
+      {/* Inline preview modal */}
+      {previewState && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={handleClosePreview}>
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
+              <span className="text-sm font-medium text-gray-900 truncate">{previewState.attachment.filename}</span>
+              <button onClick={handleClosePreview} className="ml-4 text-gray-400 hover:text-gray-600">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50">
+              {previewState.attachment.mime_type === 'application/pdf' ? (
+                <iframe src={previewState.url} className="w-full h-[70vh] rounded" title={previewState.attachment.filename} />
+              ) : (
+                <img src={previewState.url} alt={previewState.attachment.filename} className="max-w-full max-h-[70vh] object-contain rounded" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
