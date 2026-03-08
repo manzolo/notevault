@@ -84,7 +84,7 @@ export default function NoteCard({ note, onDelete, matchInAttachment, matchInBoo
         <Button
           variant="danger"
           size="sm"
-          className="opacity-0 group-hover:opacity-100 transition-opacity"
+          className="transition-opacity"
           onClick={() => {
             if (confirm(t('deleteConfirm'))) onDelete(note.id);
           }}
