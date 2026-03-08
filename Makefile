@@ -51,7 +51,7 @@ migrate-down:
 ## test: Run the full test suite (backend + frontend)
 test: test-backend test-frontend
 
-## test-backend: Run backend pytest suite
+## test-backend: Run backend pytest suite against the dedicated test database
 test-backend:
 	docker compose exec backend pytest tests/ -v
 

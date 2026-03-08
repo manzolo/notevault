@@ -83,7 +83,11 @@ class Secret(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
-    secret_type = Column(SAEnum(SecretType), nullable=False, default=SecretType.OTHER)
+    secret_type = Column(
+        SAEnum(SecretType, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=SecretType.OTHER,
+    )
     encrypted_value = Column(BYTEA, nullable=False)  # nonce(12B) || ciphertext
     note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -99,7 +103,10 @@ class SecretAccessLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     secret_id = Column(Integer, ForeignKey("secrets.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    action = Column(SAEnum(AuditAction), nullable=False)
+    action = Column(
+        SAEnum(AuditAction, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
     ip_address = Column(String(50))
     user_agent = Column(String(500))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
