@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 
@@ -18,6 +19,7 @@ class UserResponse(BaseModel):
     username: str
     email: str
     is_active: bool
+    totp_enabled: bool
     created_at: datetime
 
     class Config:
@@ -27,3 +29,30 @@ class UserResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class LoginResponse(BaseModel):
+    """Login endpoint response — either a full token or a TOTP challenge."""
+    access_token: Optional[str] = None
+    token_type: str = "bearer"
+    totp_required: bool = False
+    partial_token: Optional[str] = None
+
+
+class TotpSetupResponse(BaseModel):
+    secret: str
+    otpauth_url: str
+
+
+class TotpEnableRequest(BaseModel):
+    secret: str
+    code: str
+
+
+class TotpDisableRequest(BaseModel):
+    password: str
+
+
+class TotpVerifyRequest(BaseModel):
+    partial_token: str
+    code: str

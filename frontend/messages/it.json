@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "newNote": "Nuova Nota",
+    "settings": "Impostazioni",
     "logout": "Esci",
     "brand": "NoteVault"
   },
@@ -19,7 +20,34 @@
     "loggingIn": "Accesso in corso...",
     "registering": "Registrazione in corso...",
     "welcomeBack": "Bentornato",
-    "createAccount": "Crea il tuo account"
+    "createAccount": "Crea il tuo account",
+    "totpTitle": "Autenticazione a due fattori",
+    "totpHint": "Inserisci il codice a 6 cifre dall'app di autenticazione.",
+    "totpCode": "Codice di autenticazione",
+    "totpVerify": "Verifica",
+    "totpInvalid": "Codice non valido. Riprova.",
+    "backToLogin": "Torna al login"
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "totpTitle": "Autenticazione a due fattori (TOTP)",
+    "totpDesc": "Proteggi il tuo account con un'app di autenticazione (Google Authenticator, Aegis, ecc.).",
+    "enabled": "Attivo",
+    "disabled": "Disattivo",
+    "setupTotp": "Configura 2FA",
+    "scanQr": "Scansiona il QR code con la tua app di autenticazione, poi inserisci il codice a 6 cifre per confermare.",
+    "manualEntry": "Non riesci a scansionare? Inserisci la chiave segreta manualmente",
+    "verifyCode": "Codice di verifica",
+    "activate": "Attiva",
+    "cancel": "Annulla",
+    "disableTotp": "Disattiva 2FA",
+    "confirmDisable": "Inserisci la tua password per confermare la disattivazione dell'autenticazione a due fattori.",
+    "currentPassword": "Password attuale",
+    "setupFailed": "Generazione configurazione fallita. Riprova.",
+    "enabledSuccess": "Autenticazione a due fattori attivata!",
+    "disabledSuccess": "Autenticazione a due fattori disattivata.",
+    "invalidCode": "Codice non valido. Riprova.",
+    "invalidPassword": "Password non valida."
   },
   "notes": {
     "myNotes": "Le mie Note",

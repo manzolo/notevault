@@ -68,6 +68,12 @@ export default function Navbar() {
                 >
                   {t('newNote')}
                 </Link>
+                <Link
+                  href={`/${locale}/settings`}
+                  className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                >
+                  {t('settings')}
+                </Link>
                 <span className="text-sm text-gray-400">{user.username}</span>
                 <Button variant="ghost" size="sm" onClick={logout}>
                   {t('logout')}
