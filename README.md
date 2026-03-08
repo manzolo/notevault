@@ -11,6 +11,22 @@ NoteVault is a **self-hosted, multi-user knowledge base** that combines a Markdo
 
 ---
 
+## Screenshots
+
+### Dashboard — full-text search with attachment match
+
+![Dashboard search](docs/screenshots/dashboard-search.png)
+
+The search bar queries note titles, content, attachment text, bookmark URLs and descriptions in real time. When a match is found inside a file attachment, the filename appears as a clickable chip directly in the result card — click **Preview** to open the file inline without leaving the page.
+
+### Note detail — secrets, attachments and bookmarks
+
+![Note detail](docs/screenshots/note-detail.png)
+
+Each note is a self-contained workspace: a Markdown body, an encrypted secrets vault (API keys, passwords, certificates, SSH keys…), file attachments with inline preview, and URL bookmarks — all on a single page. Secrets can be copied to the clipboard silently (without ever displaying the value on screen) or revealed for 30 seconds before being automatically hidden.
+
+---
+
 ## Table of Contents
 
 - [Features](#features)
@@ -34,8 +50,8 @@ NoteVault is a **self-hosted, multi-user knowledge base** that combines a Markdo
 - **Full-text search with pagination** — powered by PostgreSQL `tsvector` columns and a `GIN` index; searches across note titles, content, attachment text, attachment descriptions, bookmark titles, URLs, and descriptions. Results are paginated.
 - **File attachments** — upload files to notes (PDF, images, text, Markdown, …); text is extracted automatically for full-text search. Each attachment can have an optional description and tags.
 - **URL bookmarks** — attach bookmarked URLs with title, description, and tags to any note; bookmarks are fully searchable.
-- **Encrypted secrets vault** — store API keys, passwords, and other sensitive values encrypted with AES-256-GCM using a `MASTER_KEY` that never touches the database.
-- **Per-user rate-limited secret reveal** — secrets are revealed on demand and auto-hidden after 30 seconds; the reveal endpoint is rate-limited via Redis to prevent brute-force access.
+- **Encrypted secrets vault** — store API keys, passwords, and other sensitive values encrypted with AES-256-GCM using a `MASTER_KEY` that never touches the database. Password-type secrets support an optional plaintext `username` field.
+- **Per-user rate-limited secret reveal** — secrets are revealed on demand and auto-hidden after 30 seconds; the reveal endpoint is rate-limited via Redis to prevent brute-force access. Values can also be copied silently to the clipboard without ever being displayed on screen.
 - **Audit logging** — every create, update, delete, and reveal action is logged with timestamps and user context; secret values are always redacted from audit records.
 - **Dark mode** — full dark mode support across all pages and components.
 - **Internationalisation (English + Italian)** — the frontend ships with full `en` and `it` translations; locale is determined by the URL prefix (`/en/...`, `/it/...`).

@@ -11,6 +11,22 @@ NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un edi
 
 ---
 
+## Screenshot
+
+### Dashboard — ricerca full-text con corrispondenza in allegato
+
+![Dashboard ricerca](docs/screenshots/dashboard-search.png)
+
+La barra di ricerca interroga in tempo reale titoli, contenuto, testo estratto dagli allegati, descrizioni, segnalibri e URL. Quando la corrispondenza è trovata all'interno di un file allegato, il nome del file appare come chip cliccabile direttamente nella card del risultato — cliccando **Anteprima** il file si apre inline senza lasciare la pagina.
+
+### Dettaglio nota — segreti, allegati e segnalibri
+
+![Dettaglio nota](docs/screenshots/note-detail.png)
+
+Ogni nota è uno spazio di lavoro autonomo: corpo in Markdown, cassaforte di segreti cifrati (chiavi API, password, certificati, chiavi SSH…), allegati con anteprima inline e segnalibri URL — tutto su un'unica pagina. I segreti possono essere copiati negli appunti in modo silenzioso (senza mai mostrare il valore sullo schermo) oppure rivelati per 30 secondi, dopodiché vengono nascosti automaticamente.
+
+---
+
 ## Indice
 
 - [Funzionalità](#funzionalità)
@@ -34,8 +50,8 @@ NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un edi
 - **Ricerca full-text con paginazione** — basata su colonne `tsvector` di PostgreSQL e un indice `GIN`; la ricerca copre titoli, contenuti, testo estratto dagli allegati, descrizioni, segnalibri e URL. I risultati sono paginati.
 - **Allegati** — carica file sulle note (PDF, immagini, testo, Markdown, …); il testo viene estratto automaticamente per la ricerca full-text. Ogni allegato può avere una descrizione opzionale e tag.
 - **Segnalibri URL** — aggiungi URL segnalibro con titolo, descrizione e tag a qualsiasi nota; i segnalibri sono completamente ricercabili.
-- **Cassaforte per segreti cifrati (AES-256-GCM)** — salva chiavi API, password e altri valori sensibili cifrati con AES-256-GCM tramite una `MASTER_KEY` che non viene mai scritta nel database.
-- **Rivelazione segreti con rate limiting** — i segreti vengono mostrati su richiesta e nascosti automaticamente dopo 30 secondi; l'endpoint di rivelazione è soggetto a rate limiting tramite Redis.
+- **Cassaforte per segreti cifrati (AES-256-GCM)** — salva chiavi API, password e altri valori sensibili cifrati con AES-256-GCM tramite una `MASTER_KEY` che non viene mai scritta nel database. I segreti di tipo password supportano un campo `username` opzionale (in chiaro).
+- **Rivelazione segreti con rate limiting** — i segreti vengono mostrati su richiesta e nascosti automaticamente dopo 30 secondi; l'endpoint di rivelazione è soggetto a rate limiting tramite Redis. È possibile copiare il valore negli appunti senza mai visualizzarlo sullo schermo.
 - **Log di audit** — ogni azione viene registrata con timestamp e contesto utente; i valori dei segreti vengono oscurati nei log.
 - **Modalità scura** — supporto completo al dark mode in tutte le pagine e componenti.
 - **Internazionalizzazione (Italiano + Inglese)** — il frontend include traduzioni complete per `en` e `it`; la lingua è determinata dal prefisso URL (`/en/...`, `/it/...`).
