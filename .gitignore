@@ -3,6 +3,7 @@ data/
 
 # Environment files with secrets
 .env
+.env.deploy
 backend/.env
 frontend/.env.local
 

@@ -1,5 +1,6 @@
 .PHONY: up down restart build migrate migrate-down test test-backend test-frontend \
-        test-e2e logs logs-backend shell-backend shell-db keygen deploy clean help
+        test-e2e logs logs-backend shell-backend shell-db keygen \
+        tag publish deploy deploy-update clean help
 
 # ---------------------------------------------------------------------------
 # NoteVault – Makefile
@@ -7,10 +8,16 @@
 # Default target
 .DEFAULT_GOAL := help
 
-# Deployment variables (override on the command line or via environment)
-DEPLOY_KEY  ?= ~/.ssh/id_rsa
-DEPLOY_HOST ?= user@example.com
+# Docker Hub
+DOCKER_USER ?= manzolo
+APP_VERSION ?= 0.1.0
+
+# Deployment — override via .env.deploy (gitignored) or env vars
+DEPLOY_HOST ?= user@your-server.com
 DEPLOY_PATH ?= /opt/notevault
+
+# Load local deploy overrides if present (gitignored)
+-include .env.deploy
 
 # ---------------------------------------------------------------------------
 # Infrastructure
@@ -98,15 +105,48 @@ keygen:
 		print('MASTER_KEY='  + base64.b64encode(secrets.token_bytes(32)).decode())"
 
 # ---------------------------------------------------------------------------
+# Release / Docker Hub
+# ---------------------------------------------------------------------------
+
+## tag: Git-tag the current commit as vX.Y.Z and tag local Docker images
+##      Usage: make tag APP_VERSION=0.1.0
+tag:
+	git tag -a v$(APP_VERSION) -m "Release v$(APP_VERSION)"
+	docker tag notevault-backend $(DOCKER_USER)/notevault-backend:$(APP_VERSION)
+	docker tag notevault-backend $(DOCKER_USER)/notevault-backend:latest
+	docker tag notevault-frontend $(DOCKER_USER)/notevault-frontend:$(APP_VERSION)
+	docker tag notevault-frontend $(DOCKER_USER)/notevault-frontend:latest
+	@echo "Tagged v$(APP_VERSION). Run 'make publish' to push to Docker Hub."
+
+## publish: Push backend + frontend images to Docker Hub
+##          Usage: make publish APP_VERSION=0.1.0
+publish:
+	docker push $(DOCKER_USER)/notevault-backend:$(APP_VERSION)
+	docker push $(DOCKER_USER)/notevault-backend:latest
+	docker push $(DOCKER_USER)/notevault-frontend:$(APP_VERSION)
+	docker push $(DOCKER_USER)/notevault-frontend:latest
+	git push origin v$(APP_VERSION)
+	@echo "Published $(DOCKER_USER)/notevault-*:$(APP_VERSION) to Docker Hub."
+
+# ---------------------------------------------------------------------------
 # Deployment
 # ---------------------------------------------------------------------------
 
-## deploy: Sync codebase to remote host and restart services
-##         Requires: DEPLOY_KEY, DEPLOY_HOST, DEPLOY_PATH
+## deploy: First-time deploy — copy prod compose + .env, pull images, start stack
+##         Requires .env with APP_VERSION, DB_PASSWORD, SECRET_KEY, MASTER_KEY
 deploy:
-	rsync -avz --delete -e "ssh -i $(DEPLOY_KEY)" . $(DEPLOY_HOST):$(DEPLOY_PATH) && \
-	ssh -i $(DEPLOY_KEY) $(DEPLOY_HOST) \
-		"cd $(DEPLOY_PATH) && docker compose up -d --build"
+	ssh $(DEPLOY_HOST) "mkdir -p $(DEPLOY_PATH)/data/uploads $(DEPLOY_PATH)/data/postgres $(DEPLOY_PATH)/data/redis"
+	scp docker-compose.prod.yml $(DEPLOY_HOST):$(DEPLOY_PATH)/docker-compose.yml
+	scp .env $(DEPLOY_HOST):$(DEPLOY_PATH)/.env
+	ssh $(DEPLOY_HOST) "cd $(DEPLOY_PATH) && docker compose pull && docker compose up -d && docker compose exec backend alembic upgrade head"
+	@echo "Deploy complete. Stack running at http://notevault.lan"
+
+## deploy-update: Pull new images and restart (after publish)
+##                Usage: make deploy-update APP_VERSION=0.2.0
+deploy-update:
+	scp docker-compose.prod.yml $(DEPLOY_HOST):$(DEPLOY_PATH)/docker-compose.yml
+	ssh $(DEPLOY_HOST) "cd $(DEPLOY_PATH) && APP_VERSION=$(APP_VERSION) docker compose pull && APP_VERSION=$(APP_VERSION) docker compose up -d && docker compose exec backend alembic upgrade head"
+	@echo "Updated to v$(APP_VERSION)."
 
 # ---------------------------------------------------------------------------
 # Cleanup

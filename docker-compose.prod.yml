@@ -1,0 +1,75 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: notevault-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: notevault
+      POSTGRES_USER: notevault
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notevault -d notevault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - notevault_internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: notevault-redis
+    restart: unless-stopped
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - notevault_internal
+
+  backend:
+    image: manzolo/notevault-backend:${APP_VERSION:-latest}
+    container_name: notevault-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://notevault:${DB_PASSWORD}@db:5432/notevault
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY}
+      MASTER_KEY: ${MASTER_KEY}
+    volumes:
+      - ./data/uploads:/app/data/uploads
+    networks:
+      - notevault_internal
+
+  frontend:
+    image: manzolo/notevault-frontend:${APP_VERSION:-latest}
+    container_name: notevault-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    env_file:
+      - .env
+    environment:
+      BACKEND_INTERNAL_URL: http://notevault-backend:8000
+    networks:
+      - notevault_internal
+      - nginx-net
+
+networks:
+  notevault_internal:
+    driver: bridge
+  nginx-net:
+    external: true
