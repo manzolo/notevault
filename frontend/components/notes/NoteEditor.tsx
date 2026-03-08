@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { NoteCreate, NoteUpdate, Tag } from '@/lib/types';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
@@ -31,6 +33,7 @@ export default function NoteEditor({
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(initialTagIds ?? []);
   const [newTagName, setNewTagName] = useState('');
   const [creatingTag, setCreatingTag] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
 
   const toggleTag = (id: number) => {
     setSelectedTagIds((prev) =>
@@ -66,14 +69,42 @@ export default function NoteEditor({
         placeholder="Note title..."
       />
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('content')}</label>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={12}
-          className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="Write your note in Markdown..."
-        />
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('content')}</label>
+          <div className="flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden text-xs">
+            <button
+              type="button"
+              onClick={() => setPreviewMode(false)}
+              className={`px-3 py-1 transition-colors ${!previewMode ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            >
+              {t('write')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewMode(true)}
+              className={`px-3 py-1 transition-colors ${previewMode ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            >
+              {t('preview')}
+            </button>
+          </div>
+        </div>
+        {previewMode ? (
+          <div className="min-h-[18rem] rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm prose prose-sm max-w-none dark:prose-invert overflow-auto">
+            {content.trim() ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            ) : (
+              <p className="text-gray-400 italic">Nothing to preview.</p>
+            )}
+          </div>
+        ) : (
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={12}
+            className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Write your note in Markdown..."
+          />
+        )}
       </div>
 
       {(availableTags && availableTags.length > 0 || onCreateTag) && (

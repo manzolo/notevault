@@ -38,7 +38,9 @@
     "deleteConfirm": "Sei sicuro di voler eliminare questa nota?",
     "allTags": "Tutti",
     "newTag": "Nome nuovo tag",
-    "createTag": "Crea"
+    "createTag": "Crea",
+    "write": "Scrivi",
+    "preview": "Anteprima"
   },
   "secrets": {
     "secrets": "Segreti",
