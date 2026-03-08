@@ -4,10 +4,20 @@ import filetype
 from fastapi import HTTPException, status
 
 ALLOWED_MIME_TYPES = {
+    # Images
     "image/jpeg": ".jpg",
     "image/png": ".png",
     "image/gif": ".gif",
     "image/webp": ".webp",
+    "image/svg+xml": ".svg",
+    # Video
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/ogg": ".ogv",
+    "video/quicktime": ".mov",
+    "video/x-msvideo": ".avi",
+    "video/x-matroska": ".mkv",
+    # Documents
     "application/pdf": ".pdf",
     # OpenDocument
     "application/vnd.oasis.opendocument.text": ".odt",
@@ -21,8 +31,14 @@ ALLOWED_MIME_TYPES = {
     "application/msword": ".doc",
     "application/vnd.ms-excel": ".xls",
     "application/vnd.ms-powerpoint": ".ppt",
-    # Text / Markdown
+    # Text / Markup / Data (no magic bytes — extension-priority)
+    "text/plain": ".txt",
     "text/markdown": ".md",
+    "text/csv": ".csv",
+    "text/html": ".html",
+    "text/xml": ".xml",
+    "application/xml": ".xml",
+    "application/json": ".json",
     # Archives
     "application/zip": ".zip",
     "application/x-tar": ".tar",
@@ -30,7 +46,7 @@ ALLOWED_MIME_TYPES = {
 }
 
 # Extensions where the declared extension wins over magic-byte detection.
-# These formats are ZIP/OLE containers, so magic bytes alone are ambiguous.
+# Covers: Office/ODF containers (ZIP/OLE-based) and all text formats (no magic bytes).
 EXTENSION_PRIORITY: dict[str, str] = {
     # OpenDocument
     ".odt": "application/vnd.oasis.opendocument.text",
@@ -44,14 +60,34 @@ EXTENSION_PRIORITY: dict[str, str] = {
     ".doc": "application/msword",
     ".xls": "application/vnd.ms-excel",
     ".ppt": "application/vnd.ms-powerpoint",
-    # Plain text / Markdown
+    # Text / Markup / Data
+    ".txt": "text/plain",
+    ".log": "text/plain",
     ".md": "text/markdown",
     ".markdown": "text/markdown",
+    ".csv": "text/csv",
+    ".html": "text/html",
+    ".htm": "text/html",
+    ".xml": "text/xml",
+    ".json": "application/json",
+    ".svg": "image/svg+xml",
+    # Source / config files (treated as plain text)
+    ".py": "text/plain",
+    ".js": "text/plain",
+    ".ts": "text/plain",
+    ".css": "text/plain",
+    ".sh": "text/plain",
+    ".yaml": "text/plain",
+    ".yml": "text/plain",
+    ".toml": "text/plain",
+    ".ini": "text/plain",
+    ".sql": "text/plain",
+    ".env": "text/plain",
 }
 
 
 def validate(header_bytes: bytes, original_filename: str) -> tuple[str, str]:
-    """Detect MIME type. Extension wins for Office/ODF/Markdown (ZIP-based containers).
+    """Detect MIME type. Extension wins for Office/ODF/text formats.
     Returns (mime_type, extension) or raises HTTPException(415)."""
     ext = os.path.splitext(original_filename)[1].lower()
 

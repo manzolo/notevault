@@ -8,7 +8,11 @@ import Button from '@/components/common/Button';
 import { EyeIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 
-const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
+const INLINE_MIMES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+  'application/pdf',
+  'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+]);
 
 interface NoteCardProps {
   note: Note;

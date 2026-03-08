@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
@@ -25,13 +25,18 @@ import { KeyIcon, LinkIcon, PaperclipUploadIcon, PencilIcon, TrashIcon, XMarkIco
 import { useConfirm } from '@/hooks/useConfirm';
 import api from '@/lib/api';
 
-const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
+const INLINE_MIMES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+  'application/pdf',
+  'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+]);
 
 export default function NotePage({ params }: { params: { id: string; locale: string } }) {
   const t = useTranslations('notes');
   const tSecrets = useTranslations('secrets');
   const tAttachments = useTranslations('attachments');
   const tBookmarks = useTranslations('bookmarks');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
   const noteId = parseInt(params.id);
@@ -53,6 +58,15 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [previewState, setPreviewState] = useState<{ attachment: Attachment; url: string } | null>(null);
 
+  // Paste-image state (images: quick modal with preview)
+  const [pasteFile, setPasteFile] = useState<File | null>(null);
+  const [pasteName, setPasteName] = useState('');
+  const [pastePreviewUrl, setPastePreviewUrl] = useState('');
+  const [pasteUploading, setPasteUploading] = useState(false);
+  const filenameInputRef = useRef<HTMLInputElement>(null);
+  // Paste-file state (non-images: reuse upload modal pre-filled)
+  const [pasteUploadFile, setPasteUploadFile] = useState<File | null>(null);
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -61,7 +75,6 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         await fetchSecrets();
         await fetchAttachments();
         await fetchBookmarks();
-        // Fetch available tags for forms
         const tagsResp = await api.get<Tag[]>('/api/tags');
         setAvailableTags(tagsResp.data);
       } catch {
@@ -72,6 +85,80 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     };
     load();
   }, [noteId]);
+
+  // Document-level paste listener: active for the whole note page
+  useEffect(() => {
+    const handleDocumentPaste = (e: ClipboardEvent) => {
+      // Don't trigger if a modal filename input is focused or modal already open
+      if (filenameInputRef.current && document.activeElement === filenameInputRef.current) return;
+      if (pasteFile) return;
+
+      const items = Array.from(e.clipboardData?.items ?? []);
+      const fileItem = items.find((item) => item.kind === 'file');
+      if (fileItem) {
+        const file = fileItem.getAsFile();
+        if (file) {
+          e.preventDefault();
+          if (file.type.startsWith('image/')) {
+            openPasteModal(file);
+          } else {
+            setPasteUploadFile(file);
+            setShowUploadModal(true);
+          }
+          return;
+        }
+      }
+
+      const files = Array.from(e.clipboardData?.files ?? []);
+      if (files.length > 0) {
+        e.preventDefault();
+        const file = files[0];
+        if (file.type.startsWith('image/')) {
+          openPasteModal(file);
+        } else {
+          setPasteUploadFile(file);
+          setShowUploadModal(true);
+        }
+      }
+    };
+
+    document.addEventListener('paste', handleDocumentPaste);
+    return () => document.removeEventListener('paste', handleDocumentPaste);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pasteFile]);
+
+  const openPasteModal = (file: File) => {
+    const ext = file.type.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
+    const defaultName = `pasted-image-${Date.now()}.${ext}`;
+    setPasteName(defaultName);
+    setPastePreviewUrl(URL.createObjectURL(file));
+    setPasteFile(file);
+    setTimeout(() => filenameInputRef.current?.select(), 50);
+  };
+
+  const handlePasteConfirm = async () => {
+    if (!pasteFile) return;
+    setPasteUploading(true);
+    try {
+      const namedFile = new File([pasteFile], pasteName, { type: pasteFile.type });
+      await uploadAttachment(namedFile);
+      toast.success(`${pasteName} uploaded!`);
+    } catch {
+      toast.error('Failed to upload pasted image');
+    } finally {
+      setPasteUploading(false);
+      URL.revokeObjectURL(pastePreviewUrl);
+      setPasteFile(null);
+      setPastePreviewUrl('');
+    }
+  };
+
+  const handlePasteCancel = () => {
+    URL.revokeObjectURL(pastePreviewUrl);
+    setPasteFile(null);
+    setPasteName('');
+    setPastePreviewUrl('');
+  };
 
   const handleUpdate = async (data: any) => {
     setSaving(true);
@@ -102,6 +189,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const handleUpload = async (file: File, tagIds: number[], description?: string) => {
     await uploadAttachment(file, tagIds, description);
     setShowUploadModal(false);
+    setPasteUploadFile(null);
     toast.success('File uploaded!');
   };
 
@@ -153,6 +241,47 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   return (
     <div className="space-y-6">
       {confirmDialog}
+
+      {/* Paste-image modal */}
+      {pasteFile && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+              {tAttachments('pasteImageTitle')}
+            </h3>
+            <img
+              src={pastePreviewUrl}
+              alt="preview"
+              className="w-full max-h-40 object-contain rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {tAttachments('pasteImageLabel')}
+              </label>
+              <input
+                ref={filenameInputRef}
+                type="text"
+                value={pasteName}
+                onChange={(e) => setPasteName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handlePasteConfirm();
+                  if (e.key === 'Escape') handlePasteCancel();
+                }}
+                className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={handlePasteCancel} disabled={pasteUploading}>
+                {tCommon('cancel')}
+              </Button>
+              <Button size="sm" onClick={handlePasteConfirm} loading={pasteUploading} disabled={!pasteName.trim()}>
+                {pasteUploading ? tAttachments('pasteImageUploading') : tAttachments('pasteImageSave')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{note.title}</h1>
         <div className="flex gap-2">
@@ -248,27 +377,15 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         />
       </div>
 
-      <Modal
-        isOpen={showSecretModal}
-        onClose={() => setShowSecretModal(false)}
-        title={tSecrets('addSecret')}
-      >
+      <Modal isOpen={showSecretModal} onClose={() => setShowSecretModal(false)} title={tSecrets('addSecret')}>
         <SecretForm onSubmit={handleCreateSecret} />
       </Modal>
 
-      <Modal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        title={tAttachments('upload')}
-      >
-        <AttachmentUploadForm onUpload={handleUpload} availableTags={availableTags} />
+      <Modal isOpen={showUploadModal} onClose={() => { setShowUploadModal(false); setPasteUploadFile(null); }} title={tAttachments('upload')}>
+        <AttachmentUploadForm onUpload={handleUpload} availableTags={availableTags} initialFile={pasteUploadFile ?? undefined} />
       </Modal>
 
-      <Modal
-        isOpen={showBookmarkModal}
-        onClose={() => setShowBookmarkModal(false)}
-        title={tBookmarks('add')}
-      >
+      <Modal isOpen={showBookmarkModal} onClose={() => setShowBookmarkModal(false)} title={tBookmarks('add')}>
         <BookmarkForm
           availableTags={availableTags}
           onSubmit={handleCreateBookmark}
@@ -276,11 +393,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         />
       </Modal>
 
-      <Modal
-        isOpen={!!editingBookmark}
-        onClose={() => setEditingBookmark(null)}
-        title={tBookmarks('edit')}
-      >
+      <Modal isOpen={!!editingBookmark} onClose={() => setEditingBookmark(null)} title={tBookmarks('edit')}>
         {editingBookmark && (
           <BookmarkForm
             initial={editingBookmark}
@@ -306,6 +419,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50">
               {previewState.attachment.mime_type === 'application/pdf' ? (
                 <iframe src={previewState.url} className="w-full h-[70vh] rounded" title={previewState.attachment.filename} />
+              ) : previewState.attachment.mime_type.startsWith('video/') ? (
+                <video src={previewState.url} controls className="max-w-full max-h-[70vh] rounded" />
               ) : (
                 <img src={previewState.url} alt={previewState.attachment.filename} className="max-w-full max-h-[70vh] object-contain rounded" />
               )}

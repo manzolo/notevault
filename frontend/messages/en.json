@@ -73,7 +73,11 @@
     "unsupportedType": "Unsupported file type",
     "fileTooLarge": "File exceeds 10 MB limit",
     "description": "Description",
-    "descriptionPlaceholder": "Optional description..."
+    "descriptionPlaceholder": "Optional description...",
+    "pasteImageTitle": "Save pasted image",
+    "pasteImageLabel": "File name",
+    "pasteImageSave": "Save",
+    "pasteImageUploading": "Uploading..."
   },
   "bookmarks": {
     "bookmarks": "Bookmarks",
