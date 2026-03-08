@@ -79,8 +79,10 @@ test.describe('Dark mode', () => {
 
     const brand = page.locator('a:has-text("NoteVault")').first();
     await expect(brand).toBeVisible();
-    const color = await brand.evaluate((el) => getComputedStyle(el).color);
-    expect(color).not.toBe('rgba(0, 0, 0, 0)');
+    // Brand uses bg-clip-text gradient — computed color is always transparent.
+    // Verify the gradient backgroundImage is applied instead.
+    const bgImage = await brand.evaluate((el) => getComputedStyle(el).backgroundImage);
+    expect(bgImage).toContain('gradient');
   });
 
   test('search input is readable in dark mode', async ({ page }) => {

@@ -5,8 +5,9 @@
 ![Frontend: Next.js 14](https://img.shields.io/badge/Frontend-Next.js%2014-black.svg)
 ![Database: PostgreSQL 15](https://img.shields.io/badge/Database-PostgreSQL%2015-336791.svg)
 ![Cifratura: AES-256-GCM](https://img.shields.io/badge/Cifratura-AES--256--GCM-critical.svg)
+![Docker Hub](https://img.shields.io/badge/Docker%20Hub-manzolo%2Fnotevault-blue.svg)
 
-NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un editor di note in Markdown a una cassaforte per segreti completamente cifrata. Le note sono organizzate con tag e categorie, ricercabili tramite la ricerca full-text di PostgreSQL, e tutti i valori sensibili sono memorizzati cifrati a riposo con AES-256-GCM. L'intero stack gira in Docker ed è gestito tramite un unico `Makefile`.
+NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un editor di note in Markdown a una cassaforte per segreti completamente cifrata. Le note sono organizzate con tag, ricercabili tramite la ricerca full-text di PostgreSQL, e possono avere allegati e segnalibri URL. Tutti i valori sensibili sono memorizzati cifrati a riposo con AES-256-GCM. L'intero stack gira in Docker ed è gestito tramite un unico `Makefile`.
 
 ---
 
@@ -20,6 +21,7 @@ NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un edi
 - [Internazionalizzazione](#internazionalizzazione)
 - [Panoramica API](#panoramica-api)
 - [Variabili d'Ambiente](#variabili-dambiente)
+- [Deploy in Produzione](#deploy-in-produzione)
 - [Licenza](#licenza)
 
 ---
@@ -28,13 +30,16 @@ NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un edi
 
 - **Multi-utente con autenticazione JWT** — ogni utente dispone di uno spazio di lavoro isolato; i token usano HS256 e scadono dopo 7 giorni.
 - **Note con editor Markdown e anteprima live** — scrivi in Markdown e visualizza il risultato renderizzato in tempo reale, affiancato al testo.
-- **Tag e categorie** — organizza le note liberamente con tag colorati e categorie gerarchiche.
-- **Ricerca full-text** — basata su colonne `tsvector` di PostgreSQL e un indice `GIN` per risultati rapidi e classificati per rilevanza su titoli e contenuti.
+- **Tag** — organizza le note liberamente con tag colorati; i tag sono assegnabili anche ad allegati e segnalibri.
+- **Ricerca full-text con paginazione** — basata su colonne `tsvector` di PostgreSQL e un indice `GIN`; la ricerca copre titoli, contenuti, testo estratto dagli allegati, descrizioni, segnalibri e URL. I risultati sono paginati.
+- **Allegati** — carica file sulle note (PDF, immagini, testo, Markdown, …); il testo viene estratto automaticamente per la ricerca full-text. Ogni allegato può avere una descrizione opzionale e tag.
+- **Segnalibri URL** — aggiungi URL segnalibro con titolo, descrizione e tag a qualsiasi nota; i segnalibri sono completamente ricercabili.
 - **Cassaforte per segreti cifrati (AES-256-GCM)** — salva chiavi API, password e altri valori sensibili cifrati con AES-256-GCM tramite una `MASTER_KEY` che non viene mai scritta nel database.
-- **Rotazione automatica dei segreti dopo 30 secondi** — i segreti vengono mostrati su richiesta e nascosti automaticamente dopo 30 secondi; l'endpoint di rivelazione è soggetto a rate limiting tramite Redis per prevenire accessi automatizzati.
-- **Log di audit** — ogni azione di creazione, modifica, eliminazione e rivelazione viene registrata con timestamp e contesto utente; i valori dei segreti vengono oscurati nei log di audit.
+- **Rivelazione segreti con rate limiting** — i segreti vengono mostrati su richiesta e nascosti automaticamente dopo 30 secondi; l'endpoint di rivelazione è soggetto a rate limiting tramite Redis.
+- **Log di audit** — ogni azione viene registrata con timestamp e contesto utente; i valori dei segreti vengono oscurati nei log.
+- **Modalità scura** — supporto completo al dark mode in tutte le pagine e componenti.
 - **Internazionalizzazione (Italiano + Inglese)** — il frontend include traduzioni complete per `en` e `it`; la lingua è determinata dal prefisso URL (`/en/...`, `/it/...`).
-- **Distribuzione basata su Docker** — un singolo `docker compose up -d` avvia l'intero stack (PostgreSQL, Redis, backend, frontend).
+- **Deploy basato su Docker** — lo stack (PostgreSQL, Redis, backend, frontend) è gestito interamente tramite Docker Compose e un `Makefile`.
 
 ---
 
@@ -43,7 +48,7 @@ NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un edi
 ### Prerequisiti
 
 - Docker >= 24 e Docker Compose v2
-- Python 3.x (necessario solo per il comando `make keygen`, utilizza la libreria standard)
+- Python 3.x (necessario solo per `make keygen`, utilizza la libreria standard)
 - GNU Make
 
 ### Procedura
@@ -64,6 +69,7 @@ cp .env.example .env
 # Modifica .env e inserisci SECRET_KEY, MASTER_KEY, DB_PASSWORD, ecc.
 
 # 4. Costruisci le immagini e avvia tutti i servizi
+make build
 make up
 
 # 5. Esegui le migrazioni del database
@@ -73,32 +79,46 @@ make migrate
 # http://localhost:3000
 ```
 
-> **Nota:** Al primo avvio, Docker costruirà le immagini del backend e del frontend. Questa operazione può richiedere alcuni minuti. Gli avvii successivi utilizzeranno le immagini in cache.
+> **Nota:** Al primo avvio, `make build` compila le immagini del backend e del frontend. Questa operazione può richiedere alcuni minuti. Gli avvii successivi utilizzeranno la cache dei layer Docker.
 
 ---
 
 ## Comandi Make
 
-Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make help` per visualizzare l'elenco completo in qualsiasi momento.
+Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make help` per visualizzare l'elenco completo.
+
+### Sviluppo
 
 | Target | Descrizione |
 |---|---|
+| `build` | (Ri)costruisce le immagini per **sviluppo** (`NEXT_PUBLIC_API_URL=http://localhost:8000`) |
 | `up` | Avvia tutti i servizi in modalità detached |
 | `down` | Ferma e rimuove i container |
 | `restart` | Riavvia tutti i servizi |
-| `build` | (Ri)costruisce le immagini dei servizi |
 | `migrate` | Applica tutte le migrazioni Alembic in attesa |
 | `migrate-down` | Annulla l'ultima migrazione Alembic |
 | `test` | Esegue l'intera suite di test (backend + frontend) |
 | `test-backend` | Esegue la suite pytest del backend |
 | `test-frontend` | Esegue la suite Jest/React del frontend in modalità CI |
+| `test-e2e` | Esegue i test end-to-end Playwright (richiede lo stack attivo) |
 | `logs` | Segue i log di tutti i servizi |
 | `logs-backend` | Segue i log del solo servizio backend |
 | `shell-backend` | Apre una shell bash nel container del backend |
 | `shell-db` | Apre una sessione psql nel container del database |
-| `keygen` | Genera i valori `SECRET_KEY` e `MASTER_KEY` per `.env` |
-| `deploy` | Sincronizza il codice su un host remoto e riavvia i servizi |
+| `keygen` | Genera i valori `SECRET_KEY` e `MASTER_KEY` |
 | `clean` | Rimuove container, volumi e servizi orfani |
+
+### Release & Deploy (Docker Hub)
+
+| Target | Descrizione |
+|---|---|
+| `build-prod` | Costruisce le immagini per la **produzione** (legge `NEXT_PUBLIC_API_URL` da `.env.deploy`) |
+| `tag` | Crea il tag git `vX.Y.Z` e tagga le immagini Docker — `make tag APP_VERSION=1.2.3` |
+| `publish` | Pubblica le immagini su Docker Hub e invia il tag git — `make publish APP_VERSION=1.2.3` |
+| `deploy` | **Prima installazione**: copia compose + `.env` sul server, scarica le immagini, avvia, migra |
+| `deploy-update` | **Aggiornamento**: scarica la nuova versione e riavvia — `make deploy-update APP_VERSION=1.2.3` |
+
+> Le variabili di deploy (`DEPLOY_HOST`, `DEPLOY_PATH`, `NEXT_PUBLIC_API_URL`) vengono lette da `.env.deploy` (gitignored). Vedi [Deploy in Produzione](#deploy-in-produzione).
 
 ---
 
@@ -108,13 +128,13 @@ Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make h
 ┌─────────────────────────────────────────────────────────┐
 │                        Browser                          │
 └───────────────────────────┬─────────────────────────────┘
-                            │ HTTP / JSON
+                            │ HTTP (via reverse proxy)
 ┌───────────────────────────▼─────────────────────────────┐
 │          Frontend  ·  Next.js 14  ·  :3000              │
 │          App Router · TypeScript · Tailwind CSS         │
-│          next-intl (routing per locale en / it)         │
+│          next-intl (en / it) · rewrite /api/* → backend │
 └───────────────────────────┬─────────────────────────────┘
-                            │ REST API
+                            │ REST API (interna)
 ┌───────────────────────────▼─────────────────────────────┐
 │          Backend  ·  FastAPI  ·  :8000                  │
 │          SQLAlchemy async · Migrazioni Alembic          │
@@ -127,31 +147,20 @@ Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make h
 └────────────────────────┘  └─────────────────────────────┘
 ```
 
-### Riepilogo dei Componenti
-
-| Livello | Tecnologia | Note |
-|---|---|---|
-| Backend | FastAPI + SQLAlchemy async | Python 3.12, I/O asincrono completo |
-| Database | PostgreSQL 15 | `tsvector` + indice `GIN` per la ricerca full-text |
-| Migrazioni | Alembic | Modifiche allo schema versionato |
-| Frontend | Next.js 14 App Router + TypeScript | Tailwind CSS, componenti server e client |
-| Cache / Rate limiting | Redis 7 | Limita le richieste all'endpoint di rivelazione per utente |
-| Autenticazione | JWT HS256 | Scadenza 7 giorni, `SECRET_KEY` da variabile d'ambiente |
-| Cifratura | AES-256-GCM + PBKDF2 | `MASTER_KEY` da variabile d'ambiente, mai memorizzata |
+In produzione, un reverse proxy (es. Nginx Proxy Manager) è posizionato davanti al container frontend. Il server Next.js fa da proxy interno per tutte le richieste `/api/*` verso il backend — il backend non è mai esposto pubblicamente.
 
 ---
 
 ## Sicurezza
 
-NoteVault è progettato con un approccio a difesa in profondità per proteggere sia le credenziali degli utenti sia i segreti memorizzati.
-
-- **Le chiavi non vengono mai registrate nei log** — `SECRET_KEY` e `MASTER_KEY` vengono lette dalle variabili d'ambiente e non vengono mai scritte nei log applicativi né nel database.
-- **Segreti cifrati a riposo** — ogni valore segreto viene cifrato con AES-256-GCM prima di essere salvato. La `MASTER_KEY` è la radice unica della cifratura e deve essere custodita con cura; perderla significa perdere l'accesso a tutti i segreti.
-- **I valori dei segreti vengono oscurati nei log di audit** — quando un segreto viene creato, modificato o rivelato, il log di audit registra l'evento e il nome del segreto, ma il valore viene sempre sostituito con `[REDACTED]`.
-- **Rate limiting sull'endpoint di rivelazione** — Redis impone un limite di richieste per utente su `POST /api/secrets/{id}/reveal` per prevenire l'estrazione automatizzata dei segreti.
-- **Nascondimento automatico dopo 30 secondi** — una volta che un segreto viene rivelato nell'interfaccia, un timer lato client nasconde automaticamente il valore in chiaro dopo 30 secondi.
-- **bcrypt a 12 iterazioni** — le password degli utenti sono sottoposte ad hash con bcrypt con un fattore di costo pari a 12.
-- **CORS** — il backend accetta richieste solo dalle origini elencate nella variabile d'ambiente `CORS_ORIGINS`.
+- **Le chiavi non vengono mai registrate** — `SECRET_KEY` e `MASTER_KEY` vengono lette dalle variabili d'ambiente e non vengono mai scritte nei log né nel database.
+- **Segreti cifrati a riposo** — ogni valore segreto viene cifrato con AES-256-GCM prima di essere salvato. La `MASTER_KEY` è la radice unica della cifratura; perderla significa perdere l'accesso a tutti i segreti.
+- **Valori oscurati nei log di audit** — il log di audit registra eventi e nomi dei segreti, ma i valori vengono sempre sostituiti con `[REDACTED]`.
+- **Rate limiting sull'endpoint di rivelazione** — Redis impone un limite di richieste per utente su `POST /api/secrets/{id}/reveal`.
+- **Nascondimento automatico dopo 30 secondi** — un timer lato client nasconde automaticamente il valore in chiaro dopo 30 secondi.
+- **bcrypt a 12 iterazioni** — le password degli utenti sono sottoposte ad hash con bcrypt con fattore di costo 12.
+- **CORS** — il backend accetta richieste solo dalle origini elencate in `CORS_ORIGINS`.
+- **Configurazione deploy locale** — le informazioni sul server (`DEPLOY_HOST`, `DEPLOY_PATH`, `NEXT_PUBLIC_API_URL`) risiedono in `.env.deploy`, gitignored e mai committato.
 
 > **Rotazione delle chiavi:** Per ruotare la `MASTER_KEY`, decifrare tutti i segreti con la vecchia chiave, riciclarli con la nuova, aggiornare `.env` e riavviare. Non è presente uno strumento di rotazione automatica nella versione attuale.
 
@@ -166,30 +175,22 @@ NoteVault utilizza [next-intl](https://next-intl-docs.vercel.app/) con la strate
 | Inglese | `/en/...` | `frontend/messages/en.json` |
 | Italiano | `/it/...` | `frontend/messages/it.json` |
 
-La lingua predefinita è `en`. Se un utente visita `/`, il middleware lo reindirizza automaticamente a `/en/`.
-
-### Aggiungere una nuova lingua
-
-1. Crea `frontend/messages/<locale>.json` copiando `en.json` e traducendo tutti i valori.
-2. Aggiungi il codice della lingua all'array `locales` in `frontend/i18n.ts`:
-   ```typescript
-   export const locales = ['en', 'it', 'de'] as const; // esempio: aggiungere il tedesco
-   ```
-3. Ricostruisci l'immagine del frontend: `make build`.
+La lingua predefinita è `en`. Visitare `/` reindirizza automaticamente a `/en/`.
 
 ---
 
 ## Panoramica API
 
-L'API REST è servita da FastAPI su `http://localhost:8000`. La documentazione interattiva è disponibile su `/docs` (Swagger UI) e `/redoc` (ReDoc) quando `DEBUG=true`.
+L'API REST è servita da FastAPI su `http://localhost:8000`. La documentazione interattiva è disponibile su `/docs` (Swagger UI) quando `DEBUG=true`.
 
 | Gruppo di endpoint | Percorso base | Descrizione |
 |---|---|---|
 | Autenticazione | `/api/auth` | Registrazione, accesso, rinnovo token |
-| Note | `/api/notes` | CRUD per le note, contenuto Markdown |
-| Tag | `/api/tags` | Creazione, elenco, assegnazione tag alle note |
-| Categorie | `/api/categories` | Gestione delle categorie delle note |
-| Ricerca | `/api/search` | Ricerca full-text sulle note |
+| Note | `/api/notes` | CRUD per le note con paginazione |
+| Tag | `/api/tags` | Creazione, elenco, assegnazione tag |
+| Ricerca | `/api/search` | Ricerca full-text con paginazione |
+| Allegati | `/api/notes/{id}/attachments` | Upload, elenco, stream, eliminazione allegati |
+| Segnalibri | `/api/notes/{id}/bookmarks` | CRUD per i segnalibri URL |
 | Segreti | `/api/secrets` | CRUD per i segreti cifrati, endpoint di rivelazione |
 | Stato database | `/api/database` | Controllo di salute interno usato da Docker |
 
@@ -199,19 +200,63 @@ Tutti gli endpoint protetti richiedono un'intestazione `Authorization: Bearer <t
 
 ## Variabili d'Ambiente
 
+### Applicazione (`.env`)
+
 Copia `.env.example` in `.env` e compila i valori prima di avviare lo stack.
 
 | Variabile | Obbligatoria | Predefinita | Descrizione |
 |---|---|---|---|
-| `SECRET_KEY` | Sì | — | Chiave di 32 byte in base64 usata per firmare i token JWT. Generare con `make keygen`. |
-| `MASTER_KEY` | Sì | — | Chiave di 32 byte in base64 usata per la cifratura AES-256-GCM dei segreti. Generare con `make keygen`. |
-| `DB_PASSWORD` | Sì | — | Password per l'utente PostgreSQL `notevault`. |
-| `DATABASE_URL` | No | impostata da compose | Stringa di connessione SQLAlchemy asincrona completa. Sovrascritta automaticamente da Docker Compose. |
-| `REDIS_URL` | No | `redis://redis:6379/0` | URL di connessione Redis. |
-| `CORS_ORIGINS` | No | `http://localhost:3000` | Elenco separato da virgole delle origini CORS consentite. |
-| `NEXT_PUBLIC_API_URL` | No | `http://localhost:8000` | URL pubblico del backend, usato dal frontend Next.js. |
-| `DEBUG` | No | `false` | Attiva la modalità debug di FastAPI e l'interfaccia Swagger UI. Non impostare a `true` in produzione. |
-| `ACCESS_TOKEN_EXPIRE_DAYS` | No | `7` | Durata in giorni dei token JWT. |
+| `SECRET_KEY` | **sì** | — | Chiave di 32 byte in base64 per la firma dei token JWT. Generare con `make keygen`. |
+| `MASTER_KEY` | **sì** | — | Chiave di 32 byte in base64 per la cifratura AES-256-GCM. Generare con `make keygen`. |
+| `DB_PASSWORD` | **sì** | — | Password per l'utente PostgreSQL `notevault`. |
+| `DATABASE_URL` | no | impostata da compose | Stringa di connessione SQLAlchemy asincrona. Sovrascritta automaticamente da Docker Compose. |
+| `REDIS_URL` | no | `redis://redis:6379/0` | URL di connessione Redis. |
+| `CORS_ORIGINS` | no | `http://localhost:3000` | Origini CORS consentite, separate da virgola. In produzione impostare al proprio dominio pubblico. |
+| `NEXT_PUBLIC_API_URL` | no | `http://localhost:8000` | **Incorporato nel bundle frontend a build time.** In produzione impostare al dominio pubblico (es. `http://notevault.lan`) tramite `.env.deploy` e usare `make build-prod`. |
+| `DEBUG` | no | `false` | Attiva la modalità debug di FastAPI e Swagger UI. Non impostare a `true` in produzione. |
+
+### Configurazione deploy (`.env.deploy`, gitignored)
+
+Copia `.env.deploy.example` in `.env.deploy` e inserisci le informazioni del server. Questo file **non viene mai committato**.
+
+| Variabile | Descrizione |
+|---|---|
+| `DEPLOY_HOST` | Destinazione SSH, es. `root@your-server.lan` |
+| `DEPLOY_PATH` | Percorso assoluto sul server remoto, es. `/root/notevault` |
+| `NEXT_PUBLIC_API_URL` | URL pubblico dell'app (incorporato a build time), es. `http://notevault.lan` |
+
+### Variabile di build frontend (incorporata a build time)
+
+| Variabile | Default nel Dockerfile | Descrizione |
+|---|---|---|
+| `BACKEND_INTERNAL_URL` | `http://notevault-backend:8000` | URL interno usato dal server Next.js per fare da proxy alle richieste `/api/*` verso il backend. Il default è corretto sia per sviluppo che per produzione Docker. |
+
+---
+
+## Deploy in Produzione
+
+Consulta [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) per la guida completa. Riepilogo rapido:
+
+```bash
+# 1. Crea .env.deploy con le informazioni del server (gitignored)
+cp .env.deploy.example .env.deploy
+# Modifica: DEPLOY_HOST, DEPLOY_PATH, NEXT_PUBLIC_API_URL
+
+# 2. Crea il .env di produzione sul server (copia da .env.prod.example)
+#    Imposta DB_PASSWORD, SECRET_KEY, MASTER_KEY, CORS_ORIGINS robusti
+
+# 3. Costruisci, tagga e pubblica su Docker Hub
+make build-prod
+make tag APP_VERSION=1.0.0
+make publish APP_VERSION=1.0.0
+
+# 4. Prima installazione (copia compose + .env, scarica immagini, avvia, migra)
+make deploy
+
+# 5. Release successive
+make build-prod && make tag APP_VERSION=1.1.0 && make publish APP_VERSION=1.1.0
+make deploy-update APP_VERSION=1.1.0
+```
 
 ---
 

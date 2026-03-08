@@ -66,6 +66,8 @@ test.describe('Notes', () => {
     // Locate the specific note card by its link href, then find its delete button
     const noteLink = page.locator(`a[href="/it/notes/${id}"]`);
     const card = noteLink.locator('xpath=ancestor::div[contains(@class,"rounded-lg")][1]');
+    // Hover the card to reveal the delete button (opacity-0 group-hover:opacity-100)
+    await card.hover();
     page.once('dialog', (dialog) => dialog.accept());
     await card.getByRole('button', { name: /Elimina|Delete/i }).click();
 
