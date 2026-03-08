@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:15-alpine
+    container_name: notevault-db
     environment:
       POSTGRES_DB: notevault
       POSTGRES_USER: notevault
@@ -20,6 +21,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    container_name: notevault-redis
     volumes:
       - ./data/redis:/data
     healthcheck:
@@ -35,6 +37,7 @@ services:
 
   backend:
     build: ./backend
+    container_name: notevault-backend
     depends_on:
       db:
         condition: service_healthy
@@ -56,6 +59,7 @@ services:
 
   frontend:
     build: ./frontend
+    container_name: notevault-frontend
     depends_on:
       - backend
     env_file:
