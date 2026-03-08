@@ -106,7 +106,7 @@ export default function LoginPage() {
                 maxLength={6}
                 placeholder="000000"
               />
-              <Button type="submit" loading={loading} className="w-full">
+              <Button variant="secondary" type="submit" loading={loading} className="w-full">
                 {loading ? t('loggingIn') : t('totpVerify')}
               </Button>
             </form>

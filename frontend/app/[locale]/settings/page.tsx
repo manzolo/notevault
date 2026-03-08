@@ -128,7 +128,7 @@ export default function SettingsPage() {
                     autoComplete="one-time-code"
                   />
                   <div className="flex gap-2">
-                    <Button type="submit" loading={enableLoading}>
+                    <Button variant="secondary" type="submit" loading={enableLoading}>
                       {t('activate')}
                     </Button>
                     <Button variant="secondary" type="button" onClick={() => setSetupState('idle')}>
