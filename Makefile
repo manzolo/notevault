@@ -15,6 +15,7 @@ APP_VERSION ?= 0.1.0
 # Deployment — override via .env.deploy (gitignored) or env vars
 DEPLOY_HOST ?= user@your-server.com
 DEPLOY_PATH ?= /opt/notevault
+NEXT_PUBLIC_API_URL ?= http://localhost:8000
 
 # Load local deploy overrides if present (gitignored)
 -include .env.deploy
@@ -35,9 +36,14 @@ down:
 restart:
 	docker compose restart
 
-## build: (Re)build service images
+## build: (Re)build service images (dev — NEXT_PUBLIC_API_URL=http://localhost:8000)
 build:
 	docker compose build
+
+## build-prod: Build images for production release (reads NEXT_PUBLIC_API_URL from .env.deploy)
+##             Usage: make build-prod  (then make tag + make publish)
+build-prod:
+	NEXT_PUBLIC_API_URL=$(NEXT_PUBLIC_API_URL) docker compose build
 
 # ---------------------------------------------------------------------------
 # Database migrations

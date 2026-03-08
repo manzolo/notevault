@@ -59,7 +59,10 @@ services:
       - notevault_network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     container_name: notevault-frontend
     depends_on:
       - backend

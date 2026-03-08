@@ -7,6 +7,13 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Build-time args so next.config.js rewrites and NEXT_PUBLIC_* vars are baked correctly
+ARG BACKEND_INTERNAL_URL=http://notevault-backend:8000
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ENV BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 RUN npm run build
 
 FROM node:20-alpine AS runner
