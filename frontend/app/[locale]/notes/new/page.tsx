@@ -1,0 +1,33 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import toast from 'react-hot-toast';
+import { useNotes } from '@/hooks/useNotes';
+import NoteEditor from '@/components/notes/NoteEditor';
+
+export default function NewNotePage() {
+  const t = useTranslations('notes');
+  const locale = useLocale();
+  const router = useRouter();
+  const { createNote } = useNotes();
+
+  const handleSave = async (data: any) => {
+    try {
+      const note = await createNote(data);
+      toast.success('Note created!');
+      router.push(`/${locale}/notes/${note.id}`);
+    } catch {
+      toast.error('Failed to create note');
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-6">{t('createNote')}</h1>
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <NoteEditor onSave={handleSave} />
+      </div>
+    </div>
+  );
+}

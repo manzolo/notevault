@@ -1,0 +1,70 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "newNote": "Nuova Nota",
+    "logout": "Esci",
+    "brand": "NoteVault"
+  },
+  "auth": {
+    "login": "Accedi",
+    "register": "Registrati",
+    "username": "Nome utente",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Conferma password",
+    "loginFailed": "Accesso fallito. Controlla le credenziali.",
+    "registerFailed": "Registrazione fallita. Riprova.",
+    "noAccount": "Non hai un account?",
+    "hasAccount": "Hai già un account?",
+    "loggingIn": "Accesso in corso...",
+    "registering": "Registrazione in corso...",
+    "welcomeBack": "Bentornato",
+    "createAccount": "Crea il tuo account"
+  },
+  "notes": {
+    "myNotes": "Le mie Note",
+    "newNote": "Nuova Nota",
+    "save": "Salva",
+    "saving": "Salvataggio...",
+    "delete": "Elimina",
+    "noNotes": "Nessuna nota trovata. Crea la tua prima nota!",
+    "title": "Titolo",
+    "content": "Contenuto",
+    "tags": "Tag",
+    "category": "Categoria",
+    "pinned": "In evidenza",
+    "editNote": "Modifica Nota",
+    "createNote": "Crea Nota",
+    "deleteConfirm": "Sei sicuro di voler eliminare questa nota?"
+  },
+  "secrets": {
+    "secrets": "Segreti",
+    "addSecret": "Aggiungi Segreto",
+    "reveal": "Rivela",
+    "hide": "Nascondi",
+    "copy": "Copia",
+    "copied": "Copiato!",
+    "autoHide": "Questo segreto si nasconderà automaticamente tra {seconds} secondi",
+    "noSecrets": "Nessun segreto salvato per questa nota.",
+    "secretName": "Nome Segreto",
+    "secretType": "Tipo",
+    "secretValue": "Valore",
+    "creating": "Creazione...",
+    "create": "Crea Segreto",
+    "deleteConfirm": "Sei sicuro di voler eliminare questo segreto?"
+  },
+  "search": {
+    "placeholder": "Cerca note...",
+    "results": "Risultati di ricerca ({count})",
+    "noResults": "Nessuna nota trovata per la tua ricerca."
+  },
+  "common": {
+    "loading": "Caricamento...",
+    "error": "Si è verificato un errore",
+    "close": "Chiudi",
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "back": "Indietro",
+    "actions": "Azioni"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "newNote": "New Note",
+    "logout": "Logout",
+    "brand": "NoteVault"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "username": "Username",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "loginFailed": "Login failed. Check your credentials.",
+    "registerFailed": "Registration failed. Please try again.",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loggingIn": "Logging in...",
+    "registering": "Registering...",
+    "welcomeBack": "Welcome back",
+    "createAccount": "Create your account"
+  },
+  "notes": {
+    "myNotes": "My Notes",
+    "newNote": "New Note",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "noNotes": "No notes found. Create your first note!",
+    "title": "Title",
+    "content": "Content",
+    "tags": "Tags",
+    "category": "Category",
+    "pinned": "Pinned",
+    "editNote": "Edit Note",
+    "createNote": "Create Note",
+    "deleteConfirm": "Are you sure you want to delete this note?"
+  },
+  "secrets": {
+    "secrets": "Secrets",
+    "addSecret": "Add Secret",
+    "reveal": "Reveal",
+    "hide": "Hide",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "autoHide": "This secret will auto-hide in {seconds} seconds",
+    "noSecrets": "No secrets stored for this note.",
+    "secretName": "Secret Name",
+    "secretType": "Type",
+    "secretValue": "Value",
+    "creating": "Creating...",
+    "create": "Create Secret",
+    "deleteConfirm": "Are you sure you want to delete this secret?"
+  },
+  "search": {
+    "placeholder": "Search notes...",
+    "results": "Search Results ({count})",
+    "noResults": "No notes found for your search."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "actions": "Actions"
+  }
+}
