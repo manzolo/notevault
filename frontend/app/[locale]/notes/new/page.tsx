@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useNotes } from '@/hooks/useNotes';
+import { useTags } from '@/hooks/useTags';
 import NoteEditor from '@/components/notes/NoteEditor';
 
 export default function NewNotePage() {
@@ -11,6 +13,11 @@ export default function NewNotePage() {
   const locale = useLocale();
   const router = useRouter();
   const { createNote } = useNotes();
+  const { tags, fetchTags, createTag } = useTags();
+
+  useEffect(() => {
+    fetchTags();
+  }, [fetchTags]);
 
   const handleSave = async (data: any) => {
     try {
@@ -26,7 +33,7 @@ export default function NewNotePage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">{t('createNote')}</h1>
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <NoteEditor onSave={handleSave} />
+        <NoteEditor onSave={handleSave} availableTags={tags} onCreateTag={createTag} />
       </div>
     </div>
   );

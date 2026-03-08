@@ -35,7 +35,10 @@
     "pinned": "In evidenza",
     "editNote": "Modifica Nota",
     "createNote": "Crea Nota",
-    "deleteConfirm": "Sei sicuro di voler eliminare questa nota?"
+    "deleteConfirm": "Sei sicuro di voler eliminare questa nota?",
+    "allTags": "Tutti",
+    "newTag": "Nome nuovo tag",
+    "createTag": "Crea"
   },
   "secrets": {
     "secrets": "Segreti",

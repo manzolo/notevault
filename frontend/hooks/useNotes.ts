@@ -10,13 +10,13 @@ export function useNotes() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchNotes = useCallback(async (page = 1, perPage = 20) => {
+  const fetchNotes = useCallback(async (page = 1, perPage = 20, tagId?: number | null) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get<NoteListResponse>('/api/notes', {
-        params: { page, per_page: perPage },
-      });
+      const params: Record<string, any> = { page, per_page: perPage };
+      if (tagId != null) params.tag_id = tagId;
+      const response = await api.get<NoteListResponse>('/api/notes', { params });
       setNotes(response.data.items);
       setTotal(response.data.total);
     } catch (err: any) {

@@ -19,10 +19,10 @@ export default function TagFilter({ tags, selectedTagId, onSelect }: TagFilterPr
         className={`px-3 py-1 text-xs rounded-full transition-colors ${
           selectedTagId === null
             ? 'bg-blue-600 text-white'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
         }`}
       >
-        All
+        {t('allTags')}
       </button>
       {tags.map((tag) => (
         <button
@@ -31,7 +31,7 @@ export default function TagFilter({ tags, selectedTagId, onSelect }: TagFilterPr
           className={`px-3 py-1 text-xs rounded-full transition-colors ${
             selectedTagId === tag.id
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
           }`}
         >
           {tag.name}

@@ -168,3 +168,39 @@ async def test_note_with_category(client, auth_headers):
     }, headers=auth_headers)
     assert note_resp.status_code == 201
     assert note_resp.json()["category_id"] == cat_id
+
+
+async def test_list_notes_filtered_by_tag(client, auth_headers):
+    tag_resp = await client.post("/api/tags", json={"name": "filteredtag"}, headers=auth_headers)
+    tag_id = tag_resp.json()["id"]
+    tagged = await client.post("/api/notes", json={"title": "Tagged", "content": "", "tag_ids": [tag_id]}, headers=auth_headers)
+    await client.post("/api/notes", json={"title": "Untagged", "content": ""}, headers=auth_headers)
+
+    response = await client.get(f"/api/notes?tag_id={tag_id}", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 1
+    assert data["items"][0]["id"] == tagged.json()["id"]
+
+
+async def test_list_notes_filtered_by_tag_no_match(client, auth_headers):
+    tag_resp = await client.post("/api/tags", json={"name": "emptytag"}, headers=auth_headers)
+    tag_id = tag_resp.json()["id"]
+    await client.post("/api/notes", json={"title": "Untagged", "content": ""}, headers=auth_headers)
+
+    response = await client.get(f"/api/notes?tag_id={tag_id}", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 0
+    assert data["items"] == []
+
+
+async def test_list_notes_tag_filter_user_isolation(client, auth_headers, second_auth_headers):
+    tag_resp = await client.post("/api/tags", json={"name": "isolatedtag"}, headers=auth_headers)
+    tag_id = tag_resp.json()["id"]
+    await client.post("/api/notes", json={"title": "User A Note", "content": "", "tag_ids": [tag_id]}, headers=auth_headers)
+    await client.post("/api/notes", json={"title": "User B Note", "content": ""}, headers=second_auth_headers)
+
+    response = await client.get(f"/api/notes?tag_id={tag_id}", headers=second_auth_headers)
+    assert response.status_code == 200
+    assert response.json()["total"] == 0

@@ -19,35 +19,31 @@ router = APIRouter(prefix="/api/notes", tags=["notes"])
 async def list_notes(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
+    tag_id: Optional[int] = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     offset = (page - 1) * per_page
+    base_filter = Note.user_id == current_user.id
 
-    count_result = await db.execute(
-        select(func.count(Note.id)).where(Note.user_id == current_user.id)
-    )
+    if tag_id is not None:
+        tag_subq = (
+            select(NoteTag.note_id)
+            .where(NoteTag.tag_id == tag_id)
+            .scalar_subquery()
+        )
+        base_filter = base_filter & Note.id.in_(tag_subq)
+
+    count_result = await db.execute(select(func.count(Note.id)).where(base_filter))
     total = count_result.scalar()
-
     result = await db.execute(
-        select(Note)
-        .options(selectinload(Note.tags))
-        .where(Note.user_id == current_user.id)
+        select(Note).options(selectinload(Note.tags)).where(base_filter)
         .order_by(Note.is_pinned.desc(), Note.updated_at.desc())
-        .offset(offset)
-        .limit(per_page)
+        .offset(offset).limit(per_page)
     )
     notes = result.scalars().all()
-
     pages = (total + per_page - 1) // per_page if total > 0 else 1
-
-    return NoteListResponse(
-        items=list(notes),
-        total=total,
-        page=page,
-        per_page=per_page,
-        pages=pages,
-    )
+    return NoteListResponse(items=list(notes), total=total, page=page, per_page=per_page, pages=pages)
 
 
 @router.post("", response_model=NoteResponse, status_code=status.HTTP_201_CREATED)

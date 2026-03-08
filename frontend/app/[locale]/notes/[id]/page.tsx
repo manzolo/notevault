@@ -7,10 +7,11 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import toast from 'react-hot-toast';
 import { useNotes } from '@/hooks/useNotes';
+import { useTags } from '@/hooks/useTags';
 import { useSecrets } from '@/hooks/useSecrets';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useBookmarks } from '@/hooks/useBookmarks';
-import { Attachment, Bookmark, Note, Tag } from '@/lib/types';
+import { Attachment, Bookmark, Note } from '@/lib/types';
 import NoteEditor from '@/components/notes/NoteEditor';
 import SecretList from '@/components/secrets/SecretList';
 import SecretForm from '@/components/secrets/SecretForm';
@@ -23,7 +24,6 @@ import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { KeyIcon, LinkIcon, PaperclipUploadIcon, PencilIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
-import api from '@/lib/api';
 
 const INLINE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
@@ -42,6 +42,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const noteId = parseInt(params.id);
 
   const { getNote, updateNote, deleteNote } = useNotes();
+  const { tags: availableTagsFromHook, fetchTags, createTag } = useTags();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret } = useSecrets(noteId);
   const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, deleteAttachment, previewAttachment } = useAttachments(noteId);
@@ -51,7 +52,6 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
@@ -75,8 +75,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         await fetchSecrets();
         await fetchAttachments();
         await fetchBookmarks();
-        const tagsResp = await api.get<Tag[]>('/api/tags');
-        setAvailableTags(tagsResp.data);
+        await fetchTags();
       } catch {
         router.push(`/${locale}/dashboard`);
       } finally {
@@ -301,7 +300,10 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           <NoteEditor
             initialTitle={note.title}
             initialContent={note.content}
+            initialTagIds={note.tags.map((t) => t.id)}
+            availableTags={availableTagsFromHook}
             onSave={handleUpdate}
+            onCreateTag={createTag}
             loading={saving}
           />
         </div>
@@ -382,12 +384,12 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       </Modal>
 
       <Modal isOpen={showUploadModal} onClose={() => { setShowUploadModal(false); setPasteUploadFile(null); }} title={tAttachments('upload')}>
-        <AttachmentUploadForm onUpload={handleUpload} availableTags={availableTags} initialFile={pasteUploadFile ?? undefined} />
+        <AttachmentUploadForm onUpload={handleUpload} availableTags={availableTagsFromHook} initialFile={pasteUploadFile ?? undefined} />
       </Modal>
 
       <Modal isOpen={showBookmarkModal} onClose={() => setShowBookmarkModal(false)} title={tBookmarks('add')}>
         <BookmarkForm
-          availableTags={availableTags}
+          availableTags={availableTagsFromHook}
           onSubmit={handleCreateBookmark}
           onCancel={() => setShowBookmarkModal(false)}
         />
@@ -397,7 +399,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         {editingBookmark && (
           <BookmarkForm
             initial={editingBookmark}
-            availableTags={availableTags}
+            availableTags={availableTagsFromHook}
             onSubmit={handleUpdateBookmark}
             onCancel={() => setEditingBookmark(null)}
           />

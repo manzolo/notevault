@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotes } from '@/hooks/useNotes';
+import { useTags } from '@/hooks/useTags';
 import NoteList from '@/components/notes/NoteList';
 import SearchBar from '@/components/search/SearchBar';
+import TagFilter from '@/components/search/TagFilter';
 import Pagination from '@/components/common/Pagination';
 import Button from '@/components/common/Button';
 import { PlusIcon } from '@/components/common/Icons';
@@ -20,7 +22,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { notes, total, loading, fetchNotes, deleteNote } = useNotes();
+  const { tags, fetchTags } = useTags();
   const [page, setPage] = useState(1);
+  const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
@@ -37,9 +41,20 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      fetchNotes(page).then(() => {});
+      fetchTags();
     }
-  }, [user, page]);
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotes(page, PER_PAGE, selectedTagId).then(() => {});
+    }
+  }, [user, page, selectedTagId]);
+
+  const handleTagSelect = (tagId: number | null) => {
+    setSelectedTagId(tagId);
+    setPage(1);
+  };
 
   const doSearch = async (query: string, pg: number) => {
     if (!query) return;
@@ -62,7 +77,7 @@ export default function DashboardPage() {
 
   const handleDelete = async (id: number) => {
     await deleteNote(id);
-    fetchNotes(page);
+    fetchNotes(page, PER_PAGE, selectedTagId);
   };
 
   const handlePreviewAttachment = async (noteId: number, att: MatchingAttachment) => {
@@ -124,6 +139,12 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {!searchResults && tags.length > 0 && (
+        <div className="mb-4">
+          <TagFilter tags={tags} selectedTagId={selectedTagId} onSelect={handleTagSelect} />
+        </div>
+      )}
 
       <NoteList
         notes={displayNotes}
