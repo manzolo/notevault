@@ -9,10 +9,11 @@ interface Props {
   attachments: Attachment[];
   loading: boolean;
   onPreview: (attachment: Attachment) => void;
+  onDownload: (attachment: Attachment) => void;
   onDelete: (id: number) => void;
 }
 
-export default function AttachmentList({ attachments, loading, onPreview, onDelete }: Props) {
+export default function AttachmentList({ attachments, loading, onPreview, onDownload, onDelete }: Props) {
   const t = useTranslations('attachments');
 
   if (loading) return <LoadingSpinner />;
@@ -28,6 +29,7 @@ export default function AttachmentList({ attachments, loading, onPreview, onDele
           key={att.id}
           attachment={att}
           onPreview={onPreview}
+          onDownload={onDownload}
           onDelete={onDelete}
         />
       ))}

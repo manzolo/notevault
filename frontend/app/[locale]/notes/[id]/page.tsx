@@ -94,22 +94,25 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     setPreviewState(null);
   };
 
+  const handleDownload = async (attachment: Attachment) => {
+    try {
+      const url = await previewAttachment(attachment.id);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Failed to download file');
+    }
+  };
+
   const handlePreview = async (attachment: Attachment) => {
     try {
       const url = await previewAttachment(attachment.id);
-      if (INLINE_MIMES.has(attachment.mime_type)) {
-        // Show inline inside a modal — filename appears as modal title
-        setPreviewState({ attachment, url });
-      } else {
-        // Download: anchor trick preserves original filename
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = attachment.filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
+      setPreviewState({ attachment, url });
     } catch {
       toast.error('Failed to load file');
     }
@@ -188,6 +191,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           attachments={attachments}
           loading={attachmentsLoading}
           onPreview={handlePreview}
+          onDownload={handleDownload}
           onDelete={deleteAttachment}
         />
       </div>
