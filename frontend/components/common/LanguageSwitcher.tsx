@@ -21,7 +21,7 @@ export default function LanguageSwitcher() {
         className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
           locale === 'en'
             ? 'bg-blue-600 text-white'
-            : 'text-gray-500 hover:text-gray-900'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
         }`}
       >
         EN
@@ -32,7 +32,7 @@ export default function LanguageSwitcher() {
         className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
           locale === 'it'
             ? 'bg-blue-600 text-white'
-            : 'text-gray-500 hover:text-gray-900'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
         }`}
       >
         IT

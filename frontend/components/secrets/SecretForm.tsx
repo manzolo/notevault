@@ -41,11 +41,11 @@ export default function SecretForm({ onSubmit }: SecretFormProps) {
         placeholder="e.g. Database Password"
       />
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('secretType')}</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('secretType')}</label>
         <select
           value={secretType}
           onChange={(e) => setSecretType(e.target.value as SecretType)}
-          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {SECRET_TYPES.map((type) => (
             <option key={type} value={type}>{type}</option>
@@ -53,13 +53,13 @@ export default function SecretForm({ onSubmit }: SecretFormProps) {
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('secretValue')}</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('secretValue')}</label>
         <textarea
           value={value}
           onChange={(e) => setValue(e.target.value)}
           required
           rows={3}
-          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Secret value..."
         />
       </div>

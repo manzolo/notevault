@@ -1,5 +1,5 @@
 .PHONY: up down restart build migrate migrate-down test test-backend test-frontend \
-        logs logs-backend shell-backend shell-db keygen deploy clean help
+        test-e2e logs logs-backend shell-backend shell-db keygen deploy clean help
 
 # ---------------------------------------------------------------------------
 # NoteVault – Makefile
@@ -48,16 +48,20 @@ migrate-down:
 # Testing
 # ---------------------------------------------------------------------------
 
-## test: Run the full test suite (backend + frontend)
+## test: Run the full test suite (backend + frontend unit)
 test: test-backend test-frontend
 
-## test-backend: Run backend pytest suite against the dedicated test database
+## test-backend: Run backend pytest suite (includes full-flow tests with E2eTest123! user)
 test-backend:
 	docker compose exec backend pytest tests/ -v
 
-## test-frontend: Run frontend Jest/React test suite (CI mode)
+## test-frontend: Run frontend Jest/React unit tests (CI mode)
 test-frontend:
 	docker compose exec frontend npm test -- --watchAll=false
+
+## test-e2e: Run Playwright E2E tests against the running stack (requires: make up)
+test-e2e:
+	cd frontend && npx playwright test
 
 # ---------------------------------------------------------------------------
 # Logs

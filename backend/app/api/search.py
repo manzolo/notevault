@@ -1,11 +1,11 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import or_, exists, select, func, text
+from sqlalchemy import or_, exists, select, func
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Attachment, Note, Tag, NoteTag, User
-from app.schemas.search import SearchResponse
+from app.models.database import Attachment, Note, NoteTag, User
+from app.schemas.search import SearchResponse, SearchNoteResponse
 from app.security.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/search", tags=["search"])
@@ -21,35 +21,59 @@ async def search_notes(
     db: AsyncSession = Depends(get_db),
 ):
     tsquery = func.plainto_tsquery("english", q)
-    query = (
-        select(Note)
-        .options(selectinload(Note.tags))
+
+    # Correlated subquery: True if the note has matching attachments
+    attachment_match = (
+        exists()
         .where(
-            Note.user_id == current_user.id,
-            or_(
-                Note.fts_vector.op("@@")(tsquery),
-                exists().where(
-                    Attachment.note_id == Note.id,
-                    Attachment.fts_vector.op("@@")(tsquery),
-                ),
+            Attachment.note_id == Note.id,
+            Attachment.fts_vector.op("@@")(tsquery),
+        )
+        .correlate(Note)
+        .label("match_in_attachment")
+    )
+
+    base_where = [
+        Note.user_id == current_user.id,
+        or_(
+            Note.fts_vector.op("@@")(tsquery),
+            exists().where(
+                Attachment.note_id == Note.id,
+                Attachment.fts_vector.op("@@")(tsquery),
             ),
+        ),
+    ]
+
+    # Separate count subquery (avoids issues with labelled scalar subqueries)
+    count_subq = select(Note.id).where(*base_where)
+    if tag_id:
+        count_subq = count_subq.join(NoteTag, NoteTag.note_id == Note.id).where(
+            NoteTag.tag_id == tag_id
         )
-        .order_by(
-            func.ts_rank(Note.fts_vector, tsquery).desc()
-        )
+    total = (
+        await db.execute(select(func.count()).select_from(count_subq.subquery()))
+    ).scalar()
+
+    # Main query with attachment_match column
+    query = (
+        select(Note, attachment_match)
+        .options(selectinload(Note.tags))
+        .where(*base_where)
+        .order_by(func.ts_rank(Note.fts_vector, tsquery).desc())
     )
 
     if tag_id:
-        query = query.join(NoteTag, NoteTag.note_id == Note.id).where(NoteTag.tag_id == tag_id)
+        query = query.join(NoteTag, NoteTag.note_id == Note.id).where(
+            NoteTag.tag_id == tag_id
+        )
 
-    # Count
-    count_query = select(func.count()).select_from(query.subquery())
-    total_result = await db.execute(count_query)
-    total = total_result.scalar()
-
-    # Paginate
     query = query.offset((page - 1) * per_page).limit(per_page)
-    result = await db.execute(query)
-    notes = result.scalars().all()
+    rows = (await db.execute(query)).all()
 
-    return SearchResponse(items=list(notes), total=total, query=q)
+    items = []
+    for note, match_bool in rows:
+        item = SearchNoteResponse.model_validate(note)
+        item.match_in_attachment = bool(match_bool)
+        items.append(item)
+
+    return SearchResponse(items=items, total=total, query=q)

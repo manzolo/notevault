@@ -52,6 +52,8 @@ export function useAuthState() {
   const logout = () => {
     authLogout();
     setUser(null);
+    const locale = window.location.pathname.split('/')[1] || 'en';
+    window.location.href = `/${locale}/login`;
   };
 
   return { user, loading, logout, refresh };

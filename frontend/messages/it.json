@@ -74,7 +74,8 @@
   "search": {
     "placeholder": "Cerca note...",
     "results": "Risultati di ricerca ({count})",
-    "noResults": "Nessuna nota trovata per la tua ricerca."
+    "noResults": "Nessuna nota trovata per la tua ricerca.",
+    "foundInAttachment": "Trovato nell'allegato"
   },
   "common": {
     "loading": "Caricamento...",

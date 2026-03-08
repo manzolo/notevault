@@ -92,8 +92,12 @@ export interface TokenResponse {
   token_type: string;
 }
 
+export interface SearchNote extends Note {
+  match_in_attachment?: boolean;
+}
+
 export interface SearchResponse {
-  items: Note[];
+  items: SearchNote[];
   total: number;
   query: string;
 }

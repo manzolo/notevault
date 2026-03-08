@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { login } from '@/lib/auth';
+import { useAuth } from '@/hooks/useAuth';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const t = useTranslations('auth');
   const locale = useLocale();
   const router = useRouter();
+  const { refresh } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,6 +24,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
+      await refresh();
       router.push(`/${locale}/dashboard`);
     } catch {
       toast.error(t('loginFailed'));
@@ -32,7 +35,7 @@ export default function LoginPage() {
 
   return (
     <div className="max-w-sm mx-auto mt-16">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
         <h1 className="text-2xl font-bold text-center mb-2">{t('welcomeBack')}</h1>
         <p className="text-center text-gray-500 text-sm mb-6">NoteVault</p>
 

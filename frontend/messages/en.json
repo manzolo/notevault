@@ -74,7 +74,8 @@
   "search": {
     "placeholder": "Search notes...",
     "results": "Search Results ({count})",
-    "noResults": "No notes found for your search."
+    "noResults": "No notes found for your search.",
+    "foundInAttachment": "Found in attachment"
   },
   "common": {
     "loading": "Loading...",

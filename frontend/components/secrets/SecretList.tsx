@@ -22,7 +22,7 @@ export default function SecretList({
 
   if (loading) return <LoadingSpinner size="sm" />;
   if (secrets.length === 0) {
-    return <p className="text-sm text-gray-500">{t('noSecrets')}</p>;
+    return <p className="text-sm text-gray-500 dark:text-gray-400">{t('noSecrets')}</p>;
   }
 
   return (

@@ -124,7 +124,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{note.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{note.title}</h1>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={() => setEditing(!editing)}>
             {editing ? 'Cancel' : 'Edit'}
@@ -136,7 +136,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       </div>
 
       {editing ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <NoteEditor
             initialTitle={note.title}
             initialContent={note.content}
@@ -145,7 +145,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           />
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 prose prose-sm max-w-none">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 prose prose-sm max-w-none dark:prose-invert">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.content || '*No content*'}</ReactMarkdown>
         </div>
       )}
@@ -161,7 +161,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       )}
 
       {/* Secrets Section */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{tSecrets('secrets')}</h2>
           <Button size="sm" onClick={() => setShowSecretModal(true)}>
@@ -180,7 +180,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       </div>
 
       {/* Attachments Section */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{tAttachments('attachments')}</h2>
           <Button size="sm" onClick={() => setShowUploadModal(true)}>
@@ -215,9 +215,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       {/* Inline preview modal */}
       {previewState && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={handleClosePreview}>
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
-              <span className="text-sm font-medium text-gray-900 truncate">{previewState.attachment.filename}</span>
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{previewState.attachment.filename}</span>
               <button onClick={handleClosePreview} className="ml-4 text-gray-400 hover:text-gray-600">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

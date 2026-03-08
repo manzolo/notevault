@@ -30,18 +30,18 @@ export default function SecretViewer({
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/50">
       <div className="flex items-center justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-sm text-gray-900">{secret.name}</span>
-            <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+            <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{secret.name}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded">
               {secret.secret_type}
             </span>
           </div>
           {revealed && (
             <div className="mt-2">
-              <div className="bg-white border border-gray-200 rounded px-3 py-2 font-mono text-sm break-all">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded px-3 py-2 font-mono text-sm break-all">
                 {revealed.value}
               </div>
               {countdownSeconds !== undefined && (

@@ -51,10 +51,14 @@ export default function DashboardPage() {
   const displayNotes = searchResults ? searchResults.items : notes;
   const displayLoading = loading && !searchResults;
 
+  const matchMap = searchResults
+    ? new Map(searchResults.items.map((item) => [item.id, item.match_in_attachment ?? false]))
+    : undefined;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('myNotes')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('myNotes')}</h1>
         <Link href={`/${locale}/notes/new`}>
           <Button>{t('newNote')}</Button>
         </Link>
@@ -64,7 +68,7 @@ export default function DashboardPage() {
         <SearchBar onSearch={handleSearch} />
         {searchResults && (
           <div className="mt-2 flex items-center justify-between">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {searchResults.total} results for &ldquo;{searchResults.query}&rdquo;
             </p>
             <button
@@ -77,7 +81,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <NoteList notes={displayNotes} loading={displayLoading} onDelete={handleDelete} />
+      <NoteList notes={displayNotes} loading={displayLoading} onDelete={handleDelete} matchMap={matchMap} />
 
       {!searchResults && (
         <Pagination page={page} pages={pages} onPageChange={setPage} />
