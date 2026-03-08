@@ -6,7 +6,6 @@ psycopg2-binary==2.9.9
 pydantic-settings==2.1.0
 pydantic[email]==2.5.3
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
 bcrypt==4.1.2
 cryptography==42.0.0
 slowapi==0.1.9
