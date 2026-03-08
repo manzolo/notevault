@@ -11,7 +11,7 @@ import SearchBar from '@/components/search/SearchBar';
 import Pagination from '@/components/common/Pagination';
 import Button from '@/components/common/Button';
 import api from '@/lib/api';
-import { NoteListResponse } from '@/lib/types';
+import { SearchResponse } from '@/lib/types';
 
 export default function DashboardPage() {
   const t = useTranslations('notes');
@@ -21,7 +21,7 @@ export default function DashboardPage() {
   const { notes, total, loading, fetchNotes, deleteNote } = useNotes();
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
-  const [searchResults, setSearchResults] = useState<NoteListResponse | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -41,7 +41,7 @@ export default function DashboardPage() {
   };
 
   const handleSearch = async (query: string) => {
-    const response = await api.get<NoteListResponse>(`/api/search?q=${encodeURIComponent(query)}`);
+    const response = await api.get<SearchResponse>(`/api/search?q=${encodeURIComponent(query)}`);
     setSearchResults(response.data);
   };
 
@@ -65,7 +65,7 @@ export default function DashboardPage() {
         {searchResults && (
           <div className="mt-2 flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              {searchResults.total} results for &quot;{searchResults.query}&quot;
+              {searchResults.total} results for &ldquo;{searchResults.query}&rdquo;
             </p>
             <button
               onClick={() => setSearchResults(null)}

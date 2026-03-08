@@ -16,7 +16,7 @@ def test_master_key_bytes_valid():
 
 
 def test_master_key_bytes_fallback():
-    # Non-base64 key falls back to padded bytes
-    s = Settings(master_key="shortkey", secret_key="test")
+    # A key with non-base64 chars (!) triggers the fallback path → padded to 32 bytes
+    s = Settings(master_key="not-valid-b64!!", secret_key="test")
     result = s.master_key_bytes
     assert len(result) == 32

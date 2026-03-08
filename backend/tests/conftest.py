@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -14,18 +13,29 @@ settings = get_settings()
 TEST_DATABASE_URL = settings.test_database_url
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture
 async def test_engine():
+    from sqlalchemy import text
     engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Install FTS trigger (normally done by Alembic migration)
+        await conn.execute(text("""
+            CREATE OR REPLACE FUNCTION notes_fts_trigger_func()
+            RETURNS trigger AS $$
+            BEGIN
+                NEW.fts_vector :=
+                    setweight(to_tsvector('english', coalesce(NEW.title, '')), 'A') ||
+                    setweight(to_tsvector('english', coalesce(NEW.content, '')), 'B');
+                RETURN NEW;
+            END
+            $$ LANGUAGE plpgsql
+        """))
+        await conn.execute(text("""
+            CREATE OR REPLACE TRIGGER notes_fts_update
+            BEFORE INSERT OR UPDATE ON notes
+            FOR EACH ROW EXECUTE FUNCTION notes_fts_trigger_func()
+        """))
     yield engine
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -34,7 +44,9 @@ async def test_engine():
 
 @pytest_asyncio.fixture
 async def db_session(test_engine):
-    TestSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+    TestSessionLocal = async_sessionmaker(
+        test_engine, class_=AsyncSession, expire_on_commit=False
+    )
     async with TestSessionLocal() as session:
         yield session
         await session.rollback()
@@ -55,7 +67,7 @@ async def client(db_session):
 
 @pytest_asyncio.fixture
 async def auth_headers(client):
-    """Create a test user and return auth headers."""
+    """Register a test user and return its auth headers."""
     response = await client.post("/api/auth/register", json={
         "username": "testuser",
         "email": "test@example.com",
@@ -67,7 +79,7 @@ async def auth_headers(client):
 
 @pytest_asyncio.fixture
 async def second_auth_headers(client):
-    """Create a second test user and return auth headers."""
+    """Register a second test user and return its auth headers."""
     response = await client.post("/api/auth/register", json={
         "username": "otheruser",
         "email": "other@example.com",
