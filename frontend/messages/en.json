@@ -8,7 +8,7 @@
   "auth": {
     "login": "Login",
     "register": "Register",
-    "username": "Username",
+    "username": "Username or Email",
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm Password",

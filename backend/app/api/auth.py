@@ -40,8 +40,12 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
+    # Accept username or email in the username field
     result = await db.execute(select(User).where(User.username == credentials.username))
     user = result.scalar_one_or_none()
+    if not user:
+        result = await db.execute(select(User).where(User.email == credentials.username))
+        user = result.scalar_one_or_none()
 
     if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
