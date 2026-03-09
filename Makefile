@@ -151,7 +151,13 @@ deploy:
 ##                Usage: make deploy-update APP_VERSION=0.2.0
 deploy-update:
 	scp docker-compose.prod.yml $(DEPLOY_HOST):$(DEPLOY_PATH)/docker-compose.yml
-	ssh $(DEPLOY_HOST) "cd $(DEPLOY_PATH) && APP_VERSION=$(APP_VERSION) docker compose pull && APP_VERSION=$(APP_VERSION) docker compose up -d && docker compose exec backend alembic upgrade head"
+	ssh $(DEPLOY_HOST) "cd $(DEPLOY_PATH) && \
+		grep -q '^APP_VERSION=' .env \
+			&& sed -i 's/^APP_VERSION=.*/APP_VERSION=$(APP_VERSION)/' .env \
+			|| echo 'APP_VERSION=$(APP_VERSION)' >> .env && \
+		APP_VERSION=$(APP_VERSION) docker compose pull && \
+		APP_VERSION=$(APP_VERSION) docker compose up -d && \
+		docker compose exec backend alembic upgrade head"
 	@echo "Updated to v$(APP_VERSION)."
 
 # ---------------------------------------------------------------------------
