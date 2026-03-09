@@ -1,11 +1,13 @@
+import email as email_lib
 import os
-from typing import List, Optional
+from io import BytesIO
+from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 from uuid import uuid4
 
 import aiofiles
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -181,6 +183,130 @@ async def stream_attachment(
         full_path,
         media_type=attachment.mime_type,
         headers={"Content-Disposition": disposition},
+    )
+
+
+def _load_eml(full_path: str):
+    with open(full_path, "rb") as f:
+        return email_lib.message_from_bytes(f.read())
+
+
+def _decode_part(part: Any) -> str:
+    raw = part.get_payload(decode=True)
+    if not raw:
+        return ""
+    charset = part.get_content_charset() or "utf-8"
+    return raw.decode(charset, errors="replace")
+
+
+def _is_attachment_part(part: Any) -> bool:
+    """True if this MIME part is an embedded attachment (not a body part)."""
+    cd = str(part.get("Content-Disposition", ""))
+    if "attachment" in cd:
+        return True
+    filename = part.get_filename()
+    ct = part.get_content_type()
+    if not filename and ct in ("text/plain", "text/html"):
+        return False
+    return bool(filename)
+
+
+def _leaf_parts(msg: Any) -> list:
+    """All non-multipart MIME parts in walk order."""
+    return [p for p in msg.walk() if p.get_content_maintype() != "multipart"]
+
+
+def _eml_file_path(settings, user_id: int, note_id: int, stored_filename: str) -> str:
+    return os.path.join(settings.upload_dir, str(user_id), str(note_id), stored_filename)
+
+
+@router.get("/{note_id}/attachments/{attachment_id}/eml")
+async def parse_eml_attachment(
+    note_id: int,
+    attachment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> JSONResponse:
+    await _get_owned_note(note_id, current_user, db)
+    attachment = await _get_attachment(attachment_id, note_id, db)
+
+    if attachment.mime_type != "message/rfc822":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not an EML file")
+
+    full_path = _eml_file_path(settings, current_user.id, note_id, attachment.stored_filename)
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
+
+    msg = _load_eml(full_path)
+
+    headers: Dict[str, str] = {
+        k: str(msg.get(k, ""))
+        for k in ["From", "To", "Cc", "Bcc", "Date", "Subject", "Reply-To"]
+        if msg.get(k)
+    }
+
+    body_text: Optional[str] = None
+    body_html: Optional[str] = None
+    eml_attachments: List[Dict[str, Any]] = []
+
+    for idx, part in enumerate(_leaf_parts(msg)):
+        ct = part.get_content_type()
+        if _is_attachment_part(part):
+            raw = part.get_payload(decode=True) or b""
+            filename = part.get_filename() or f"part-{idx}"
+            eml_attachments.append({
+                "index": idx,
+                "filename": filename,
+                "content_type": ct,
+                "size": len(raw),
+            })
+        elif ct == "text/plain" and body_text is None:
+            body_text = _decode_part(part)
+        elif ct == "text/html" and body_html is None:
+            body_html = _decode_part(part)
+
+    return JSONResponse({
+        "headers": headers,
+        "body_text": body_text,
+        "body_html": body_html,
+        "attachments": eml_attachments,
+    })
+
+
+@router.get("/{note_id}/attachments/{attachment_id}/eml/part/{part_index}")
+async def stream_eml_part(
+    note_id: int,
+    attachment_id: int,
+    part_index: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_owned_note(note_id, current_user, db)
+    attachment = await _get_attachment(attachment_id, note_id, db)
+
+    if attachment.mime_type != "message/rfc822":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not an EML file")
+
+    full_path = _eml_file_path(settings, current_user.id, note_id, attachment.stored_filename)
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
+
+    msg = _load_eml(full_path)
+    parts = _leaf_parts(msg)
+
+    if part_index < 0 or part_index >= len(parts):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Part not found")
+
+    part = parts[part_index]
+    raw = part.get_payload(decode=True) or b""
+    filename = part.get_filename() or f"part-{part_index}"
+    content_type = part.get_content_type() or "application/octet-stream"
+    encoded_name = quote(filename, safe="")
+
+    return StreamingResponse(
+        BytesIO(raw),
+        media_type=content_type,
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}"},
     )
 
 

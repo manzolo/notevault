@@ -22,7 +22,7 @@ import BookmarkForm from '@/components/bookmarks/BookmarkForm';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { KeyIcon, LinkIcon, PaperclipUploadIcon, PencilIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
+import { ArrowDownTrayIcon, EyeIcon, KeyIcon, LinkIcon, PaperclipUploadIcon, PencilIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
@@ -47,7 +47,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const { tags: availableTagsFromHook, fetchTags, createTag } = useTags();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret } = useSecrets(noteId);
-  const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, deleteAttachment, previewAttachment } = useAttachments(noteId);
+  const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, deleteAttachment, previewAttachment, parseEml, previewEmlPart, downloadEmlPart } = useAttachments(noteId);
   const { bookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark } = useBookmarks(noteId);
 
   const [note, setNote] = useState<Note | null>(null);
@@ -62,6 +62,16 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
   // Email preview state
   const [emailContent, setEmailContent] = useState<{ headers: Record<string, string>; body: string } | null>(null);
+  const [emlView, setEmlView] = useState<'raw' | 'rendered'>('rendered');
+  type EmlParsed = {
+    headers: Record<string, string>;
+    body_text: string | null;
+    body_html: string | null;
+    attachments: { index: number; filename: string; content_type: string; size: number }[];
+  };
+  const [emlParsed, setEmlParsed] = useState<EmlParsed | null>(null);
+  const [emlParsedLoading, setEmlParsedLoading] = useState(false);
+  const [emlPartPreview, setEmlPartPreview] = useState<{ url: string; filename: string; content_type: string } | null>(null);
 
   // Paste-image state (images: quick modal with preview)
   const [pasteFile, setPasteFile] = useState<File | null>(null);
@@ -71,6 +81,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const filenameInputRef = useRef<HTMLInputElement>(null);
   // Paste-file state (non-images: reuse upload modal pre-filled)
   const [pasteUploadFile, setPasteUploadFile] = useState<File | null>(null);
+  // Drag-and-drop state
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
 
   useEffect(() => {
     const load = async () => {
@@ -130,6 +143,49 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     return () => document.removeEventListener('paste', handleDocumentPaste);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pasteFile]);
+
+  // Document-level drag-and-drop listener
+  useEffect(() => {
+    const handleDragEnter = (e: DragEvent) => {
+      if (!e.dataTransfer?.types.includes('Files')) return;
+      e.preventDefault();
+      dragCounterRef.current += 1;
+      if (dragCounterRef.current === 1) setIsDragging(true);
+    };
+    const handleDragOver = (e: DragEvent) => {
+      if (!e.dataTransfer?.types.includes('Files')) return;
+      e.preventDefault();
+    };
+    const handleDragLeave = (e: DragEvent) => {
+      dragCounterRef.current -= 1;
+      if (dragCounterRef.current === 0) setIsDragging(false);
+    };
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current = 0;
+      setIsDragging(false);
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      if (file.type.startsWith('image/')) {
+        openPasteModal(file);
+      } else {
+        setPasteUploadFile(file);
+        setShowUploadModal(true);
+      }
+    };
+
+    document.addEventListener('dragenter', handleDragEnter);
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('dragleave', handleDragLeave);
+    document.addEventListener('drop', handleDrop);
+    return () => {
+      document.removeEventListener('dragenter', handleDragEnter);
+      document.removeEventListener('dragover', handleDragOver);
+      document.removeEventListener('dragleave', handleDragLeave);
+      document.removeEventListener('drop', handleDrop);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openPasteModal = (file: File) => {
     const ext = file.type.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
@@ -201,6 +257,45 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     if (previewState?.url) URL.revokeObjectURL(previewState.url);
     setPreviewState(null);
     setEmailContent(null);
+    setEmlView('raw');
+    setEmlParsed(null);
+    if (emlPartPreview?.url) URL.revokeObjectURL(emlPartPreview.url);
+    setEmlPartPreview(null);
+  };
+
+  const handleEmlViewToggle = async (view: 'raw' | 'rendered') => {
+    setEmlView(view);
+    if (view === 'rendered' && !emlParsed && previewState) {
+      setEmlParsedLoading(true);
+      try {
+        const parsed = await parseEml(previewState.attachment.id);
+        setEmlParsed(parsed);
+      } catch {
+        toast.error('Failed to parse EML');
+      } finally {
+        setEmlParsedLoading(false);
+      }
+    }
+  };
+
+  const EML_PREVIEW_MIMES = new Set([
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+    'application/pdf',
+    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+  ]);
+
+  const handleEmlPartPreview = async (attachmentId: number, partIndex: number, filename: string, content_type: string) => {
+    try {
+      const url = await previewEmlPart(attachmentId, partIndex);
+      setEmlPartPreview({ url, filename, content_type });
+    } catch {
+      toast.error('Failed to load preview');
+    }
+  };
+
+  const handleEmlPartPreviewClose = () => {
+    if (emlPartPreview?.url) URL.revokeObjectURL(emlPartPreview.url);
+    setEmlPartPreview(null);
   };
 
   const handleDownload = async (attachment: Attachment) => {
@@ -222,6 +317,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     try {
       const url = await previewAttachment(attachment.id);
       if (attachment.mime_type === 'message/rfc822') {
+        // Load raw for Raw tab
         const raw = await fetch(url).then((r) => r.text());
         URL.revokeObjectURL(url);
         const lines = raw.split(/\r?\n/);
@@ -235,6 +331,17 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         const body = lines.slice(i).join('\n').trim();
         setEmailContent({ headers, body });
         setPreviewState({ attachment, url: '' });
+        // Immediately load rendered view
+        setEmlView('rendered');
+        setEmlParsedLoading(true);
+        try {
+          const parsed = await parseEml(attachment.id);
+          setEmlParsed(parsed);
+        } catch {
+          toast.error('Failed to parse EML');
+        } finally {
+          setEmlParsedLoading(false);
+        }
       } else {
         setPreviewState({ attachment, url });
       }
@@ -256,12 +363,29 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     toast.success('Bookmark updated!');
   };
 
+  const formatBytes = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  };
+
   if (loading) return <LoadingSpinner className="py-12" />;
   if (!note) return null;
 
   return (
     <div className="space-y-6">
       {confirmDialog}
+
+      {/* Drag-and-drop overlay */}
+      {isDragging && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-indigo-500/10 border-4 border-dashed border-indigo-400 rounded-xl m-4" />
+          <div className="relative bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-semibold text-lg px-8 py-4 rounded-xl shadow-xl flex items-center gap-3">
+            <PaperclipUploadIcon />
+            {tAttachments('dropOverlay')}
+          </div>
+        </div>
+      )}
 
       {/* Paste-image modal */}
       {pasteFile && (
@@ -432,6 +556,29 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         )}
       </Modal>
 
+      {/* EML part preview overlay (above eml modal) */}
+      {emlPartPreview && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70" onClick={handleEmlPartPreviewClose}>
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{emlPartPreview.filename}</span>
+              <button onClick={handleEmlPartPreviewClose} className="ml-4 text-gray-400 hover:text-gray-600">
+                <XMarkIcon />
+              </button>
+            </div>
+            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
+              {emlPartPreview.content_type === 'application/pdf' ? (
+                <iframe src={emlPartPreview.url} className="w-full h-[70vh] rounded" title={emlPartPreview.filename} />
+              ) : emlPartPreview.content_type.startsWith('video/') ? (
+                <video src={emlPartPreview.url} controls className="max-w-full max-h-[70vh] rounded" />
+              ) : (
+                <img src={emlPartPreview.url} alt={emlPartPreview.filename} className="max-w-full max-h-[70vh] object-contain rounded" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Inline preview modal */}
       {previewState && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={handleClosePreview}>
@@ -450,18 +597,96 @@ export default function NotePage({ params }: { params: { id: string; locale: str
               ) : previewState.attachment.mime_type.startsWith('video/') ? (
                 <video src={previewState.url} controls className="max-w-full max-h-[70vh] rounded" />
               ) : previewState.attachment.mime_type === 'message/rfc822' && emailContent ? (
-                <div className="w-full max-h-[70vh] overflow-auto rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
-                  <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1">
-                    {['From', 'To', 'Cc', 'Date', 'Subject'].map((key) => emailContent.headers[key] ? (
-                      <div key={key} className="flex gap-2">
-                        <span className="font-medium text-gray-500 dark:text-gray-400 w-16 shrink-0">{key}:</span>
-                        <span className="text-gray-900 dark:text-gray-100 break-all">{emailContent.headers[key]}</span>
-                      </div>
-                    ) : null)}
+                <div className="w-full max-h-[70vh] overflow-auto rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm flex flex-col">
+                  {/* Tab toggle */}
+                  <div className="flex border-b border-gray-200 dark:border-gray-700 shrink-0">
+                    {(['raw', 'rendered'] as const).map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => handleEmlViewToggle(v)}
+                        className={`px-4 py-2 text-xs font-medium transition-colors ${emlView === v ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                      >
+                        {v === 'raw' ? tAttachments('emlRaw') : tAttachments('emlRendered')}
+                      </button>
+                    ))}
                   </div>
-                  <pre className="px-4 py-3 whitespace-pre-wrap font-sans text-gray-800 dark:text-gray-200 leading-relaxed">
-                    {emailContent.body || '(empty body)'}
-                  </pre>
+                  {emlView === 'raw' ? (
+                    <>
+                      <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1">
+                        {['From', 'To', 'Cc', 'Date', 'Subject'].map((key) => emailContent.headers[key] ? (
+                          <div key={key} className="flex gap-2">
+                            <span className="font-medium text-gray-500 dark:text-gray-400 w-16 shrink-0">{key}:</span>
+                            <span className="text-gray-900 dark:text-gray-100 break-all">{emailContent.headers[key]}</span>
+                          </div>
+                        ) : null)}
+                      </div>
+                      <pre className="px-4 py-3 whitespace-pre-wrap font-sans text-gray-800 dark:text-gray-200 leading-relaxed">
+                        {emailContent.body || tAttachments('emlNoBody')}
+                      </pre>
+                    </>
+                  ) : emlParsedLoading ? (
+                    <div className="flex-1 flex items-center justify-center py-12">
+                      <LoadingSpinner />
+                    </div>
+                  ) : emlParsed ? (
+                    <>
+                      <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1 shrink-0">
+                        {['From', 'To', 'Cc', 'Bcc', 'Date', 'Subject', 'Reply-To'].map((key) => emlParsed.headers[key] ? (
+                          <div key={key} className="flex gap-2">
+                            <span className="font-medium text-gray-500 dark:text-gray-400 w-20 shrink-0">{key}:</span>
+                            <span className="text-gray-900 dark:text-gray-100 break-all">{emlParsed.headers[key]}</span>
+                          </div>
+                        ) : null)}
+                      </div>
+                      {emlParsed.body_html ? (
+                        <iframe
+                          srcDoc={emlParsed.body_html}
+                          sandbox="allow-same-origin"
+                          className="flex-1 w-full min-h-[50vh] border-0"
+                          title="email body"
+                        />
+                      ) : (
+                        <pre className="px-4 py-3 whitespace-pre-wrap font-sans text-gray-800 dark:text-gray-200 leading-relaxed flex-1">
+                          {emlParsed.body_text || tAttachments('emlNoBody')}
+                        </pre>
+                      )}
+                      {emlParsed.attachments.length > 0 && (
+                        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
+                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                            {tAttachments('emlAttachments')}
+                          </p>
+                          <div className="space-y-1">
+                            {emlParsed.attachments.map((a) => (
+                              <div key={a.index} className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <div className="min-w-0">
+                                  <span className="text-sm text-gray-800 dark:text-gray-200 truncate block">{a.filename}</span>
+                                  <span className="text-xs text-gray-400">{a.content_type} · {formatBytes(a.size)}</span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {EML_PREVIEW_MIMES.has(a.content_type) && (
+                                    <button
+                                      onClick={() => handleEmlPartPreview(previewState!.attachment.id, a.index, a.filename, a.content_type)}
+                                      className="p-1.5 rounded text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                                      title={`Preview ${a.filename}`}
+                                    >
+                                      <EyeIcon />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => downloadEmlPart(previewState!.attachment.id, a.index, a.filename)}
+                                    className="p-1.5 rounded text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                                    title={`Download ${a.filename}`}
+                                  >
+                                    <ArrowDownTrayIcon />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : null}
                 </div>
               ) : (
                 <img src={previewState.url} alt={previewState.attachment.filename} className="max-w-full max-h-[70vh] object-contain rounded" />

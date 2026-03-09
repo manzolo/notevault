@@ -124,7 +124,12 @@
     "pasteImageTitle": "Save pasted image",
     "pasteImageLabel": "File name",
     "pasteImageSave": "Save",
-    "pasteImageUploading": "Uploading..."
+    "pasteImageUploading": "Uploading...",
+    "dropOverlay": "Drop file to upload",
+    "emlRaw": "Raw",
+    "emlRendered": "Rendered",
+    "emlNoBody": "(empty body)",
+    "emlAttachments": "Attachments in this email"
   },
   "bookmarks": {
     "bookmarks": "Bookmarks",

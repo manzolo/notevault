@@ -124,7 +124,12 @@
     "pasteImageTitle": "Salva immagine incollata",
     "pasteImageLabel": "Nome file",
     "pasteImageSave": "Salva",
-    "pasteImageUploading": "Caricamento..."
+    "pasteImageUploading": "Caricamento...",
+    "dropOverlay": "Trascina qui per caricare",
+    "emlRaw": "Grezzo",
+    "emlRendered": "Formattato",
+    "emlNoBody": "(corpo vuoto)",
+    "emlAttachments": "Allegati nell'email"
   },
   "bookmarks": {
     "bookmarks": "Segnalibri",
