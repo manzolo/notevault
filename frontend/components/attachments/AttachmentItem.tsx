@@ -14,7 +14,7 @@ interface Props {
   onDelete: (id: number) => void;
 }
 
-const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']);
+const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'message/rfc822']);
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -68,6 +68,12 @@ function FileIcon({ mime }: { mime: string }) {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
         d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13l1.5 2L12 13l1.5 2L15 13M9 9h6" />
+    </svg>
+  );
+  if (mime === 'message/rfc822') return (
+    <svg className="w-8 h-8 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
     </svg>
   );
   if (mime === 'application/zip' || mime === 'application/x-tar' || mime === 'application/gzip') return (

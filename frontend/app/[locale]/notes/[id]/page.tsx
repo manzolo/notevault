@@ -30,6 +30,7 @@ const INLINE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
   'application/pdf',
   'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+  'message/rfc822',
 ]);
 
 export default function NotePage({ params }: { params: { id: string; locale: string } }) {
@@ -58,6 +59,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [previewState, setPreviewState] = useState<{ attachment: Attachment; url: string } | null>(null);
+
+  // Email preview state
+  const [emailContent, setEmailContent] = useState<{ headers: Record<string, string>; body: string } | null>(null);
 
   // Paste-image state (images: quick modal with preview)
   const [pasteFile, setPasteFile] = useState<File | null>(null);
@@ -194,8 +198,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   };
 
   const handleClosePreview = () => {
-    if (previewState) URL.revokeObjectURL(previewState.url);
+    if (previewState?.url) URL.revokeObjectURL(previewState.url);
     setPreviewState(null);
+    setEmailContent(null);
   };
 
   const handleDownload = async (attachment: Attachment) => {
@@ -216,7 +221,23 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const handlePreview = async (attachment: Attachment) => {
     try {
       const url = await previewAttachment(attachment.id);
-      setPreviewState({ attachment, url });
+      if (attachment.mime_type === 'message/rfc822') {
+        const raw = await fetch(url).then((r) => r.text());
+        URL.revokeObjectURL(url);
+        const lines = raw.split(/\r?\n/);
+        const headers: Record<string, string> = {};
+        let i = 0;
+        for (; i < lines.length; i++) {
+          if (lines[i].trim() === '') { i++; break; }
+          const m = lines[i].match(/^([\w-]+):\s*(.*)$/);
+          if (m) headers[m[1]] = m[2];
+        }
+        const body = lines.slice(i).join('\n').trim();
+        setEmailContent({ headers, body });
+        setPreviewState({ attachment, url: '' });
+      } else {
+        setPreviewState({ attachment, url });
+      }
     } catch {
       toast.error('Failed to load file');
     }
@@ -423,11 +444,25 @@ export default function NotePage({ params }: { params: { id: string; locale: str
                 </svg>
               </button>
             </div>
-            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50">
+            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
               {previewState.attachment.mime_type === 'application/pdf' ? (
                 <iframe src={previewState.url} className="w-full h-[70vh] rounded" title={previewState.attachment.filename} />
               ) : previewState.attachment.mime_type.startsWith('video/') ? (
                 <video src={previewState.url} controls className="max-w-full max-h-[70vh] rounded" />
+              ) : previewState.attachment.mime_type === 'message/rfc822' && emailContent ? (
+                <div className="w-full max-h-[70vh] overflow-auto rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
+                  <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1">
+                    {['From', 'To', 'Cc', 'Date', 'Subject'].map((key) => emailContent.headers[key] ? (
+                      <div key={key} className="flex gap-2">
+                        <span className="font-medium text-gray-500 dark:text-gray-400 w-16 shrink-0">{key}:</span>
+                        <span className="text-gray-900 dark:text-gray-100 break-all">{emailContent.headers[key]}</span>
+                      </div>
+                    ) : null)}
+                  </div>
+                  <pre className="px-4 py-3 whitespace-pre-wrap font-sans text-gray-800 dark:text-gray-200 leading-relaxed">
+                    {emailContent.body || '(empty body)'}
+                  </pre>
+                </div>
               ) : (
                 <img src={previewState.url} alt={previewState.attachment.filename} className="max-w-full max-h-[70vh] object-contain rounded" />
               )}

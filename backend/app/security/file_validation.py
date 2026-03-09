@@ -43,6 +43,8 @@ ALLOWED_MIME_TYPES = {
     "application/zip": ".zip",
     "application/x-tar": ".tar",
     "application/gzip": ".gz",
+    # Email
+    "message/rfc822": ".eml",
 }
 
 # Extensions where the declared extension wins over magic-byte detection.
@@ -71,6 +73,8 @@ EXTENSION_PRIORITY: dict[str, str] = {
     ".xml": "text/xml",
     ".json": "application/json",
     ".svg": "image/svg+xml",
+    # Email
+    ".eml": "message/rfc822",
     # Source / config files (treated as plain text)
     ".py": "text/plain",
     ".js": "text/plain",
