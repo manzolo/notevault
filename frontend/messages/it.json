@@ -173,7 +173,9 @@
     "deleteFolder": "Elimina cartella",
     "deleteConfirm": "Eliminare questa cartella? Le note diventeranno non archiviate e le sottocartelle verranno spostate in su.",
     "noFolder": "Nessuna cartella",
-    "folders": "Cartelle"
+    "folders": "Cartelle",
+    "searchFolders": "Cerca cartelle…",
+    "noResults": "Nessuna cartella trovata"
   },
   "common": {
     "loading": "Caricamento...",

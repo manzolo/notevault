@@ -43,6 +43,21 @@ function getPathTo(cats: Category[], targetId: number): Category[] {
   return [];
 }
 
+interface FlatCategory {
+  category: Category;
+  pathLabel: string; // e.g. "Work > Projects > Frontend"
+}
+
+function flattenWithPath(cats: Category[], prefix = ''): FlatCategory[] {
+  const result: FlatCategory[] = [];
+  for (const cat of cats) {
+    const pathLabel = prefix ? `${prefix} > ${cat.name}` : cat.name;
+    result.push({ category: cat, pathLabel });
+    if (cat.children?.length) result.push(...flattenWithPath(cat.children, pathLabel));
+  }
+  return result;
+}
+
 export default function FolderSelector({
   categories,
   selectedCategoryId,
@@ -57,6 +72,7 @@ export default function FolderSelector({
   const t = useTranslations('folders');
   const [open, setOpen] = useState(false);
   const [autoOpened, setAutoOpened] = useState(false);
+  const [search, setSearch] = useState('');
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -66,6 +82,7 @@ export default function FolderSelector({
   const [dropTarget, setDropTarget] = useState<'root' | number | null>(null);
   const { confirm, dialog } = useConfirm();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // Auto-open dropdown when a drag starts; close when drag ends
   useEffect(() => {
@@ -78,6 +95,14 @@ export default function FolderSelector({
       setDropTarget(null);
     }
   }, [isDragging]);
+
+  // Autofocus search input when dropdown opens (not during drag)
+  useEffect(() => {
+    if (open && !isDragging) {
+      setTimeout(() => searchRef.current?.focus(), 50);
+    }
+    if (!open) setSearch('');
+  }, [open, isDragging]);
 
   // Close dropdown when clicking outside (skip during drag to avoid accidental close)
   useEffect(() => {
@@ -187,7 +212,52 @@ export default function FolderSelector({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 flex flex-col max-h-72">
+          {/* Search input — hidden during drag */}
+          {!isDragging && (
+            <div className="px-2 py-2 border-b border-gray-100 dark:border-gray-700 shrink-0">
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('searchFolders')}
+                className="w-full text-sm px-2 py-1 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              />
+            </div>
+          )}
+
+          {/* Flat search results (when typing) */}
+          {search.trim() && (
+            <div className="overflow-y-auto">
+              {flattenWithPath(categories).filter(({ pathLabel }) =>
+                pathLabel.toLowerCase().includes(search.trim().toLowerCase())
+              ).length === 0 ? (
+                <p className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">{t('noResults')}</p>
+              ) : (
+                flattenWithPath(categories)
+                  .filter(({ pathLabel }) => pathLabel.toLowerCase().includes(search.trim().toLowerCase()))
+                  .map(({ category, pathLabel }) => (
+                    <button
+                      key={category.id}
+                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                        selectedCategoryId === category.id
+                          ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+                      }`}
+                      onClick={() => { onSelect(category.id); setOpen(false); }}
+                    >
+                      <FolderIcon className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                      <span className="truncate">{pathLabel}</span>
+                    </button>
+                  ))
+              )}
+            </div>
+          )}
+
+          {/* Level navigation (when not searching) */}
+          {!search.trim() && (
+          <div className="overflow-y-auto">
           {/* All Notes option — drop target to unfile */}
           <button
             className={`w-full text-left px-3 py-2 text-sm transition-colors ${
@@ -300,9 +370,11 @@ export default function FolderSelector({
               ))}
             </div>
           )}
+          </div>
+          )} {/* end level navigation */}
 
-          {/* Create new folder inline */}
-          <div className="border-t border-gray-100 dark:border-gray-700">
+          {/* Create new folder inline — only shown when not searching */}
+          {!search.trim() && <div className="border-t border-gray-100 dark:border-gray-700 shrink-0">
             {creating ? (
               <form className="flex flex-col px-3 py-2 gap-1" onSubmit={handleCreate}>
                 <div className="flex items-center gap-2">
@@ -334,7 +406,7 @@ export default function FolderSelector({
                 {selectedCategoryId ? t('newSubfolder') : t('newFolder')}
               </button>
             )}
-          </div>
+          </div>}
         </div>
       )}
 

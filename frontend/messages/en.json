@@ -173,7 +173,9 @@
     "deleteFolder": "Delete folder",
     "deleteConfirm": "Delete this folder? Notes will become unfiled and subfolders will be moved up.",
     "noFolder": "No folder",
-    "folders": "Folders"
+    "folders": "Folders",
+    "searchFolders": "Search folders…",
+    "noResults": "No folders found"
   },
   "common": {
     "loading": "Loading...",
