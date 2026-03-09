@@ -177,6 +177,7 @@ export default function DashboardPage() {
               const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
               const before = dateTo ? `${dateTo}T23:59:59` : undefined;
               fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId);
+              fetchCategories();
             }}
           />
           {tags.length > 0 && (
