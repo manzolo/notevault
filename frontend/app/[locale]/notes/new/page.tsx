@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useNotes } from '@/hooks/useNotes';
 import { useTags } from '@/hooks/useTags';
+import { useCategories } from '@/hooks/useCategories';
 import NoteEditor from '@/components/notes/NoteEditor';
 
 export default function NewNotePage() {
@@ -14,10 +15,12 @@ export default function NewNotePage() {
   const router = useRouter();
   const { createNote } = useNotes();
   const { tags, fetchTags, createTag } = useTags();
+  const { fetchCategories, flattenCategories, categories } = useCategories();
 
   useEffect(() => {
     fetchTags();
-  }, [fetchTags]);
+    fetchCategories();
+  }, [fetchTags, fetchCategories]);
 
   const handleSave = async (data: any) => {
     try {
@@ -33,7 +36,12 @@ export default function NewNotePage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">{t('createNote')}</h1>
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <NoteEditor onSave={handleSave} availableTags={tags} onCreateTag={createTag} />
+        <NoteEditor
+          onSave={handleSave}
+          availableTags={tags}
+          onCreateTag={createTag}
+          availableCategories={flattenCategories(categories)}
+        />
       </div>
     </div>
   );

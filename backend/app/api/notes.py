@@ -16,11 +16,14 @@ from app.config import get_settings
 router = APIRouter(prefix="/api/notes", tags=["notes"])
 
 
+
 @router.get("", response_model=NoteListResponse)
 async def list_notes(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     tag_id: Optional[int] = Query(None),
+    category_id: Optional[int] = Query(None),
+    unfiled: bool = Query(False),
     created_after: Optional[datetime] = Query(None),
     created_before: Optional[datetime] = Query(None),
     updated_after: Optional[datetime] = Query(None),
@@ -38,6 +41,11 @@ async def list_notes(
             .scalar_subquery()
         )
         base_filter = base_filter & Note.id.in_(tag_subq)
+
+    if category_id is not None:
+        base_filter = base_filter & (Note.category_id == category_id)
+    elif unfiled:
+        base_filter = base_filter & Note.category_id.is_(None)
 
     if created_after is not None:
         base_filter = base_filter & (Note.created_at >= created_after)
@@ -132,7 +140,7 @@ async def update_note(
         note.content = note_data.content
     if note_data.is_pinned is not None:
         note.is_pinned = note_data.is_pinned
-    if note_data.category_id is not None:
+    if "category_id" in note_data.model_fields_set:
         note.category_id = note_data.category_id
 
     if note_data.tag_ids is not None:

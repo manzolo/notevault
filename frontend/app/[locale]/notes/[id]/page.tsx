@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import toast from 'react-hot-toast';
 import { useNotes } from '@/hooks/useNotes';
 import { useTags } from '@/hooks/useTags';
+import { useCategories } from '@/hooks/useCategories';
 import { useSecrets } from '@/hooks/useSecrets';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useBookmarks } from '@/hooks/useBookmarks';
@@ -47,6 +48,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
   const { getNote, updateNote, deleteNote } = useNotes();
   const { tags: availableTagsFromHook, fetchTags, createTag } = useTags();
+  const { categories, fetchCategories, flattenCategories } = useCategories();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret } = useSecrets(noteId);
   const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, deleteAttachment, previewAttachment, parseZip, previewZipEntry, downloadZipEntry, parseZipEml, previewZipEmlPart, downloadZipEmlPart, parseEml, previewEmlPart, downloadEmlPart } = useAttachments(noteId);
@@ -121,6 +123,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         }
         await fetchBookmarks();
         await fetchTags();
+        await fetchCategories();
       } catch {
         router.push(`/${locale}/dashboard`);
       } finally {
@@ -629,7 +632,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             initialTitle={note.title}
             initialContent={note.content}
             initialTagIds={note.tags.map((t) => t.id)}
+            initialCategoryId={note.category_id}
             availableTags={availableTagsFromHook}
+            availableCategories={flattenCategories(categories)}
             onSave={handleUpdate}
             onCreateTag={createTag}
             loading={saving}

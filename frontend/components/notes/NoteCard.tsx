@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { MatchingAttachment, Note } from '@/lib/types';
 import { formatRelative, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
-import { EyeIcon, TrashIcon } from '@/components/common/Icons';
+import { EyeIcon, FolderIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
@@ -18,6 +19,7 @@ const INLINE_MIMES = new Set([
 interface NoteCardProps {
   note: Note;
   onDelete: (id: number) => void;
+  categoryName?: string;
   matchInAttachment?: boolean;
   matchInBookmark?: boolean;
   matchingAttachments?: MatchingAttachment[];
@@ -42,21 +44,33 @@ function GlobeIcon() {
   );
 }
 
-export default function NoteCard({ note, onDelete, matchInAttachment, matchInBookmark, matchingAttachments, onPreviewAttachment }: NoteCardProps) {
+export default function NoteCard({ note, onDelete, categoryName, matchInAttachment, matchInBookmark, matchingAttachments, onPreviewAttachment }: NoteCardProps) {
   const locale = useLocale();
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
   const tAtt = useTranslations('attachments');
   const { confirm, dialog } = useConfirm();
+  const [dragging, setDragging] = useState(false);
 
   const handleDelete = async () => {
     if (await confirm(t('deleteConfirm'))) onDelete(note.id);
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('text/plain', note.id.toString());
+    e.dataTransfer.effectAllowed = 'move';
+    setDragging(true);
+  };
+
   return (
     <>
       {dialog}
-      <div className="group bg-white dark:bg-gray-800 rounded-xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all border border-gray-200 dark:border-gray-700 p-4">
+      <div
+        draggable
+        onDragStart={handleDragStart}
+        onDragEnd={() => setDragging(false)}
+        className={`group bg-white dark:bg-gray-800 rounded-xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all border border-gray-200 dark:border-gray-700 p-4 cursor-grab active:cursor-grabbing select-none ${dragging ? 'opacity-40 scale-95' : ''}`}
+      >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -77,6 +91,12 @@ export default function NoteCard({ note, onDelete, matchInAttachment, matchInBoo
                   {tag.name}
                 </span>
               ))}
+              {categoryName && (
+                <span className="inline-flex items-center gap-1 text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 px-2 py-0.5 rounded-full">
+                  <FolderIcon className="w-3 h-3" />
+                  {categoryName}
+                </span>
+              )}
               <span className="text-xs text-gray-400">{formatRelative(note.updated_at)}</span>
               <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
             </div>
