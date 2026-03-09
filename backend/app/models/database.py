@@ -95,6 +95,8 @@ class Secret(Base):
         default=SecretType.OTHER,
     )
     username = Column(String(255), nullable=True)
+    url = Column(String(2048), nullable=True)
+    public_key = Column(Text, nullable=True)  # SSH public key, stored plain (not a secret)
     encrypted_value = Column(BYTEA, nullable=False)  # nonce(12B) || ciphertext
     note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

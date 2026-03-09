@@ -52,6 +52,8 @@ async def create_secret(
         name=secret_data.name,
         secret_type=secret_data.secret_type,
         username=secret_data.username or None,
+        url=secret_data.url or None,
+        public_key=secret_data.public_key or None,
         encrypted_value=encrypted_value,
         note_id=note_id,
     )
@@ -133,6 +135,8 @@ async def reveal_secret(
         name=secret.name,
         secret_type=secret.secret_type,
         username=secret.username,
+        url=secret.url,
+        public_key=secret.public_key,
         value=decrypted_value,
         note_id=secret.note_id,
     )

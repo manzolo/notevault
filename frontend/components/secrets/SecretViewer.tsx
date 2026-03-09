@@ -66,8 +66,40 @@ export default function SecretViewer({
                   {secret.username}
                 </span>
               )}
+              {secret.url && (
+                <a
+                  href={secret.url.startsWith('http') ? secret.url : `https://${secret.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 truncate max-w-[180px]"
+                  title={secret.url}
+                >
+                  <svg className="h-3 w-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  {secret.url}
+                </a>
+              )}
               <DateInfoTooltip createdAt={secret.created_at} updatedAt={secret.updated_at} />
             </div>
+            {secret.public_key && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('publicKey')}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(secret.public_key!)}
+                    className="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    {copied ? t('copied') : t('copyPublicKey')}
+                  </button>
+                </div>
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded px-3 py-2 font-mono text-xs break-all">
+                  {secret.public_key}
+                </div>
+              </div>
+            )}
             {revealed && (
               <div className="mt-2">
                 <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded px-3 py-2 font-mono text-sm break-all">
