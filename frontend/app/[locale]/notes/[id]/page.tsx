@@ -144,6 +144,21 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pasteFile]);
 
+  // ESC key: close preview overlays in cascade (eml part first, then main preview)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (emlPartPreview) {
+        handleEmlPartPreviewClose();
+      } else if (previewState) {
+        handleClosePreview();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emlPartPreview, previewState]);
+
   // Document-level drag-and-drop listener
   useEffect(() => {
     const handleDragEnter = (e: DragEvent) => {
@@ -369,6 +384,18 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
+  // Inject theme-aware CSS into email HTML iframe
+  const injectThemeBg = (html: string): string => {
+    const dark = document.documentElement.classList.contains('dark');
+    const bg = dark ? '#1e2533' : '#ffffff';
+    const color = dark ? '#c9d1d9' : '#374151';
+    const linkColor = dark ? '#7ca4e0' : '#1d4ed8';
+    const css = `<style>:root{color-scheme:${dark ? 'dark' : 'light'}}html,body{background:${bg}!important;color:${color}!important;font-family:sans-serif}a{color:${linkColor}!important}</style>`;
+    const headMatch = html.match(/<head[^>]*>/i);
+    if (headMatch) return html.replace(headMatch[0], headMatch[0] + css);
+    return css + html;
+  };
+
   if (loading) return <LoadingSpinner className="py-12" />;
   if (!note) return null;
 
@@ -397,7 +424,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             <img
               src={pastePreviewUrl}
               alt="preview"
-              className="w-full max-h-40 object-contain rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+              className="w-full max-h-40 object-contain rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
             />
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -558,15 +585,15 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
       {/* EML part preview overlay (above eml modal) */}
       {emlPartPreview && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70" onClick={handleEmlPartPreviewClose}>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50" onClick={handleEmlPartPreviewClose}>
           <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{emlPartPreview.filename}</span>
+              <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{emlPartPreview.filename}</span>
               <button onClick={handleEmlPartPreviewClose} className="ml-4 text-gray-400 hover:text-gray-600">
                 <XMarkIcon />
               </button>
             </div>
-            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
+            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-800">
               {emlPartPreview.content_type === 'application/pdf' ? (
                 <iframe src={emlPartPreview.url} className="w-full h-[70vh] rounded" title={emlPartPreview.filename} />
               ) : emlPartPreview.content_type.startsWith('video/') ? (
@@ -581,17 +608,17 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
       {/* Inline preview modal */}
       {previewState && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={handleClosePreview}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={handleClosePreview}>
           <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{previewState.attachment.filename}</span>
+              <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{previewState.attachment.filename}</span>
               <button onClick={handleClosePreview} className="ml-4 text-gray-400 hover:text-gray-600">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
+            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-800">
               {previewState.attachment.mime_type === 'application/pdf' ? (
                 <iframe src={previewState.url} className="w-full h-[70vh] rounded" title={previewState.attachment.filename} />
               ) : previewState.attachment.mime_type.startsWith('video/') ? (
@@ -615,12 +642,12 @@ export default function NotePage({ params }: { params: { id: string; locale: str
                       <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1">
                         {['From', 'To', 'Cc', 'Date', 'Subject'].map((key) => emailContent.headers[key] ? (
                           <div key={key} className="flex gap-2">
-                            <span className="font-medium text-gray-500 dark:text-gray-400 w-16 shrink-0">{key}:</span>
-                            <span className="text-gray-900 dark:text-gray-100 break-all">{emailContent.headers[key]}</span>
+                            <span className="font-medium text-gray-400 dark:text-gray-500 w-16 shrink-0">{key}:</span>
+                            <span className="text-gray-800 dark:text-gray-300 break-all">{emailContent.headers[key]}</span>
                           </div>
                         ) : null)}
                       </div>
-                      <pre className="px-4 py-3 whitespace-pre-wrap font-sans text-gray-800 dark:text-gray-200 leading-relaxed">
+                      <pre className="px-4 py-3 whitespace-pre-wrap font-sans text-gray-700 dark:text-gray-300 leading-relaxed">
                         {emailContent.body || tAttachments('emlNoBody')}
                       </pre>
                     </>
@@ -633,20 +660,20 @@ export default function NotePage({ params }: { params: { id: string; locale: str
                       <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1 shrink-0">
                         {['From', 'To', 'Cc', 'Bcc', 'Date', 'Subject', 'Reply-To'].map((key) => emlParsed.headers[key] ? (
                           <div key={key} className="flex gap-2">
-                            <span className="font-medium text-gray-500 dark:text-gray-400 w-20 shrink-0">{key}:</span>
-                            <span className="text-gray-900 dark:text-gray-100 break-all">{emlParsed.headers[key]}</span>
+                            <span className="font-medium text-gray-400 dark:text-gray-500 w-20 shrink-0">{key}:</span>
+                            <span className="text-gray-800 dark:text-gray-300 break-all">{emlParsed.headers[key]}</span>
                           </div>
                         ) : null)}
                       </div>
                       {emlParsed.body_html ? (
                         <iframe
-                          srcDoc={emlParsed.body_html}
+                          srcDoc={injectThemeBg(emlParsed.body_html)}
                           sandbox="allow-same-origin"
                           className="flex-1 w-full min-h-[50vh] border-0"
                           title="email body"
                         />
                       ) : (
-                        <pre className="px-4 py-3 whitespace-pre-wrap font-sans text-gray-800 dark:text-gray-200 leading-relaxed flex-1">
+                        <pre className="px-4 py-3 whitespace-pre-wrap font-sans text-gray-700 dark:text-gray-300 leading-relaxed flex-1">
                           {emlParsed.body_text || tAttachments('emlNoBody')}
                         </pre>
                       )}
@@ -659,7 +686,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
                             {emlParsed.attachments.map((a) => (
                               <div key={a.index} className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                 <div className="min-w-0">
-                                  <span className="text-sm text-gray-800 dark:text-gray-200 truncate block">{a.filename}</span>
+                                  <span className="text-sm text-gray-700 dark:text-gray-300 truncate block">{a.filename}</span>
                                   <span className="text-xs text-gray-400">{a.content_type} · {formatBytes(a.size)}</span>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
