@@ -8,11 +8,14 @@ export function useAttachments(noteId: number) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchAttachments = useCallback(async () => {
+  const fetchAttachments = useCallback(async (): Promise<Attachment[] | null> => {
     setLoading(true);
     try {
       const response = await api.get<Attachment[]>(`/api/notes/${noteId}/attachments`);
       setAttachments(response.data);
+      return response.data;
+    } catch {
+      return null;
     } finally {
       setLoading(false);
     }
@@ -71,6 +74,110 @@ export function useAttachments(noteId: number) {
     [noteId],
   );
 
+  const parseZip = useCallback(
+    async (
+      attachmentId: number,
+      password?: string,
+    ): Promise<{
+      entries: { name: string; size: number; compressed_size: number; is_dir: boolean; content_type: string }[];
+      encrypted: boolean;
+    }> => {
+      const params: Record<string, string> = {};
+      if (password) params.password = password;
+      const response = await api.get(`/api/notes/${noteId}/attachments/${attachmentId}/zip`, { params });
+      return response.data;
+    },
+    [noteId],
+  );
+
+  const previewZipEntry = useCallback(
+    async (attachmentId: number, entryPath: string, password?: string): Promise<string> => {
+      const params: Record<string, string> = { path: entryPath };
+      if (password) params.password = password;
+      const response = await api.get(
+        `/api/notes/${noteId}/attachments/${attachmentId}/zip/entry`,
+        { params, responseType: 'blob' },
+      );
+      return URL.createObjectURL(response.data as Blob);
+    },
+    [noteId],
+  );
+
+  const downloadZipEntry = useCallback(
+    async (attachmentId: number, entryPath: string, filename: string, password?: string): Promise<void> => {
+      const params: Record<string, string> = { path: entryPath };
+      if (password) params.password = password;
+      const response = await api.get(
+        `/api/notes/${noteId}/attachments/${attachmentId}/zip/entry`,
+        { params, responseType: 'blob' },
+      );
+      const url = URL.createObjectURL(response.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
+    [noteId],
+  );
+
+  const previewZipEmlPart = useCallback(
+    async (attachmentId: number, entryPath: string, partIndex: number, password?: string): Promise<string> => {
+      const params: Record<string, string> = { path: entryPath, part_index: String(partIndex) };
+      if (password) params.password = password;
+      const response = await api.get(
+        `/api/notes/${noteId}/attachments/${attachmentId}/zip/entry/eml/part`,
+        { params, responseType: 'blob' },
+      );
+      return URL.createObjectURL(response.data as Blob);
+    },
+    [noteId],
+  );
+
+  const downloadZipEmlPart = useCallback(
+    async (attachmentId: number, entryPath: string, partIndex: number, filename: string, password?: string): Promise<void> => {
+      const params: Record<string, string> = { path: entryPath, part_index: String(partIndex) };
+      if (password) params.password = password;
+      const response = await api.get(
+        `/api/notes/${noteId}/attachments/${attachmentId}/zip/entry/eml/part`,
+        { params, responseType: 'blob' },
+      );
+      const url = URL.createObjectURL(response.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
+    [noteId],
+  );
+
+  const parseZipEml = useCallback(
+    async (
+      attachmentId: number,
+      entryPath: string,
+      password?: string,
+    ): Promise<{
+      headers: Record<string, string>;
+      body_text: string | null;
+      body_html: string | null;
+      attachments: { index: number; filename: string; content_type: string; size: number }[];
+    }> => {
+      const params: Record<string, string> = { path: entryPath };
+      if (password) params.password = password;
+      const response = await api.get(
+        `/api/notes/${noteId}/attachments/${attachmentId}/zip/entry/eml`,
+        { params },
+      );
+      return response.data;
+    },
+    [noteId],
+  );
+
   const parseEml = useCallback(
     async (attachmentId: number): Promise<{
       headers: Record<string, string>;
@@ -122,6 +229,12 @@ export function useAttachments(noteId: number) {
     getStreamUrl,
     previewAttachment,
     updateAttachment,
+    parseZip,
+    previewZipEntry,
+    downloadZipEntry,
+    parseZipEml,
+    previewZipEmlPart,
+    downloadZipEmlPart,
     parseEml,
     previewEmlPart,
     downloadEmlPart,

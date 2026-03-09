@@ -12,9 +12,10 @@ interface Props {
   onDownload: (attachment: Attachment) => void;
   onDelete: (id: number) => void;
   onEdit: (attachment: Attachment) => void;
+  emlAttachmentsMap?: Record<number, number>;
 }
 
-export default function AttachmentList({ attachments, loading, onPreview, onDownload, onDelete, onEdit }: Props) {
+export default function AttachmentList({ attachments, loading, onPreview, onDownload, onDelete, onEdit, emlAttachmentsMap }: Props) {
   const t = useTranslations('attachments');
 
   if (loading) return <LoadingSpinner />;
@@ -33,6 +34,7 @@ export default function AttachmentList({ attachments, loading, onPreview, onDown
           onDownload={onDownload}
           onDelete={onDelete}
           onEdit={onEdit}
+          emlAttachmentCount={emlAttachmentsMap?.[att.id] ?? 0}
         />
       ))}
     </div>

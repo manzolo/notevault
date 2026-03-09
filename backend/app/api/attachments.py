@@ -1,5 +1,7 @@
 import email as email_lib
+import mimetypes
 import os
+import pyzipper
 from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Dict, List, Optional
@@ -296,6 +298,244 @@ async def stream_eml_part(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
 
     msg = _load_eml(full_path)
+    parts = _leaf_parts(msg)
+
+    if part_index < 0 or part_index >= len(parts):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Part not found")
+
+    part = parts[part_index]
+    raw = part.get_payload(decode=True) or b""
+    filename = part.get_filename() or f"part-{part_index}"
+    content_type = part.get_content_type() or "application/octet-stream"
+    encoded_name = quote(filename, safe="")
+
+    return StreamingResponse(
+        BytesIO(raw),
+        media_type=content_type,
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}"},
+    )
+
+
+def _zip_file_path(settings, user_id: int, note_id: int, stored_filename: str) -> str:
+    return os.path.join(settings.upload_dir, str(user_id), str(note_id), stored_filename)
+
+
+@router.get("/{note_id}/attachments/{attachment_id}/zip")
+async def list_zip_attachment(
+    note_id: int,
+    attachment_id: int,
+    password: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> JSONResponse:
+    await _get_owned_note(note_id, current_user, db)
+    attachment = await _get_attachment(attachment_id, note_id, db)
+
+    if attachment.mime_type != "application/zip":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a ZIP file")
+
+    full_path = _zip_file_path(settings, current_user.id, note_id, attachment.stored_filename)
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
+
+    try:
+        with pyzipper.AESZipFile(full_path, "r") as zf:
+            encrypted = any(info.flag_bits & 0x1 for info in zf.infolist())
+
+            if password is not None and encrypted:
+                pwd_bytes = password.encode()
+                for info in zf.infolist():
+                    if not info.is_dir():
+                        try:
+                            zf.read(info.filename, pwd=pwd_bytes)
+                        except (RuntimeError, pyzipper.BadZipFile):
+                            raise HTTPException(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                detail="Wrong password",
+                            )
+                        break
+
+            entries = []
+            for info in zf.infolist():
+                ct, _ = mimetypes.guess_type(info.filename)
+                entries.append({
+                    "name": info.filename,
+                    "size": info.file_size,
+                    "compressed_size": info.compress_size,
+                    "is_dir": info.is_dir(),
+                    "content_type": ct or "application/octet-stream",
+                })
+
+            return JSONResponse({"entries": entries, "encrypted": encrypted})
+    except pyzipper.BadZipFile:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or corrupted ZIP file"
+        )
+
+
+_ZIP_ENTRY_MAX_BYTES = 50 * 1024 * 1024  # 50 MB
+
+
+@router.get("/{note_id}/attachments/{attachment_id}/zip/entry")
+async def stream_zip_entry(
+    note_id: int,
+    attachment_id: int,
+    path: str,
+    password: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_owned_note(note_id, current_user, db)
+    attachment = await _get_attachment(attachment_id, note_id, db)
+
+    if attachment.mime_type != "application/zip":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a ZIP file")
+
+    full_path = _zip_file_path(settings, current_user.id, note_id, attachment.stored_filename)
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
+
+    try:
+        with pyzipper.AESZipFile(full_path, "r") as zf:
+            if path not in zf.namelist():
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+
+            info = zf.getinfo(path)
+            if info.is_dir():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot stream a directory"
+                )
+            if info.file_size > _ZIP_ENTRY_MAX_BYTES:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"Entry too large (max {_ZIP_ENTRY_MAX_BYTES // 1024 // 1024} MB)",
+                )
+
+            pwd_bytes = password.encode() if password else None
+            try:
+                data = zf.read(path, pwd=pwd_bytes)
+            except RuntimeError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Wrong password"
+                )
+
+            filename = os.path.basename(path) or path
+            ct, _ = mimetypes.guess_type(filename)
+            if not ct:
+                ct = "application/octet-stream"
+
+            encoded_name = quote(filename, safe="")
+            if ct in _INLINE_MIMES or ct.startswith("image/"):
+                disposition = f"inline; filename*=UTF-8''{encoded_name}"
+            else:
+                disposition = f"attachment; filename*=UTF-8''{encoded_name}"
+
+            return StreamingResponse(
+                BytesIO(data),
+                media_type=ct,
+                headers={"Content-Disposition": disposition},
+            )
+    except pyzipper.BadZipFile:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or corrupted ZIP file"
+        )
+
+
+@router.get("/{note_id}/attachments/{attachment_id}/zip/entry/eml")
+async def parse_zip_eml_entry(
+    note_id: int,
+    attachment_id: int,
+    path: str,
+    password: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> JSONResponse:
+    await _get_owned_note(note_id, current_user, db)
+    attachment = await _get_attachment(attachment_id, note_id, db)
+
+    if attachment.mime_type != "application/zip":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a ZIP file")
+
+    full_path = _zip_file_path(settings, current_user.id, note_id, attachment.stored_filename)
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
+
+    try:
+        with pyzipper.AESZipFile(full_path, "r") as zf:
+            if path not in zf.namelist():
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+            pwd_bytes = password.encode() if password else None
+            try:
+                data = zf.read(path, pwd=pwd_bytes)
+            except RuntimeError:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Wrong password")
+    except pyzipper.BadZipFile:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or corrupted ZIP file")
+
+    msg = email_lib.message_from_bytes(data)
+
+    headers: Dict[str, str] = {
+        k: str(msg.get(k, ""))
+        for k in ["From", "To", "Cc", "Bcc", "Date", "Subject", "Reply-To"]
+        if msg.get(k)
+    }
+
+    body_text: Optional[str] = None
+    body_html: Optional[str] = None
+    eml_attachments: List[Dict[str, Any]] = []
+
+    for idx, part in enumerate(_leaf_parts(msg)):
+        ct = part.get_content_type()
+        if _is_attachment_part(part):
+            raw = part.get_payload(decode=True) or b""
+            filename = part.get_filename() or f"part-{idx}"
+            eml_attachments.append({"index": idx, "filename": filename, "content_type": ct, "size": len(raw)})
+        elif ct == "text/plain" and body_text is None:
+            body_text = _decode_part(part)
+        elif ct == "text/html" and body_html is None:
+            body_html = _decode_part(part)
+
+    return JSONResponse({
+        "headers": headers,
+        "body_text": body_text,
+        "body_html": body_html,
+        "attachments": eml_attachments,
+    })
+
+
+@router.get("/{note_id}/attachments/{attachment_id}/zip/entry/eml/part")
+async def stream_zip_eml_part(
+    note_id: int,
+    attachment_id: int,
+    path: str,
+    part_index: int,
+    password: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_owned_note(note_id, current_user, db)
+    attachment = await _get_attachment(attachment_id, note_id, db)
+
+    if attachment.mime_type != "application/zip":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a ZIP file")
+
+    full_path = _zip_file_path(settings, current_user.id, note_id, attachment.stored_filename)
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
+
+    try:
+        with pyzipper.AESZipFile(full_path, "r") as zf:
+            if path not in zf.namelist():
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+            pwd_bytes = password.encode() if password else None
+            try:
+                data = zf.read(path, pwd=pwd_bytes)
+            except RuntimeError:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Wrong password")
+    except pyzipper.BadZipFile:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or corrupted ZIP file")
+
+    msg = email_lib.message_from_bytes(data)
     parts = _leaf_parts(msg)
 
     if part_index < 0 or part_index >= len(parts):

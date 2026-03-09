@@ -16,6 +16,7 @@ pypdf==4.2.0
 aiofiles==23.2.1
 filetype==1.2.0
 pyotp==2.9.0
+pyzipper==0.3.6
 pytest==7.4.4
 pytest-asyncio==0.23.3
 httpx==0.26.0

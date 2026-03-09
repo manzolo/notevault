@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Attachment } from '@/lib/types';
 import Button from '@/components/common/Button';
-import { ArrowDownTrayIcon, EyeIcon, PencilIcon, TrashIcon } from '@/components/common/Icons';
+import { ArrowDownTrayIcon, EyeIcon, PaperclipIcon, PencilIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 import { formatDate } from '@/lib/utils';
@@ -14,9 +14,10 @@ interface Props {
   onDownload: (attachment: Attachment) => void;
   onDelete: (id: number) => void;
   onEdit: (attachment: Attachment) => void;
+  emlAttachmentCount?: number;
 }
 
-const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'message/rfc822']);
+const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'message/rfc822', 'application/zip']);
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -92,7 +93,7 @@ function FileIcon({ mime }: { mime: string }) {
   );
 }
 
-export default function AttachmentItem({ attachment, onPreview, onDownload, onDelete, onEdit }: Props) {
+export default function AttachmentItem({ attachment, onPreview, onDownload, onDelete, onEdit, emlAttachmentCount = 0 }: Props) {
   const t = useTranslations('attachments');
   const tCommon = useTranslations('common');
   const { confirm, dialog } = useConfirm();
@@ -113,7 +114,14 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
         <FileIcon mime={attachment.mime_type} />
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{attachment.filename}</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate flex items-center gap-1">
+            {attachment.filename}
+            {emlAttachmentCount > 0 && (
+              <span className="text-gray-400 dark:text-gray-500 shrink-0" title={t('emlHasAttachments')}>
+                <PaperclipIcon />
+              </span>
+            )}
+          </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">{formatBytes(attachment.size_bytes)}</p>
           {attachment.description && (
             <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{attachment.description}</p>
@@ -128,7 +136,7 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
           </div>
         </div>
 
-        <div className="flex gap-1.5 shrink-0">
+        <div className="flex gap-1.5 shrink-0 items-center">
           {canPreview && (
             <Button size="sm" variant="secondary" onClick={() => onPreview(attachment)}>
               <EyeIcon />

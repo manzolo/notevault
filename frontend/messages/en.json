@@ -131,7 +131,13 @@
     "emlNoBody": "(empty body)",
     "emlAttachments": "Attachments in this email",
     "edit": "Edit",
-    "editAttachment": "Edit Attachment"
+    "editAttachment": "Edit Attachment",
+    "zipEncrypted": "This archive is password-protected",
+    "zipPasswordPlaceholder": "Enter ZIP password...",
+    "zipUnlock": "Unlock",
+    "zipPasswordWrong": "Incorrect password, try again",
+    "zipEmpty": "Empty archive",
+    "emlHasAttachments": "This email has embedded attachments"
   },
   "bookmarks": {
     "bookmarks": "Bookmarks",

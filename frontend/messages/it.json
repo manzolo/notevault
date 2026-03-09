@@ -131,7 +131,13 @@
     "emlNoBody": "(corpo vuoto)",
     "emlAttachments": "Allegati nell'email",
     "edit": "Modifica",
-    "editAttachment": "Modifica Allegato"
+    "editAttachment": "Modifica Allegato",
+    "zipEncrypted": "Questo archivio è protetto da password",
+    "zipPasswordPlaceholder": "Inserisci la password ZIP...",
+    "zipUnlock": "Sblocca",
+    "zipPasswordWrong": "Password errata, riprova",
+    "zipEmpty": "Archivio vuoto",
+    "emlHasAttachments": "Questa email contiene allegati"
   },
   "bookmarks": {
     "bookmarks": "Segnalibri",
