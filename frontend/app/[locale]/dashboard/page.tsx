@@ -7,9 +7,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotes } from '@/hooks/useNotes';
 import { useTags } from '@/hooks/useTags';
+import { useCategories } from '@/hooks/useCategories';
 import NoteList from '@/components/notes/NoteList';
 import SearchBar from '@/components/search/SearchBar';
 import TagFilter from '@/components/search/TagFilter';
+import FolderSelector from '@/components/folders/FolderSelector';
 import Pagination from '@/components/common/Pagination';
 import Button from '@/components/common/Button';
 import { PlusIcon } from '@/components/common/Icons';
@@ -21,16 +23,19 @@ export default function DashboardPage() {
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { notes, total, loading, fetchNotes, deleteNote } = useNotes();
+  const { notes, total, loading, fetchNotes, deleteNote, updateNote } = useNotes();
   const { tags, fetchTags } = useTags();
+  const { categories, fetchCategories, createCategory, updateCategory, deleteCategory } = useCategories();
   const [page, setPage] = useState(1);
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
   const [attachPreview, setAttachPreview] = useState<{ url: string; filename: string; mime_type: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const PER_PAGE = 20;
   const pages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -44,6 +49,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user) {
       fetchTags();
+      fetchCategories();
     }
   }, [user]);
 
@@ -51,12 +57,17 @@ export default function DashboardPage() {
     if (user) {
       const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
       const before = dateTo ? `${dateTo}T23:59:59` : undefined;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before).then(() => {});
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId).then(() => {});
     }
-  }, [user, page, selectedTagId, dateFrom, dateTo]);
+  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId]);
 
   const handleTagSelect = (tagId: number | null) => {
     setSelectedTagId(tagId);
+    setPage(1);
+  };
+
+  const handleCategorySelect = (categoryId: number | null) => {
+    setSelectedCategoryId(categoryId);
     setPage(1);
   };
 
@@ -87,7 +98,7 @@ export default function DashboardPage() {
 
   const handleDelete = async (id: number) => {
     await deleteNote(id);
-    fetchNotes(page, PER_PAGE, selectedTagId);
+    fetchNotes(page, PER_PAGE, selectedTagId, undefined, undefined, selectedCategoryId);
   };
 
   const handlePreviewAttachment = async (noteId: number, att: MatchingAttachment) => {
@@ -152,6 +163,22 @@ export default function DashboardPage() {
 
       {!searchResults && (
         <div className="mb-4 flex flex-col gap-2">
+          <FolderSelector
+            categories={categories}
+            selectedCategoryId={selectedCategoryId}
+            onSelect={handleCategorySelect}
+            onCreateCategory={createCategory}
+            onUpdateCategory={updateCategory}
+            onDeleteCategory={deleteCategory}
+            onRefresh={fetchCategories}
+            isDragging={isDragging}
+            onDropNote={async (noteId, categoryId) => {
+              await updateNote(noteId, { category_id: categoryId });
+              const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
+              const before = dateTo ? `${dateTo}T23:59:59` : undefined;
+              fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId);
+            }}
+          />
           {tags.length > 0 && (
             <TagFilter tags={tags} selectedTagId={selectedTagId} onSelect={handleTagSelect} />
           )}
@@ -191,14 +218,20 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <NoteList
-        notes={displayNotes}
-        loading={displayLoading}
-        onDelete={handleDelete}
-        matchMap={matchMap}
-        matchingAttachmentsMap={matchingAttachmentsMap}
-        onPreviewAttachment={handlePreviewAttachment}
-      />
+      <div
+        onDragStart={() => setIsDragging(true)}
+        onDragEnd={() => setIsDragging(false)}
+      >
+        <NoteList
+          notes={displayNotes}
+          loading={displayLoading}
+          onDelete={handleDelete}
+          categories={categories}
+          matchMap={matchMap}
+          matchingAttachmentsMap={matchingAttachmentsMap}
+          onPreviewAttachment={handlePreviewAttachment}
+        />
+      </div>
 
       {searchResults ? (
         <Pagination page={searchPage} pages={searchResults.pages} onPageChange={handleSearchPageChange} />

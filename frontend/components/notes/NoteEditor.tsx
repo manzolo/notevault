@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { NoteCreate, NoteUpdate, Tag } from '@/lib/types';
+import { Category, NoteCreate, NoteUpdate, Tag } from '@/lib/types';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 
@@ -12,7 +12,9 @@ interface NoteEditorProps {
   initialTitle?: string;
   initialContent?: string;
   initialTagIds?: number[];
+  initialCategoryId?: number | null;
   availableTags?: Tag[];
+  availableCategories?: Array<Category & { depth: number }>;
   onSave: (data: NoteCreate | NoteUpdate) => Promise<void>;
   onCreateTag?: (name: string) => Promise<Tag>;
   loading?: boolean;
@@ -22,7 +24,9 @@ export default function NoteEditor({
   initialTitle = '',
   initialContent = '',
   initialTagIds,
+  initialCategoryId = null,
   availableTags,
+  availableCategories,
   onSave,
   onCreateTag,
   loading,
@@ -31,6 +35,7 @@ export default function NoteEditor({
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(initialTagIds ?? []);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(initialCategoryId ?? null);
   const [newTagName, setNewTagName] = useState('');
   const [creatingTag, setCreatingTag] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
@@ -56,7 +61,7 @@ export default function NoteEditor({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSave({ title, content, tag_ids: selectedTagIds });
+    await onSave({ title, content, tag_ids: selectedTagIds, category_id: selectedCategoryId });
   };
 
   return (
@@ -68,6 +73,27 @@ export default function NoteEditor({
         required
         placeholder="Note title..."
       />
+
+      {availableCategories && availableCategories.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('category')}
+          </label>
+          <select
+            value={selectedCategoryId ?? ''}
+            onChange={(e) => setSelectedCategoryId(e.target.value ? Number(e.target.value) : null)}
+            className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">— {t('noFolder')} —</option>
+            {availableCategories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {'  '.repeat(cat.depth)}{cat.depth > 0 ? '↳ ' : ''}{cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('content')}</label>

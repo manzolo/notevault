@@ -33,12 +33,20 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    parent_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    __table_args__ = (UniqueConstraint("name", "user_id", name="uq_category_name_user"),)
+    __table_args__ = (UniqueConstraint("name", "user_id", "parent_id", name="uq_category_name_user_parent"),)
 
     owner = relationship("User", back_populates="categories")
     notes = relationship("Note", back_populates="category")
+    children = relationship(
+        "Category",
+        primaryjoin="Category.parent_id == Category.id",
+        foreign_keys="[Category.parent_id]",
+        lazy="noload",
+    )
 
 
 class Note(Base):

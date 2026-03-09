@@ -16,6 +16,7 @@ export function useNotes() {
     tagId?: number | null,
     createdAfter?: string | null,
     createdBefore?: string | null,
+    categoryId?: number | null,
   ) => {
     setLoading(true);
     setError(null);
@@ -24,6 +25,11 @@ export function useNotes() {
       if (tagId != null) params.tag_id = tagId;
       if (createdAfter) params.created_after = createdAfter;
       if (createdBefore) params.created_before = createdBefore;
+      if (categoryId != null) {
+        params.category_id = categoryId;
+      } else if (categoryId === null) {
+        params.unfiled = true;
+      }
       const response = await api.get<NoteListResponse>('/api/notes', { params });
       setNotes(response.data.items);
       setTotal(response.data.total);

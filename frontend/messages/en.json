@@ -72,7 +72,8 @@
     "filterByDate": "Filter by date",
     "dateFrom": "From",
     "dateTo": "To",
-    "clearDate": "Clear"
+    "clearDate": "Clear",
+    "noFolder": "No folder"
   },
   "secrets": {
     "secrets": "Secrets",
@@ -163,6 +164,16 @@
     "noResults": "No notes found for your search.",
     "foundInAttachment": "Found in attachment",
     "foundInBookmark": "Found in bookmark"
+  },
+  "folders": {
+    "allNotes": "All Notes",
+    "newFolder": "New folder",
+    "newSubfolder": "New subfolder",
+    "rename": "Rename",
+    "deleteFolder": "Delete folder",
+    "deleteConfirm": "Delete this folder? Notes will become unfiled and subfolders will be moved up.",
+    "noFolder": "No folder",
+    "folders": "Folders"
   },
   "common": {
     "loading": "Loading...",

@@ -72,7 +72,8 @@
     "filterByDate": "Filtra per data",
     "dateFrom": "Da",
     "dateTo": "A",
-    "clearDate": "Cancella"
+    "clearDate": "Cancella",
+    "noFolder": "Nessuna cartella"
   },
   "secrets": {
     "secrets": "Segreti",
@@ -163,6 +164,16 @@
     "noResults": "Nessuna nota trovata per la tua ricerca.",
     "foundInAttachment": "Trovato nell'allegato",
     "foundInBookmark": "Trovato nel segnalibro"
+  },
+  "folders": {
+    "allNotes": "Tutte le note",
+    "newFolder": "Nuova cartella",
+    "newSubfolder": "Nuova sottocartella",
+    "rename": "Rinomina",
+    "deleteFolder": "Elimina cartella",
+    "deleteConfirm": "Eliminare questa cartella? Le note diventeranno non archiviate e le sottocartelle verranno spostate in su.",
+    "noFolder": "Nessuna cartella",
+    "folders": "Cartelle"
   },
   "common": {
     "loading": "Caricamento...",
