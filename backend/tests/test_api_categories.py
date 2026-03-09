@@ -159,8 +159,8 @@ async def test_delete_category_children_reparented(client, auth_headers):
     assert child_id in child_ids
 
 
-async def test_notes_filter_includes_subcategories(client, auth_headers):
-    """Filtering by category_id should include notes in descendant folders."""
+async def test_notes_filter_exact_category(client, auth_headers):
+    """Filtering by category_id returns only notes directly in that folder (not descendants)."""
     parent_resp = await client.post("/api/categories", json={"name": "FilterParent"}, headers=auth_headers)
     parent_id = parent_resp.json()["id"]
     child_resp = await client.post(
@@ -170,24 +170,53 @@ async def test_notes_filter_includes_subcategories(client, auth_headers):
     )
     child_id = child_resp.json()["id"]
 
-    # Note in parent
     n1 = await client.post(
         "/api/notes",
         json={"title": "Parent Note", "content": "test", "category_id": parent_id},
         headers=auth_headers,
     )
-    # Note in child
     n2 = await client.post(
         "/api/notes",
         json={"title": "Child Note", "content": "test", "category_id": child_id},
         headers=auth_headers,
     )
 
-    response = await client.get(f"/api/notes?category_id={parent_id}", headers=auth_headers)
+    # Filter by parent: only n1
+    resp_parent = await client.get(f"/api/notes?category_id={parent_id}", headers=auth_headers)
+    assert resp_parent.status_code == 200
+    ids_parent = [item["id"] for item in resp_parent.json()["items"]]
+    assert n1.json()["id"] in ids_parent
+    assert n2.json()["id"] not in ids_parent
+
+    # Filter by child: only n2
+    resp_child = await client.get(f"/api/notes?category_id={child_id}", headers=auth_headers)
+    assert resp_child.status_code == 200
+    ids_child = [item["id"] for item in resp_child.json()["items"]]
+    assert n2.json()["id"] in ids_child
+    assert n1.json()["id"] not in ids_child
+
+
+async def test_notes_filter_unfiled(client, auth_headers):
+    """unfiled=true returns only notes with no folder assigned."""
+    cat_resp = await client.post("/api/categories", json={"name": "SomeFolder"}, headers=auth_headers)
+    cat_id = cat_resp.json()["id"]
+
+    n_filed = await client.post(
+        "/api/notes",
+        json={"title": "Filed Note", "content": "test", "category_id": cat_id},
+        headers=auth_headers,
+    )
+    n_unfiled = await client.post(
+        "/api/notes",
+        json={"title": "Unfiled Note", "content": "test"},
+        headers=auth_headers,
+    )
+
+    response = await client.get("/api/notes?unfiled=true", headers=auth_headers)
     assert response.status_code == 200
     ids = [item["id"] for item in response.json()["items"]]
-    assert n1.json()["id"] in ids
-    assert n2.json()["id"] in ids
+    assert n_unfiled.json()["id"] in ids
+    assert n_filed.json()["id"] not in ids
 
 
 async def test_create_category(client, auth_headers):
