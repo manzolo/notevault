@@ -3,15 +3,17 @@
 import { useTranslations } from 'next-intl';
 import { Attachment } from '@/lib/types';
 import Button from '@/components/common/Button';
-import { ArrowDownTrayIcon, EyeIcon, TrashIcon } from '@/components/common/Icons';
+import { ArrowDownTrayIcon, EyeIcon, PencilIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
+import { formatDate } from '@/lib/utils';
 
 interface Props {
   attachment: Attachment;
   onPreview: (attachment: Attachment) => void;
   onDownload: (attachment: Attachment) => void;
   onDelete: (id: number) => void;
+  onEdit: (attachment: Attachment) => void;
 }
 
 const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'message/rfc822']);
@@ -90,10 +92,15 @@ function FileIcon({ mime }: { mime: string }) {
   );
 }
 
-export default function AttachmentItem({ attachment, onPreview, onDownload, onDelete }: Props) {
+export default function AttachmentItem({ attachment, onPreview, onDownload, onDelete, onEdit }: Props) {
   const t = useTranslations('attachments');
+  const tCommon = useTranslations('common');
   const { confirm, dialog } = useConfirm();
   const canPreview = INLINE_MIMES.has(attachment.mime_type);
+
+  const tooltipExtras = attachment.file_modified_at
+    ? [{ label: tCommon('fileModifiedAt'), value: formatDate(attachment.file_modified_at) }]
+    : undefined;
 
   const handleDelete = async () => {
     if (await confirm(t('deleteConfirm'))) onDelete(attachment.id);
@@ -117,7 +124,7 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
                 {tag.name}
               </span>
             ))}
-            <DateInfoTooltip createdAt={attachment.created_at} updatedAt={attachment.updated_at} />
+            <DateInfoTooltip createdAt={attachment.created_at} updatedAt={attachment.updated_at} extras={tooltipExtras} />
           </div>
         </div>
 
@@ -131,6 +138,9 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
           <Button size="sm" variant="secondary" onClick={() => onDownload(attachment)}>
             <ArrowDownTrayIcon />
             {t('download')}
+          </Button>
+          <Button size="sm" variant="secondary" title={t('edit')} onClick={() => onEdit(attachment)}>
+            <PencilIcon />
           </Button>
           <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
             <TrashIcon />

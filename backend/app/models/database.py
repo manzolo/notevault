@@ -135,6 +135,7 @@ class Attachment(Base):
     size_bytes = Column(Integer, nullable=False)
     extracted_text = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
+    file_modified_at = Column(DateTime(timezone=True), nullable=True)
     fts_vector = Column(TSVECTOR)  # populated by DB trigger only
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

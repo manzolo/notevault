@@ -17,6 +17,7 @@ import SecretList from '@/components/secrets/SecretList';
 import SecretForm from '@/components/secrets/SecretForm';
 import AttachmentList from '@/components/attachments/AttachmentList';
 import AttachmentUploadForm from '@/components/attachments/AttachmentUploadForm';
+import AttachmentEditForm from '@/components/attachments/AttachmentEditForm';
 import BookmarkList from '@/components/bookmarks/BookmarkList';
 import BookmarkForm from '@/components/bookmarks/BookmarkForm';
 import Modal from '@/components/common/Modal';
@@ -47,7 +48,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const { tags: availableTagsFromHook, fetchTags, createTag } = useTags();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret } = useSecrets(noteId);
-  const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, deleteAttachment, previewAttachment, parseEml, previewEmlPart, downloadEmlPart } = useAttachments(noteId);
+  const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, deleteAttachment, previewAttachment, parseEml, previewEmlPart, downloadEmlPart } = useAttachments(noteId);
   const { bookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark } = useBookmarks(noteId);
 
   const [note, setNote] = useState<Note | null>(null);
@@ -59,6 +60,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [previewState, setPreviewState] = useState<{ attachment: Attachment; url: string } | null>(null);
+  const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
 
   // Email preview state
   const [emailContent, setEmailContent] = useState<{ headers: Record<string, string>; body: string } | null>(null);
@@ -266,6 +268,13 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     setShowUploadModal(false);
     setPasteUploadFile(null);
     toast.success('File uploaded!');
+  };
+
+  const handleEditAttachment = async (data: { description?: string; tag_ids: number[] }) => {
+    if (!editingAttachment) return;
+    await updateAttachment(editingAttachment.id, data);
+    setEditingAttachment(null);
+    toast.success('Attachment updated!');
   };
 
   const handleClosePreview = () => {
@@ -536,6 +545,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           onPreview={handlePreview}
           onDownload={handleDownload}
           onDelete={deleteAttachment}
+          onEdit={(att) => setEditingAttachment(att)}
         />
       </div>
 
@@ -562,6 +572,17 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
       <Modal isOpen={showUploadModal} onClose={() => { setShowUploadModal(false); setPasteUploadFile(null); }} title={tAttachments('upload')}>
         <AttachmentUploadForm onUpload={handleUpload} availableTags={availableTagsFromHook} initialFile={pasteUploadFile ?? undefined} />
+      </Modal>
+
+      <Modal isOpen={!!editingAttachment} onClose={() => setEditingAttachment(null)} title={tAttachments('editAttachment')}>
+        {editingAttachment && (
+          <AttachmentEditForm
+            attachment={editingAttachment}
+            availableTags={availableTagsFromHook}
+            onSave={handleEditAttachment}
+            onCancel={() => setEditingAttachment(null)}
+          />
+        )}
       </Modal>
 
       <Modal isOpen={showBookmarkModal} onClose={() => setShowBookmarkModal(false)} title={tBookmarks('add')}>

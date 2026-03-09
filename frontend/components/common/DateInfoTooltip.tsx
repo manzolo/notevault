@@ -7,9 +7,10 @@ import { formatDate } from '@/lib/utils';
 interface Props {
   createdAt: string;
   updatedAt?: string;
+  extras?: { label: string; value: string }[];
 }
 
-export default function DateInfoTooltip({ createdAt, updatedAt }: Props) {
+export default function DateInfoTooltip({ createdAt, updatedAt, extras }: Props) {
   const t = useTranslations('common');
   const showUpdated = updatedAt && updatedAt !== createdAt;
 
@@ -29,6 +30,12 @@ export default function DateInfoTooltip({ createdAt, updatedAt }: Props) {
             <span>{formatDate(updatedAt)}</span>
           </div>
         )}
+        {extras?.map((row) => (
+          <div key={row.label} className="flex gap-1.5 mt-0.5">
+            <span className="text-gray-400">{row.label}:</span>
+            <span>{row.value}</span>
+          </div>
+        ))}
         {/* Arrow */}
         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-900" />
       </div>

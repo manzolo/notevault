@@ -91,6 +91,7 @@ export interface Attachment {
   mime_type: string;
   size_bytes: number;
   description?: string;
+  file_modified_at?: string;
   tags: Tag[];
   created_at: string;
   updated_at: string;

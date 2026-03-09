@@ -129,7 +129,9 @@
     "emlRaw": "Raw",
     "emlRendered": "Rendered",
     "emlNoBody": "(empty body)",
-    "emlAttachments": "Attachments in this email"
+    "emlAttachments": "Attachments in this email",
+    "edit": "Edit",
+    "editAttachment": "Edit Attachment"
   },
   "bookmarks": {
     "bookmarks": "Bookmarks",
@@ -164,7 +166,9 @@
     "confirm": "Confirm",
     "back": "Back",
     "actions": "Actions",
+    "save": "Save",
     "createdAt": "Created",
-    "updatedAt": "Modified"
+    "updatedAt": "Modified",
+    "fileModifiedAt": "File modified"
   }
 }

@@ -24,6 +24,7 @@ export function useAttachments(noteId: number) {
       formData.append('file', file);
       tagIds.forEach((id) => formData.append('tag_ids', String(id)));
       if (description) formData.append('description', description);
+      if (file.lastModified) formData.append('file_modified_at', String(file.lastModified));
 
       const response = await api.post<Attachment>(
         `/api/notes/${noteId}/attachments`,
@@ -57,6 +58,15 @@ export function useAttachments(noteId: number) {
         { responseType: 'blob' },
       );
       return URL.createObjectURL(response.data as Blob);
+    },
+    [noteId],
+  );
+
+  const updateAttachment = useCallback(
+    async (attachmentId: number, data: { description?: string; tag_ids?: number[] }): Promise<Attachment> => {
+      const response = await api.patch<Attachment>(`/api/notes/${noteId}/attachments/${attachmentId}`, data);
+      setAttachments((prev) => prev.map((a) => (a.id === attachmentId ? response.data : a)));
+      return response.data;
     },
     [noteId],
   );
@@ -111,6 +121,7 @@ export function useAttachments(noteId: number) {
     deleteAttachment,
     getStreamUrl,
     previewAttachment,
+    updateAttachment,
     parseEml,
     previewEmlPart,
     downloadEmlPart,

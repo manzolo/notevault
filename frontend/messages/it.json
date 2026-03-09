@@ -129,7 +129,9 @@
     "emlRaw": "Grezzo",
     "emlRendered": "Formattato",
     "emlNoBody": "(corpo vuoto)",
-    "emlAttachments": "Allegati nell'email"
+    "emlAttachments": "Allegati nell'email",
+    "edit": "Modifica",
+    "editAttachment": "Modifica Allegato"
   },
   "bookmarks": {
     "bookmarks": "Segnalibri",
@@ -164,7 +166,9 @@
     "confirm": "Conferma",
     "back": "Indietro",
     "actions": "Azioni",
+    "save": "Salva",
     "createdAt": "Creato",
-    "updatedAt": "Modificato"
+    "updatedAt": "Modificato",
+    "fileModifiedAt": "File modificato"
   }
 }

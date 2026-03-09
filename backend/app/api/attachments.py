@@ -1,5 +1,6 @@
 import email as email_lib
 import os
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
@@ -61,6 +62,7 @@ async def upload_attachment(
     file: UploadFile,
     tag_ids: List[int] = Form(default=[]),
     description: Optional[str] = Form(default=None),
+    file_modified_at: Optional[int] = Form(default=None),  # ms timestamp from JS file.lastModified
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -98,6 +100,7 @@ async def upload_attachment(
 
     extracted = await extract_text(full_path, mime_type)
 
+    fmod = datetime.fromtimestamp(file_modified_at / 1000, tz=timezone.utc) if file_modified_at else None
     attachment = Attachment(
         note_id=note_id,
         filename=original_name,
@@ -106,6 +109,7 @@ async def upload_attachment(
         size_bytes=total,
         extracted_text=extracted,
         description=description,
+        file_modified_at=fmod,
     )
     db.add(attachment)
     await db.flush()
