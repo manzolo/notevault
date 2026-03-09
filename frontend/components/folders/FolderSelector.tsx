@@ -248,7 +248,13 @@ export default function FolderSelector({
                       onClick={() => { onSelect(category.id); setOpen(false); }}
                     >
                       <FolderIcon className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-                      <span className="truncate">{pathLabel}</span>
+                      <span className="truncate flex-1">{pathLabel}</span>
+                      {category.note_count > 0 && (
+                        <span className="shrink-0 text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-1 rounded">{category.note_count}📄</span>
+                      )}
+                      {(category.children?.length ?? 0) > 0 && (
+                        <span className="shrink-0 text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-1 rounded">{category.children.length}📁</span>
+                      )}
                     </button>
                   ))
               )}
@@ -333,12 +339,19 @@ export default function FolderSelector({
                     <>
                       <FolderIcon className="w-4 h-4 text-yellow-500 mr-2 flex-shrink-0" />
                       <button
-                        className="flex-1 text-left text-sm text-gray-700 dark:text-gray-200 truncate"
+                        className="flex-1 text-left text-sm text-gray-700 dark:text-gray-200 truncate flex items-center gap-1.5 min-w-0"
                         onClick={() => { onSelect(folder.id); setOpen(false); }}
                       >
-                        {folder.name}
+                        <span className="truncate">{folder.name}</span>
+                        {folder.note_count > 0 && (
+                          <span className="shrink-0 text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-1 rounded" title={`${folder.note_count} note`}>
+                            {folder.note_count}📄
+                          </span>
+                        )}
                         {(folder.children?.length ?? 0) > 0 && (
-                          <span className="ml-1 text-xs text-gray-400">({folder.children.length})</span>
+                          <span className="shrink-0 text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-1 rounded" title={`${folder.children.length} sottocartelle`}>
+                            {folder.children.length}📁
+                          </span>
                         )}
                       </button>
                       <div className="hidden group-hover:flex items-center gap-0.5 ml-1">

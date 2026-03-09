@@ -227,6 +227,7 @@ export default function DashboardPage() {
           loading={displayLoading}
           onDelete={handleDelete}
           categories={categories}
+          filterActive={!searchResults}
           matchMap={matchMap}
           matchingAttachmentsMap={matchingAttachmentsMap}
           onPreviewAttachment={handlePreviewAttachment}

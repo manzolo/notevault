@@ -19,6 +19,7 @@ export interface Category {
   name: string;
   user_id: number;
   parent_id: number | null;
+  note_count: number;
   children: Category[];
   created_at: string;
   updated_at: string;

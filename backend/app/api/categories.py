@@ -1,8 +1,9 @@
+import asyncio
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from pydantic import BaseModel, ConfigDict
 from app.database.connection import get_db
 from app.models.database import Category, Note, User
@@ -28,6 +29,7 @@ class CategoryResponse(BaseModel):
     parent_id: Optional[int] = None
     updated_at: Optional[datetime] = None
     created_at: datetime
+    note_count: int = 0
     children: List["CategoryResponse"] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -36,9 +38,9 @@ class CategoryResponse(BaseModel):
 CategoryResponse.model_rebuild()
 
 
-def _build_tree(all_cats: list[Category]) -> list[CategoryResponse]:
+def _build_tree(all_cats: list[Category], note_counts: dict[int, int] | None = None) -> list[CategoryResponse]:
     """Build a nested CategoryResponse tree from a flat list of ORM objects."""
-    # Map id → CategoryResponse (children still empty)
+    nc = note_counts or {}
     nodes: dict[int, CategoryResponse] = {}
     for cat in all_cats:
         nodes[cat.id] = CategoryResponse(
@@ -48,6 +50,7 @@ def _build_tree(all_cats: list[Category]) -> list[CategoryResponse]:
             parent_id=cat.parent_id,
             updated_at=cat.updated_at,
             created_at=cat.created_at,
+            note_count=nc.get(cat.id, 0),
             children=[],
         )
 
@@ -76,6 +79,16 @@ async def _load_all_categories(db: AsyncSession, user_id: int) -> list[Category]
     return list(result.scalars().all())
 
 
+async def _load_note_counts(db: AsyncSession, user_id: int) -> dict[int, int]:
+    """Return {category_id: note_count} for all categories of user (direct notes only)."""
+    result = await db.execute(
+        select(Note.category_id, func.count(Note.id))
+        .where(Note.user_id == user_id, Note.category_id.isnot(None))
+        .group_by(Note.category_id)
+    )
+    return {cat_id: cnt for cat_id, cnt in result.all()}
+
+
 async def _get_descendant_ids(all_cats: list[Category], category_id: int) -> list[int]:
     """Return category_id plus all descendant IDs via BFS (uses pre-loaded list)."""
     children_map: dict[int, list[int]] = {}
@@ -100,9 +113,12 @@ async def list_categories(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Return full category tree (root nodes with nested children)."""
-    all_cats = await _load_all_categories(db, current_user.id)
-    return _build_tree(all_cats)
+    """Return full category tree (root nodes with nested children) with note counts."""
+    all_cats, note_counts = await asyncio.gather(
+        _load_all_categories(db, current_user.id),
+        _load_note_counts(db, current_user.id),
+    )
+    return _build_tree(all_cats, note_counts)
 
 
 @router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
