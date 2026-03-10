@@ -126,7 +126,7 @@ export default function Navbar() {
 
       {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="md:hidden absolute top-14 left-0 right-0 bg-white/95 dark:bg-gray-800/95 border-b border-gray-200 dark:border-gray-700 shadow-md px-4 py-3 flex flex-col gap-3 z-[60]">
+        <div className="md:hidden fixed top-14 left-0 right-0 bg-white/95 dark:bg-gray-800/95 border-b border-gray-200 dark:border-gray-700 shadow-md px-4 py-3 flex flex-col gap-3 z-[60]">
           <div className="flex items-center gap-3">
             <button
               onClick={toggleTheme}
