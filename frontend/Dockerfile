@@ -10,7 +10,7 @@ COPY . .
 
 # Build-time args so next.config.js rewrites and NEXT_PUBLIC_* vars are baked correctly
 ARG BACKEND_INTERNAL_URL=http://notevault-backend:8000
-ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ARG NEXT_PUBLIC_API_URL=
 ENV BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 

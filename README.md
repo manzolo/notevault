@@ -108,7 +108,7 @@ All day-to-day operations are available as Make targets. Run `make help` to see 
 
 | Target | Description |
 |---|---|
-| `build` | (Re)build images for **development** (`NEXT_PUBLIC_API_URL=http://localhost:8000`) |
+| `build` | (Re)build images for **development** (`NEXT_PUBLIC_API_URL` defaults to `/api`) |
 | `up` | Start all services in detached mode |
 | `down` | Stop and remove containers |
 | `restart` | Restart all services |
@@ -129,13 +129,13 @@ All day-to-day operations are available as Make targets. Run `make help` to see 
 
 | Target | Description |
 |---|---|
-| `build-prod` | Build images for **production** (reads `NEXT_PUBLIC_API_URL` from `.env.deploy`) |
+| `build-prod` | Build images for **production** (`NEXT_PUBLIC_API_URL` optional, defaults to `/api`) |
 | `tag` | Git-tag the commit as `vX.Y.Z` and tag Docker images — `make tag APP_VERSION=1.2.3` |
 | `publish` | Push tagged images to Docker Hub and push the git tag — `make publish APP_VERSION=1.2.3` |
 | `deploy` | **First-time deploy**: copy compose file + `.env` to server, pull images, start, migrate |
 | `deploy-update` | **Rolling update**: pull new image version and restart — `make deploy-update APP_VERSION=1.2.3` |
 
-> Deploy variables (`DEPLOY_HOST`, `DEPLOY_PATH`, `NEXT_PUBLIC_API_URL`) are loaded from `.env.deploy` (gitignored). See [Production Deploy](#production-deploy).
+> Deploy variables (`DEPLOY_HOST`, `DEPLOY_PATH`) are loaded from `.env.deploy` (gitignored). See [Production Deploy](#production-deploy).
 
 ---
 
@@ -177,7 +177,7 @@ In production, a reverse proxy (e.g. Nginx Proxy Manager) sits in front of the f
 - **Auto-hide after 30 seconds** — once a secret is revealed in the UI, a client-side timer hides the plaintext automatically.
 - **bcrypt 12 rounds** — user passwords are hashed with bcrypt at a cost factor of 12.
 - **CORS** — the backend accepts requests only from origins listed in `CORS_ORIGINS`.
-- **Deploy secrets stay local** — server-specific configuration (`DEPLOY_HOST`, `DEPLOY_PATH`, `NEXT_PUBLIC_API_URL`) lives in `.env.deploy` which is gitignored and never committed.
+- **Deploy secrets stay local** — server-specific configuration (`DEPLOY_HOST`, `DEPLOY_PATH`) lives in `.env.deploy` which is gitignored and never committed.
 
 > **Key rotation:** To rotate `MASTER_KEY`, decrypt all secrets with the old key, re-encrypt with the new key, and update `.env` before restarting. There is no automated rotation tool in the current release.
 
@@ -229,7 +229,7 @@ Copy `.env.example` to `.env` and populate before starting the stack.
 | `DATABASE_URL` | no | set by compose | Full async SQLAlchemy connection string. Set automatically by Docker Compose. |
 | `REDIS_URL` | no | `redis://redis:6379/0` | Redis connection URL. |
 | `CORS_ORIGINS` | no | `http://localhost:3000` | Comma-separated allowed CORS origins. In production set to your public domain. |
-| `NEXT_PUBLIC_API_URL` | no | `http://localhost:8000` | **Baked into the frontend bundle at build time.** In production, set to your public domain (e.g. `http://notevault.lan`) via `.env.deploy` and use `make build-prod`. |
+| `NEXT_PUBLIC_API_URL` | no | `/api` | **Baked into the frontend bundle at build time.** Defaults to `/api` (domain-agnostic). Only set for cross-origin setups (e.g. `http://notevault.lan`). |
 | `DEBUG` | no | `false` | Enable FastAPI debug mode and Swagger UI. Must be `false` in production. |
 
 ### Deploy configuration (`.env.deploy`, gitignored)
@@ -240,7 +240,7 @@ Copy `.env.deploy.example` to `.env.deploy` and fill in your server details. Thi
 |---|---|
 | `DEPLOY_HOST` | SSH target, e.g. `root@your-server.lan` |
 | `DEPLOY_PATH` | Absolute path on the remote host, e.g. `/root/notevault` |
-| `NEXT_PUBLIC_API_URL` | Public URL of the app (embedded at build time), e.g. `http://notevault.lan` |
+| `NEXT_PUBLIC_API_URL` | Optional — defaults to `/api` (domain-agnostic). Only set for cross-origin setups. |
 
 ### Frontend build variable (baked at build time)
 
@@ -257,7 +257,7 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full guide. Quick summary
 ```bash
 # 1. Create .env.deploy with your server info (gitignored)
 cp .env.deploy.example .env.deploy
-# Edit: DEPLOY_HOST, DEPLOY_PATH, NEXT_PUBLIC_API_URL
+# Edit: DEPLOY_HOST, DEPLOY_PATH
 
 # 2. Create production .env on your server (copy from .env.prod.example)
 #    Set strong DB_PASSWORD, SECRET_KEY, MASTER_KEY, CORS_ORIGINS

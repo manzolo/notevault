@@ -83,7 +83,7 @@ make migrate
 | `DATABASE_URL` | no | set by compose | Full async DSN. Overridden automatically by Docker Compose. |
 | `REDIS_URL` | no | `redis://redis:6379/0` | Redis connection URL. |
 | `CORS_ORIGINS` | no | `http://localhost:3000` | Comma-separated allowed CORS origins. In production set to your public domain. |
-| `NEXT_PUBLIC_API_URL` | no | `http://localhost:8000` | **Baked into the frontend JS bundle at build time.** In production, set to your public app URL via `.env.deploy` (see below) and build with `make build-prod`. |
+| `NEXT_PUBLIC_API_URL` | no | `/api` | **Baked into the frontend JS bundle at build time.** Defaults to `/api` (domain-agnostic). Only set for cross-origin setups (e.g. `http://notevault.lan`). |
 | `APP_VERSION` | no | `latest` | Docker Hub image tag to pull on the server. Set in `.env` on the production host. |
 | `DEBUG` | no | `false` | Enables FastAPI Swagger UI. Must be `false` in production. |
 
@@ -99,7 +99,7 @@ cp .env.deploy.example .env.deploy
 |----------|-------------|---------|
 | `DEPLOY_HOST` | SSH target for the production server | `root@your-server.lan` |
 | `DEPLOY_PATH` | Absolute path on the remote host | `/root/notevault` |
-| `NEXT_PUBLIC_API_URL` | Public URL of the app, embedded at build time | `http://notevault.lan` |
+| `NEXT_PUBLIC_API_URL` | Optional — defaults to `/api` (domain-agnostic). Only set for cross-origin setups. | `http://notevault.lan` |
 
 The Makefile loads `.env.deploy` automatically via `-include .env.deploy` at the top.
 
@@ -137,14 +137,15 @@ Edit `.env.deploy`:
 ```dotenv
 DEPLOY_HOST=root@your-server.lan
 DEPLOY_PATH=/root/notevault
-NEXT_PUBLIC_API_URL=http://notevault.lan   # your public app URL
+# NEXT_PUBLIC_API_URL is optional — defaults to /api (domain-agnostic)
+# NEXT_PUBLIC_API_URL=http://notevault.lan
 ```
 
 This file is gitignored — your server address and domain name stay off GitHub.
 
 ### 4.3 Build and publish images
 
-`NEXT_PUBLIC_API_URL` is a `NEXT_PUBLIC_*` variable that Next.js bakes into the JavaScript bundle **at build time**. It must be correct when the image is built, not when it is deployed.
+`NEXT_PUBLIC_API_URL` is a `NEXT_PUBLIC_*` variable that Next.js bakes into the JavaScript bundle **at build time**. It defaults to `/api` (relative, same-origin), making the image domain-agnostic. You do not need to set it unless you have a cross-origin setup.
 
 ```bash
 # Build with the production URL from .env.deploy
@@ -183,7 +184,7 @@ DB_PASSWORD=<strong random password>
 SECRET_KEY=<output of make keygen>
 MASTER_KEY=<output of make keygen>
 CORS_ORIGINS=http://notevault.lan
-NEXT_PUBLIC_API_URL=http://notevault.lan
+# NEXT_PUBLIC_API_URL is optional — defaults to /api (domain-agnostic)
 ```
 
 **Deploy:**
@@ -244,7 +245,7 @@ Browser → notevault.lan → NPM → notevault-frontend:3000
                               notevault-backend:8000 (internal network only)
 ```
 
-1. The browser makes API calls to `http://notevault.lan/api/...` (the `NEXT_PUBLIC_API_URL` baked into the build).
+1. The browser makes API calls to `/api/...` (relative path, same origin — the default `NEXT_PUBLIC_API_URL` baked into the build).
 2. NPM receives the request and forwards it to `notevault-frontend:3000`.
 3. The Next.js server matches the `/api/:path*` rewrite rule (configured in `frontend/next.config.js`) and proxies the request to `http://notevault-backend:8000/api/...` on the internal Docker network.
 4. The response flows back through the same chain.
@@ -255,7 +256,7 @@ The backend is **never exposed** on a public port or to the `nginx-net` network.
 
 | Variable | Where set | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | `.env.deploy` → baked at `make build-prod` | Browser uses this as the base URL for API calls |
+| `NEXT_PUBLIC_API_URL` | Dockerfile default `/api`; override via `.env.deploy` only for cross-origin setups | Browser uses this as the base URL for API calls |
 | `BACKEND_INTERNAL_URL` | Dockerfile default = `http://notevault-backend:8000` | Next.js server uses this as the rewrite destination |
 
 ---
@@ -308,7 +309,7 @@ docker compose exec backend alembic upgrade head
 # 1. Make your code changes, run tests
 make test-backend
 
-# 2. Build production images (reads NEXT_PUBLIC_API_URL from .env.deploy)
+# 2. Build production images (NEXT_PUBLIC_API_URL defaults to /api — no domain needed)
 make build-prod
 
 # 3. Tag and publish to Docker Hub
@@ -345,12 +346,12 @@ Common causes:
 
 ### API calls return network error in browser
 
-The `NEXT_PUBLIC_API_URL` embedded in the frontend image does not match your server's domain, or NPM is not configured to proxy `notevault.lan` → `notevault-frontend:3000`.
+NPM is not configured to proxy your domain → `notevault-frontend:3000`, or the frontend container is not reachable.
 
 Check that:
-1. `NEXT_PUBLIC_API_URL` in `.env.deploy` matches the domain you browse to.
-2. `make build-prod` was run **after** setting `.env.deploy` (the URL is baked at build time).
-3. NPM has a proxy host for your domain pointing to `notevault-frontend:3000`.
+1. NPM has a proxy host for your domain pointing to `notevault-frontend:3000`.
+2. The `notevault-frontend` container is on the `nginx-net` network.
+3. If you use a cross-origin setup, set `NEXT_PUBLIC_API_URL` in `.env.deploy` and rebuild with `make build-prod`.
 
 ### Migrations fail
 

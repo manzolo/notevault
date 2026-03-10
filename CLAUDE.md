@@ -41,7 +41,7 @@ make deploy-update APP_VERSION=X.Y.Z   # rolling update on production server
 
 Four-service Docker Compose stack: `notevault-frontend` (Next.js :3000) → `notevault-backend` (FastAPI :8000) → `notevault-db` (PostgreSQL 15 :5432) + `notevault-redis` (Redis 7 :6379).
 
-In production, browser traffic hits Nginx Proxy Manager → frontend:3000. The frontend rewrites `/api/*` → backend:8000 via `next.config.js` `BACKEND_INTERNAL_URL` (runtime env, defaults to `http://notevault-backend:8000`). `NEXT_PUBLIC_API_URL` is baked at build time for client-side use.
+In production, browser traffic hits Nginx Proxy Manager → frontend:3000. The frontend rewrites `/api/*` → backend:8000 via `next.config.js` `BACKEND_INTERNAL_URL` (runtime env, defaults to `http://notevault-backend:8000`). `NEXT_PUBLIC_API_URL` is baked at build time for client-side use; it defaults to `''` (empty = same-origin, domain-agnostic). All API call paths are already `/api/...` so no baseURL is needed in same-origin setups.
 
 ### Backend (`backend/app/`)
 
@@ -95,5 +95,5 @@ Migrations in `backend/app/database/migrations/versions/`. Numbered `00N_descrip
 | `SECRET_KEY` | JWT signing key (base64, 32B); generate with `make keygen` |
 | `MASTER_KEY` | AES-256-GCM master key (base64, 32B); changing it breaks existing secrets |
 | `CORS_ORIGINS` | Comma-separated list (e.g. `http://localhost:3000,https://notevault.lan`) |
-| `NEXT_PUBLIC_API_URL` | Baked at build time; must be in `.env.deploy` for prod builds |
+| `NEXT_PUBLIC_API_URL` | Baked at build time; defaults to `''` (same-origin, domain-agnostic); only set for cross-origin setups |
 | `BACKEND_INTERNAL_URL` | Runtime Next.js rewrite target; default `http://notevault-backend:8000` |

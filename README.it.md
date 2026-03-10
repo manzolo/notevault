@@ -108,7 +108,7 @@ Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make h
 
 | Target | Descrizione |
 |---|---|
-| `build` | (Ri)costruisce le immagini per **sviluppo** (`NEXT_PUBLIC_API_URL=http://localhost:8000`) |
+| `build` | (Ri)costruisce le immagini per **sviluppo** (`NEXT_PUBLIC_API_URL` predefinito a `/api`) |
 | `up` | Avvia tutti i servizi in modalità detached |
 | `down` | Ferma e rimuove i container |
 | `restart` | Riavvia tutti i servizi |
@@ -129,13 +129,13 @@ Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make h
 
 | Target | Descrizione |
 |---|---|
-| `build-prod` | Costruisce le immagini per la **produzione** (legge `NEXT_PUBLIC_API_URL` da `.env.deploy`) |
+| `build-prod` | Costruisce le immagini per la **produzione** (`NEXT_PUBLIC_API_URL` opzionale, predefinito a `/api`) |
 | `tag` | Crea il tag git `vX.Y.Z` e tagga le immagini Docker — `make tag APP_VERSION=1.2.3` |
 | `publish` | Pubblica le immagini su Docker Hub e invia il tag git — `make publish APP_VERSION=1.2.3` |
 | `deploy` | **Prima installazione**: copia compose + `.env` sul server, scarica le immagini, avvia, migra |
 | `deploy-update` | **Aggiornamento**: scarica la nuova versione e riavvia — `make deploy-update APP_VERSION=1.2.3` |
 
-> Le variabili di deploy (`DEPLOY_HOST`, `DEPLOY_PATH`, `NEXT_PUBLIC_API_URL`) vengono lette da `.env.deploy` (gitignored). Vedi [Deploy in Produzione](#deploy-in-produzione).
+> Le variabili di deploy (`DEPLOY_HOST`, `DEPLOY_PATH`) vengono lette da `.env.deploy` (gitignored). Vedi [Deploy in Produzione](#deploy-in-produzione).
 
 ---
 
@@ -177,7 +177,7 @@ In produzione, un reverse proxy (es. Nginx Proxy Manager) è posizionato davanti
 - **Nascondimento automatico dopo 30 secondi** — un timer lato client nasconde automaticamente il valore in chiaro dopo 30 secondi.
 - **bcrypt a 12 iterazioni** — le password degli utenti sono sottoposte ad hash con bcrypt con fattore di costo 12.
 - **CORS** — il backend accetta richieste solo dalle origini elencate in `CORS_ORIGINS`.
-- **Configurazione deploy locale** — le informazioni sul server (`DEPLOY_HOST`, `DEPLOY_PATH`, `NEXT_PUBLIC_API_URL`) risiedono in `.env.deploy`, gitignored e mai committato.
+- **Configurazione deploy locale** — le informazioni sul server (`DEPLOY_HOST`, `DEPLOY_PATH`) risiedono in `.env.deploy`, gitignored e mai committato.
 
 > **Rotazione delle chiavi:** Per ruotare la `MASTER_KEY`, decifrare tutti i segreti con la vecchia chiave, riciclarli con la nuova, aggiornare `.env` e riavviare. Non è presente uno strumento di rotazione automatica nella versione attuale.
 
@@ -229,7 +229,7 @@ Copia `.env.example` in `.env` e compila i valori prima di avviare lo stack.
 | `DATABASE_URL` | no | impostata da compose | Stringa di connessione SQLAlchemy asincrona. Sovrascritta automaticamente da Docker Compose. |
 | `REDIS_URL` | no | `redis://redis:6379/0` | URL di connessione Redis. |
 | `CORS_ORIGINS` | no | `http://localhost:3000` | Origini CORS consentite, separate da virgola. In produzione impostare al proprio dominio pubblico. |
-| `NEXT_PUBLIC_API_URL` | no | `http://localhost:8000` | **Incorporato nel bundle frontend a build time.** In produzione impostare al dominio pubblico (es. `http://notevault.lan`) tramite `.env.deploy` e usare `make build-prod`. |
+| `NEXT_PUBLIC_API_URL` | no | `/api` | **Incorporato nel bundle frontend a build time.** Predefinito a `/api` (domain-agnostic). Impostare solo per configurazioni cross-origin (es. `http://notevault.lan`). |
 | `DEBUG` | no | `false` | Attiva la modalità debug di FastAPI e Swagger UI. Non impostare a `true` in produzione. |
 
 ### Configurazione deploy (`.env.deploy`, gitignored)
@@ -240,7 +240,7 @@ Copia `.env.deploy.example` in `.env.deploy` e inserisci le informazioni del ser
 |---|---|
 | `DEPLOY_HOST` | Destinazione SSH, es. `root@your-server.lan` |
 | `DEPLOY_PATH` | Percorso assoluto sul server remoto, es. `/root/notevault` |
-| `NEXT_PUBLIC_API_URL` | URL pubblico dell'app (incorporato a build time), es. `http://notevault.lan` |
+| `NEXT_PUBLIC_API_URL` | Opzionale — predefinito a `/api` (domain-agnostic). Impostare solo per configurazioni cross-origin. |
 
 ### Variabile di build frontend (incorporata a build time)
 
@@ -257,7 +257,7 @@ Consulta [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) per la guida completa. Riepi
 ```bash
 # 1. Crea .env.deploy con le informazioni del server (gitignored)
 cp .env.deploy.example .env.deploy
-# Modifica: DEPLOY_HOST, DEPLOY_PATH, NEXT_PUBLIC_API_URL
+# Modifica: DEPLOY_HOST, DEPLOY_PATH
 
 # 2. Crea il .env di produzione sul server (copia da .env.prod.example)
 #    Imposta DB_PASSWORD, SECRET_KEY, MASTER_KEY, CORS_ORIGINS robusti
