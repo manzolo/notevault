@@ -64,6 +64,9 @@ services:
       - .env
     environment:
       BACKEND_INTERNAL_URL: http://notevault-backend:8000
+      # Override any NEXT_PUBLIC_API_URL that may be in .env — defaults to empty (domain-agnostic).
+      # Set explicitly only for cross-origin setups: NEXT_PUBLIC_API_URL=http://custom.domain.lan
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     networks:
       - notevault_internal
       - nginx-net
