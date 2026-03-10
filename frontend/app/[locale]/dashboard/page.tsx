@@ -183,38 +183,40 @@ export default function DashboardPage() {
           {tags.length > 0 && (
             <TagFilter tags={tags} selectedTagId={selectedTagId} onSelect={handleTagSelect} />
           )}
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('filterByDate')}:</span>
-            <div className="flex items-center gap-1.5">
-              <label className="text-xs text-gray-500 dark:text-gray-400">{t('dateFrom')}</label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => handleDateChange(e.target.value, dateTo)}
-                className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1
-                           bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
-                           focus:outline-none focus:ring-1 focus:ring-indigo-400"
-              />
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{t('dateFrom')}</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => handleDateChange(e.target.value, dateTo)}
+                  className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1
+                             bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
+                             focus:outline-none focus:ring-1 focus:ring-indigo-400 w-full sm:w-auto"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{t('dateTo')}</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => handleDateChange(dateFrom, e.target.value)}
+                  className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1
+                             bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
+                             focus:outline-none focus:ring-1 focus:ring-indigo-400 w-full sm:w-auto"
+                />
+              </div>
+              {(dateFrom || dateTo) && (
+                <button
+                  onClick={() => handleDateChange('', '')}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap"
+                >
+                  {t('clearDate')}
+                </button>
+              )}
             </div>
-            <div className="flex items-center gap-1.5">
-              <label className="text-xs text-gray-500 dark:text-gray-400">{t('dateTo')}</label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => handleDateChange(dateFrom, e.target.value)}
-                className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1
-                           bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
-                           focus:outline-none focus:ring-1 focus:ring-indigo-400"
-              />
-            </div>
-            {(dateFrom || dateTo) && (
-              <button
-                onClick={() => handleDateChange('', '')}
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                {t('clearDate')}
-              </button>
-            )}
           </div>
         </div>
       )}
