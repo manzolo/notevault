@@ -25,5 +25,6 @@ class AttachmentTagUpdate(BaseModel):
 
 
 class AttachmentUpdate(BaseModel):
+    filename: Optional[str] = None
     description: Optional[str] = None
     tag_ids: Optional[List[int]] = None

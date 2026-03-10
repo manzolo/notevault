@@ -100,8 +100,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [pastePreviewUrl, setPastePreviewUrl] = useState('');
   const [pasteUploading, setPasteUploading] = useState(false);
   const filenameInputRef = useRef<HTMLInputElement>(null);
-  // Paste-file state (non-images: reuse upload modal pre-filled)
-  const [pasteUploadFile, setPasteUploadFile] = useState<File | null>(null);
+  // Paste-file state (non-images or multiple files: reuse upload modal pre-filled)
+  const [pasteUploadFiles, setPasteUploadFiles] = useState<File[]>([]);
   // Drag-and-drop state
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
@@ -140,32 +140,23 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       if (filenameInputRef.current && document.activeElement === filenameInputRef.current) return;
       if (pasteFile) return;
 
-      const items = Array.from(e.clipboardData?.items ?? []);
-      const fileItem = items.find((item) => item.kind === 'file');
-      if (fileItem) {
-        const file = fileItem.getAsFile();
-        if (file) {
-          e.preventDefault();
-          if (file.type.startsWith('image/')) {
-            openPasteModal(file);
-          } else {
-            setPasteUploadFile(file);
-            setShowUploadModal(true);
-          }
-          return;
-        }
+      const pastedFiles: File[] = Array.from(e.clipboardData?.items ?? [])
+        .filter((item) => item.kind === 'file')
+        .map((item) => item.getAsFile())
+        .filter((f): f is File => f !== null);
+
+      if (pastedFiles.length === 0) {
+        pastedFiles.push(...Array.from(e.clipboardData?.files ?? []));
       }
 
-      const files = Array.from(e.clipboardData?.files ?? []);
-      if (files.length > 0) {
-        e.preventDefault();
-        const file = files[0];
-        if (file.type.startsWith('image/')) {
-          openPasteModal(file);
-        } else {
-          setPasteUploadFile(file);
-          setShowUploadModal(true);
-        }
+      if (pastedFiles.length === 0) return;
+      e.preventDefault();
+
+      if (pastedFiles.length === 1 && pastedFiles[0].type.startsWith('image/')) {
+        openPasteModal(pastedFiles[0]);
+      } else {
+        setPasteUploadFiles(pastedFiles);
+        setShowUploadModal(true);
       }
     };
 
@@ -213,12 +204,12 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       e.preventDefault();
       dragCounterRef.current = 0;
       setIsDragging(false);
-      const file = e.dataTransfer?.files?.[0];
-      if (!file) return;
-      if (file.type.startsWith('image/')) {
-        openPasteModal(file);
+      const droppedFiles = Array.from(e.dataTransfer?.files ?? []);
+      if (droppedFiles.length === 0) return;
+      if (droppedFiles.length === 1 && droppedFiles[0].type.startsWith('image/')) {
+        openPasteModal(droppedFiles[0]);
       } else {
-        setPasteUploadFile(file);
+        setPasteUploadFiles(droppedFiles);
         setShowUploadModal(true);
       }
     };
@@ -297,12 +288,15 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
   const handleUpload = async (file: File, tagIds: number[], description?: string) => {
     await uploadAttachment(file, tagIds, description);
-    setShowUploadModal(false);
-    setPasteUploadFile(null);
-    toast.success('File uploaded!');
   };
 
-  const handleEditAttachment = async (data: { description?: string; tag_ids: number[] }) => {
+  const handleUploadComplete = (count: number) => {
+    setShowUploadModal(false);
+    setPasteUploadFiles([]);
+    toast.success(count > 1 ? `${count} files uploaded!` : 'File uploaded!');
+  };
+
+  const handleEditAttachment = async (data: { filename?: string; description?: string; tag_ids: number[] }) => {
     if (!editingAttachment) return;
     await updateAttachment(editingAttachment.id, data);
     setEditingAttachment(null);
@@ -718,8 +712,13 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         <SecretForm onSubmit={handleCreateSecret} />
       </Modal>
 
-      <Modal isOpen={showUploadModal} onClose={() => { setShowUploadModal(false); setPasteUploadFile(null); }} title={tAttachments('upload')}>
-        <AttachmentUploadForm onUpload={handleUpload} availableTags={availableTagsFromHook} initialFile={pasteUploadFile ?? undefined} />
+      <Modal isOpen={showUploadModal} onClose={() => { setShowUploadModal(false); setPasteUploadFiles([]); }} title={tAttachments('upload')}>
+        <AttachmentUploadForm
+          onUpload={handleUpload}
+          onComplete={handleUploadComplete}
+          availableTags={availableTagsFromHook}
+          initialFiles={pasteUploadFiles.length > 0 ? pasteUploadFiles : undefined}
+        />
       </Modal>
 
       <Modal isOpen={!!editingAttachment} onClose={() => setEditingAttachment(null)} title={tAttachments('editAttachment')}>

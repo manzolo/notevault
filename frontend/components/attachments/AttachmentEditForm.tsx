@@ -8,13 +8,14 @@ import { Attachment, Tag } from '@/lib/types';
 interface Props {
   attachment: Attachment;
   availableTags?: Tag[];
-  onSave: (data: { description?: string; tag_ids: number[] }) => Promise<void>;
+  onSave: (data: { filename?: string; description?: string; tag_ids: number[] }) => Promise<void>;
   onCancel: () => void;
 }
 
 export default function AttachmentEditForm({ attachment, availableTags = [], onSave, onCancel }: Props) {
   const t = useTranslations('attachments');
   const tCommon = useTranslations('common');
+  const [filename, setFilename] = useState(attachment.filename);
   const [description, setDescription] = useState(attachment.description ?? '');
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(attachment.tags.map((tag) => tag.id));
   const [saving, setSaving] = useState(false);
@@ -27,9 +28,14 @@ export default function AttachmentEditForm({ attachment, availableTags = [], onS
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!filename.trim()) return;
     setSaving(true);
     try {
-      await onSave({ description: description || undefined, tag_ids: selectedTagIds });
+      await onSave({
+        filename: filename.trim() !== attachment.filename ? filename.trim() : undefined,
+        description: description || undefined,
+        tag_ids: selectedTagIds,
+      });
     } finally {
       setSaving(false);
     }
@@ -37,8 +43,17 @@ export default function AttachmentEditForm({ attachment, availableTags = [], onS
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-sm">
-        <span className="text-gray-500 dark:text-gray-400 font-medium truncate">{attachment.filename}</span>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {t('fileName')}
+        </label>
+        <input
+          type="text"
+          value={filename}
+          onChange={(e) => setFilename(e.target.value)}
+          required
+          className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100"
+        />
       </div>
 
       <div>

@@ -605,6 +605,13 @@ async def update_attachment(
     await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
+    # Update filename if provided (only the display name; stored_filename is unchanged)
+    if body.filename is not None:
+        new_name = sanitize_filename(body.filename.strip())
+        if not new_name:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Filename cannot be empty")
+        attachment.filename = new_name
+
     # Update description if provided
     if body.description is not None:
         attachment.description = body.description
