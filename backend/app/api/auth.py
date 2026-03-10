@@ -113,7 +113,7 @@ async def change_password(
     db: AsyncSession = Depends(get_db),
 ):
     if not verify_password(data.current_password, current_user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid current password")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid current password")
     if len(data.new_password) < 8:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password must be at least 8 characters")
     current_user.hashed_password = hash_password(data.new_password)

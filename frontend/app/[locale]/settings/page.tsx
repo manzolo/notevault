@@ -93,8 +93,9 @@ export default function SettingsPage() {
       setNewPassword('');
       setConfirmNewPassword('');
       toast.success(t('changePasswordSuccess'));
-    } catch {
-      toast.error(t('changePasswordFailed'));
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      toast.error(detail === 'Invalid current password' ? t('invalidPassword') : t('changePasswordFailed'));
     } finally {
       setChangePasswordLoading(false);
     }
