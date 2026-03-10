@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from './ThemeProvider';
@@ -26,24 +27,45 @@ function MoonIcon() {
   );
 }
 
+function HamburgerIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
 export default function Navbar() {
   const t = useTranslations('nav');
   const locale = useLocale();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const closeMenu = () => setMenuOpen(false);
 
   return (
-    <nav className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 shadow-sm">
+    <nav className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 shadow-sm">
       <div className="container mx-auto px-4 max-w-5xl">
         <div className="flex items-center justify-between h-14">
           <Link
             href={`/${locale}/dashboard`}
             className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent hover:from-indigo-700 hover:to-violet-700"
+            onClick={closeMenu}
           >
             {t('brand')}
           </Link>
 
-          <div className="flex items-center gap-4">
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-4">
             <button
               onClick={toggleTheme}
               className="p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -90,8 +112,82 @@ export default function Navbar() {
               </>
             )}
           </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <XIcon /> : <HamburgerIcon />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile dropdown */}
+      {menuOpen && (
+        <div className="md:hidden absolute top-14 left-0 right-0 bg-white/95 dark:bg-gray-800/95 border-b border-gray-200 dark:border-gray-700 shadow-md px-4 py-3 flex flex-col gap-3 z-[60]">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+            </button>
+            <LanguageSwitcher />
+          </div>
+
+          {user ? (
+            <>
+              <Link
+                href={`/${locale}/dashboard`}
+                className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
+                onClick={closeMenu}
+              >
+                {t('dashboard')}
+              </Link>
+              <Link
+                href={`/${locale}/notes/new`}
+                className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
+                onClick={closeMenu}
+              >
+                {t('newNote')}
+              </Link>
+              <Link
+                href={`/${locale}/settings`}
+                className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
+                onClick={closeMenu}
+              >
+                {t('settings')}
+              </Link>
+              <div className="flex items-center justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
+                <span className="text-sm text-gray-400">{user.username}</span>
+                <Button variant="ghost" size="sm" onClick={() => { logout(); closeMenu(); }}>
+                  {t('logout')}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Link
+                href={`/${locale}/login`}
+                className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
+                onClick={closeMenu}
+              >
+                Login
+              </Link>
+              <Link
+                href={`/${locale}/register`}
+                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium py-1"
+                onClick={closeMenu}
+              >
+                Register
+              </Link>
+            </>
+          )}
+        </div>
+      )}
     </nav>
   );
 }

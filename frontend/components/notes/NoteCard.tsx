@@ -85,7 +85,7 @@ export default function NoteCard({ note, onDelete, categoryName, matchInAttachme
               </Link>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{truncate(note.content, 120)}</p>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
               {note.tags.map((tag) => (
                 <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full">
                   {tag.name}
@@ -112,7 +112,7 @@ export default function NoteCard({ note, onDelete, categoryName, matchInAttachme
                           key={att.id}
                           className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs"
                         >
-                          <span className="truncate max-w-[150px]">{att.filename}</span>
+                          <span className="truncate max-w-[120px] sm:max-w-[200px]">{att.filename}</span>
                           {INLINE_MIMES.has(att.mime_type) && onPreviewAttachment && (
                             <button
                               onClick={() => onPreviewAttachment(note.id, att)}

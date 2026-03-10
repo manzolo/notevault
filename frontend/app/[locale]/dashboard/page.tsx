@@ -138,7 +138,7 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{t('myNotes')}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{t('myNotes')}</h1>
         <Link href={`/${locale}/notes/new`}>
           <Button variant="secondary"><PlusIcon />{t('newNote')}</Button>
         </Link>

@@ -120,23 +120,23 @@ export default function SecretViewer({
                 {onCopyDirect && (
                   <Button size="sm" variant="secondary" onClick={handleCopyDirect}>
                     {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
-                    {copied ? t('copied') : t('copy')}
+                    <span className="hidden sm:inline">{copied ? t('copied') : t('copy')}</span>
                   </Button>
                 )}
                 <Button size="sm" variant="secondary" onClick={onReveal}>
                   <EyeIcon />
-                  {t('reveal')}
+                  <span className="hidden sm:inline">{t('reveal')}</span>
                 </Button>
               </>
             ) : (
               <>
                 <Button size="sm" variant="secondary" onClick={() => handleCopy(revealed.value)}>
                   {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
-                  {copied ? t('copied') : t('copy')}
+                  <span className="hidden sm:inline">{copied ? t('copied') : t('copy')}</span>
                 </Button>
                 <Button size="sm" variant="secondary" onClick={onHide}>
                   <EyeOffIcon />
-                  {t('hide')}
+                  <span className="hidden sm:inline">{t('hide')}</span>
                 </Button>
               </>
             )}

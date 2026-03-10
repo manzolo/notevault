@@ -110,7 +110,7 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
   return (
     <>
       {dialog}
-      <div className="flex items-center gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
+      <div className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0 flex-wrap">
         <FileIcon mime={attachment.mime_type} />
 
         <div className="flex-1 min-w-0">
@@ -136,16 +136,16 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
           </div>
         </div>
 
-        <div className="flex gap-1.5 shrink-0 items-center">
+        <div className="flex gap-1.5 items-center basis-full sm:basis-auto">
           {canPreview && (
             <Button size="sm" variant="secondary" onClick={() => onPreview(attachment)}>
               <EyeIcon />
-              {t('preview')}
+              <span className="hidden sm:inline">{t('preview')}</span>
             </Button>
           )}
           <Button size="sm" variant="secondary" onClick={() => onDownload(attachment)}>
             <ArrowDownTrayIcon />
-            {t('download')}
+            <span className="hidden sm:inline">{t('download')}</span>
           </Button>
           <Button size="sm" variant="secondary" title={t('edit')} onClick={() => onEdit(attachment)}>
             <PencilIcon />
