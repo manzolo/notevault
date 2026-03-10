@@ -56,3 +56,8 @@ class TotpDisableRequest(BaseModel):
 class TotpVerifyRequest(BaseModel):
     partial_token: str
     code: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str

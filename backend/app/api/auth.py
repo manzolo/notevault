@@ -7,7 +7,7 @@ from app.models.database import User
 from app.schemas.user import (
     UserCreate, UserLogin, UserResponse, TokenResponse,
     LoginResponse, TotpSetupResponse, TotpEnableRequest,
-    TotpDisableRequest, TotpVerifyRequest,
+    TotpDisableRequest, TotpVerifyRequest, ChangePasswordRequest,
 )
 from app.security.auth import hash_password, verify_password, create_access_token, verify_token
 from app.security.dependencies import get_current_user
@@ -105,6 +105,20 @@ async def me(current_user: User = Depends(get_current_user)):
 
 
 # ── TOTP management (requires full authentication) ──────────────────────────
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid current password")
+    if len(data.new_password) < 8:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password must be at least 8 characters")
+    current_user.hashed_password = hash_password(data.new_password)
+    await db.commit()
+
 
 @router.post("/totp/setup", response_model=TotpSetupResponse)
 async def totp_setup(current_user: User = Depends(get_current_user)):

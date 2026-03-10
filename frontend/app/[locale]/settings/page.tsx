@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { setupTotp, enableTotp, disableTotp } from '@/lib/auth';
+import { setupTotp, enableTotp, disableTotp, changePassword } from '@/lib/auth';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 
@@ -26,6 +26,12 @@ export default function SettingsPage() {
   const [showDisable, setShowDisable] = useState(false);
   const [disablePassword, setDisablePassword] = useState('');
   const [disableLoading, setDisableLoading] = useState(false);
+
+  // Change password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
 
   const handleSetup = async () => {
     try {
@@ -70,11 +76,72 @@ export default function SettingsPage() {
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmNewPassword) {
+      toast.error(t('passwordMismatch'));
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error(t('passwordTooShort'));
+      return;
+    }
+    setChangePasswordLoading(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      toast.success(t('changePasswordSuccess'));
+    } catch {
+      toast.error(t('changePasswordFailed'));
+    } finally {
+      setChangePasswordLoading(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
       <h1 className="text-2xl font-bold mb-8">{t('title')}</h1>
+
+      {/* ── Change password section ── */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold">{t('changePasswordTitle')}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('changePasswordDesc')}</p>
+        </div>
+        <form onSubmit={handleChangePassword} className="space-y-3 max-w-sm">
+          <Input
+            label={t('currentPassword')}
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+          />
+          <Input
+            label={t('newPassword')}
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            autoComplete="new-password"
+          />
+          <Input
+            label={t('confirmNewPassword')}
+            type="password"
+            value={confirmNewPassword}
+            onChange={(e) => setConfirmNewPassword(e.target.value)}
+            required
+            autoComplete="new-password"
+          />
+          <Button variant="secondary" type="submit" loading={changePasswordLoading}>
+            {t('changePassword')}
+          </Button>
+        </form>
+      </div>
 
       {/* ── TOTP section ── */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">

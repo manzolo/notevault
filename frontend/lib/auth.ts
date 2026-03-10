@@ -34,6 +34,10 @@ export async function disableTotp(password: string): Promise<void> {
   await api.post('/api/auth/totp/disable', { password });
 }
 
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await api.post('/api/auth/change-password', { current_password: currentPassword, new_password: newPassword });
+}
+
 export async function register(username: string, email: string, password: string): Promise<string> {
   const response = await api.post<TokenResponse>('/api/auth/register', { username, email, password });
   const token = response.data.access_token;

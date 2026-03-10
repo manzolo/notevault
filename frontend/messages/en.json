@@ -47,7 +47,17 @@
     "enabledSuccess": "Two-factor authentication enabled!",
     "disabledSuccess": "Two-factor authentication disabled.",
     "invalidCode": "Invalid code. Please try again.",
-    "invalidPassword": "Invalid password."
+    "invalidPassword": "Invalid password.",
+    "changePasswordTitle": "Change password",
+    "changePasswordDesc": "Update your account password.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "changePassword": "Change password",
+    "passwordMismatch": "Passwords do not match.",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "changePasswordSuccess": "Password changed successfully.",
+    "changePasswordFailed": "Failed to change password."
   },
   "notes": {
     "myNotes": "My Notes",

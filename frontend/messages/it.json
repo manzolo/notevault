@@ -47,7 +47,17 @@
     "enabledSuccess": "Autenticazione a due fattori attivata!",
     "disabledSuccess": "Autenticazione a due fattori disattivata.",
     "invalidCode": "Codice non valido. Riprova.",
-    "invalidPassword": "Password non valida."
+    "invalidPassword": "Password non valida.",
+    "changePasswordTitle": "Cambia password",
+    "changePasswordDesc": "Aggiorna la password del tuo account.",
+    "currentPassword": "Password attuale",
+    "newPassword": "Nuova password",
+    "confirmNewPassword": "Conferma nuova password",
+    "changePassword": "Cambia password",
+    "passwordMismatch": "Le password non coincidono.",
+    "passwordTooShort": "La password deve essere di almeno 8 caratteri.",
+    "changePasswordSuccess": "Password cambiata con successo.",
+    "changePasswordFailed": "Cambio password fallito."
   },
   "notes": {
     "myNotes": "Le mie Note",
