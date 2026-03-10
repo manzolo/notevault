@@ -41,10 +41,11 @@ restart:
 build:
 	docker compose build
 
-## build-prod: Build images for production release (NEXT_PUBLIC_API_URL optional, defaults to /api)
-##             Usage: make build-prod  (then make tag + make publish)
+## build-prod: Build images for production release (domain-agnostic by default)
+##             NEXT_PUBLIC_API_URL defaults to empty (same-origin proxy).
+##             For cross-origin: NEXT_PUBLIC_API_URL=https://custom.domain make build-prod
 build-prod:
-	NEXT_PUBLIC_API_URL=$(NEXT_PUBLIC_API_URL) docker compose build
+	docker compose build
 
 # ---------------------------------------------------------------------------
 # Database migrations
