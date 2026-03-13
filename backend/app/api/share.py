@@ -5,22 +5,25 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 
 from app.config import get_settings
 from app.database.connection import get_db
-from app.models.database import Attachment, Bookmark, Note, Secret, ShareToken, Tag, Task
+from app.models.database import Attachment, Bookmark, Event, Note, Secret, ShareToken, Tag, Task, User
 from app.schemas.note import NoteResponse
+from app.security.auth import verify_token
 from app.security.dependencies import get_current_user
-from app.models.database import User
 from app.security.encryption import get_encryption
 from app.security.rate_limit import limiter
 
 router = APIRouter(tags=["share"])
 settings = get_settings()
+
+_bearer = HTTPBearer(auto_error=False)
 
 _INLINE_MIMES = {
     "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"
@@ -32,7 +35,28 @@ _DEFAULT_SECTIONS = {
     "attachments": False,
     "bookmarks": False,
     "secrets": False,
+    "events": False,
 }
+
+
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Return the authenticated user if a valid Bearer token is provided, else None."""
+    if credentials is None:
+        return None
+    payload = verify_token(credentials.credentials)
+    if payload is None:
+        return None
+    user_id = payload.get("sub")
+    if user_id is None:
+        return None
+    result = await db.execute(select(User).where(User.id == int(user_id)))
+    user = result.scalar_one_or_none()
+    if user is None or not user.is_active:
+        return None
+    return user
 
 
 class ShareSections(BaseModel):
@@ -41,10 +65,13 @@ class ShareSections(BaseModel):
     attachments: bool = False
     bookmarks: bool = False
     secrets: bool = False
+    events: bool = False
 
 
 class ShareCreate(BaseModel):
     sections: ShareSections = ShareSections()
+    visibility: str = "public"
+    allowed_user_id: Optional[int] = None
 
 
 @router.post("/api/notes/{note_id}/share", status_code=201)
@@ -61,17 +88,32 @@ async def create_share_token(
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
 
+    # Validate visibility value
+    if body.visibility not in ("public", "users", "specific"):
+        raise HTTPException(status_code=422, detail="visibility must be 'public', 'users', or 'specific'")
+
+    # For 'specific' visibility, allowed_user_id is required
+    if body.visibility == "specific" and body.allowed_user_id is None:
+        raise HTTPException(status_code=422, detail="allowed_user_id is required when visibility is 'specific'")
+
     sections_dict = body.sections.model_dump()
 
-    # Check if a share token already exists — update sections and return
+    # Check if a share token already exists — update and return
     existing = await db.execute(
         select(ShareToken).where(ShareToken.note_id == note_id)
     )
     existing_token = existing.scalar_one_or_none()
     if existing_token:
         existing_token.share_sections = sections_dict
+        existing_token.visibility = body.visibility
+        existing_token.allowed_user_id = body.allowed_user_id
         await db.commit()
-        return {"token": existing_token.token, "share_sections": sections_dict}
+        return {
+            "token": existing_token.token,
+            "share_sections": sections_dict,
+            "visibility": body.visibility,
+            "allowed_user_id": body.allowed_user_id,
+        }
 
     token = secrets.token_urlsafe(32)
     share = ShareToken(
@@ -79,10 +121,17 @@ async def create_share_token(
         user_id=current_user.id,
         token=token,
         share_sections=sections_dict,
+        visibility=body.visibility,
+        allowed_user_id=body.allowed_user_id,
     )
     db.add(share)
     await db.commit()
-    return {"token": token, "share_sections": sections_dict}
+    return {
+        "token": token,
+        "share_sections": sections_dict,
+        "visibility": body.visibility,
+        "allowed_user_id": body.allowed_user_id,
+    }
 
 
 @router.delete("/api/notes/{note_id}/share", status_code=204)
@@ -123,10 +172,17 @@ async def get_share_status(
     )
     share = result.scalar_one_or_none()
     if not share:
-        return {"token": None, "share_sections": _DEFAULT_SECTIONS}
+        return {
+            "token": None,
+            "share_sections": _DEFAULT_SECTIONS,
+            "visibility": "public",
+            "allowed_user_id": None,
+        }
     return {
         "token": share.token,
         "share_sections": share.share_sections or _DEFAULT_SECTIONS,
+        "visibility": share.visibility or "public",
+        "allowed_user_id": share.allowed_user_id,
     }
 
 
@@ -136,6 +192,7 @@ async def get_shared_note(
     token: str,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     result = await db.execute(
         select(ShareToken).where(ShareToken.token == token)
@@ -143,6 +200,18 @@ async def get_shared_note(
     share = result.scalar_one_or_none()
     if not share:
         raise HTTPException(status_code=404, detail="Share link not found or expired")
+
+    visibility = share.visibility or "public"
+
+    # Enforce visibility access control
+    if visibility == "users":
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Login required to view this shared note")
+    elif visibility == "specific":
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Login required to view this shared note")
+        if current_user.id != share.allowed_user_id and current_user.id != share.user_id:
+            raise HTTPException(status_code=403, detail="You are not authorized to view this shared note")
 
     sections: dict = share.share_sections or _DEFAULT_SECTIONS
 
@@ -163,6 +232,7 @@ async def get_shared_note(
         "created_at": note.created_at,
         "updated_at": note.updated_at,
         "share_sections": sections,
+        "visibility": visibility,
     }
 
     # Content section
@@ -247,6 +317,26 @@ async def get_shared_note(
             )
         response["secrets"] = decrypted_secrets
 
+    # Events section
+    if sections.get("events", False):
+        ev_result = await db.execute(
+            select(Event)
+            .where(Event.note_id == note.id)
+            .order_by(Event.start_datetime)
+        )
+        events = ev_result.scalars().all()
+        response["events"] = [
+            {
+                "id": e.id,
+                "title": e.title,
+                "description": e.description,
+                "start_datetime": e.start_datetime,
+                "end_datetime": e.end_datetime,
+                "url": e.url,
+            }
+            for e in events
+        ]
+
     return response
 
 
@@ -257,6 +347,7 @@ async def download_shared_attachment(
     attachment_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ):
     """Public endpoint to stream an attachment from a shared note."""
     # Validate share token and that attachments section is enabled
@@ -266,6 +357,18 @@ async def download_shared_attachment(
     share = result.scalar_one_or_none()
     if not share:
         raise HTTPException(status_code=404, detail="Share link not found or expired")
+
+    visibility = share.visibility or "public"
+
+    # Enforce visibility access control
+    if visibility == "users":
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Login required to access this attachment")
+    elif visibility == "specific":
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Login required to access this attachment")
+        if current_user.id != share.allowed_user_id and current_user.id != share.user_id:
+            raise HTTPException(status_code=403, detail="You are not authorized to access this attachment")
 
     sections: dict = share.share_sections or _DEFAULT_SECTIONS
     if not sections.get("attachments", False):
@@ -304,3 +407,29 @@ async def download_shared_attachment(
         media_type=attachment.mime_type,
         headers={"Content-Disposition": disposition},
     )
+
+
+@router.get("/api/users/search")
+async def search_users(
+    q: str = "",
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Search users by username or email (for share visibility picker). Excludes the current user."""
+    if not q or len(q.strip()) < 2:
+        return []
+    q_lower = f"%{q.strip().lower()}%"
+    result = await db.execute(
+        select(User)
+        .where(
+            User.id != current_user.id,
+            User.is_active == True,
+            or_(
+                User.username.ilike(q_lower),
+                User.email.ilike(q_lower),
+            ),
+        )
+        .limit(10)
+    )
+    users = result.scalars().all()
+    return [{"id": u.id, "username": u.username, "email": u.email} for u in users]

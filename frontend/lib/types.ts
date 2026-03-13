@@ -194,3 +194,48 @@ export interface SearchResponse {
   per_page: number;
   pages: number;
 }
+
+export interface EventAttachment {
+  id: number;
+  event_id: number;
+  user_id: number;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  description?: string;
+  created_at: string;
+}
+
+export interface CalendarEvent {
+  id: number;
+  note_id: number;
+  user_id: number;
+  title: string;
+  description?: string;
+  start_datetime: string;
+  end_datetime?: string;
+  url?: string;
+  created_at: string;
+  updated_at: string;
+  attachments: EventAttachment[];
+}
+
+export interface CalendarEventWithNote extends CalendarEvent {
+  note_title?: string;
+}
+
+export interface CalendarEventCreate {
+  title: string;
+  description?: string;
+  start_datetime: string;
+  end_datetime?: string;
+  url?: string;
+}
+
+export interface CalendarEventUpdate {
+  title?: string;
+  description?: string;
+  start_datetime?: string;
+  end_datetime?: string;
+  url?: string;
+}

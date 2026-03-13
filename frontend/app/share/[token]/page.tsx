@@ -39,12 +39,22 @@ interface SharedSecret {
   value: string;
 }
 
+interface SharedEvent {
+  id: number;
+  title: string;
+  description: string | null;
+  start_datetime: string;
+  end_datetime: string | null;
+  url: string | null;
+}
+
 interface ShareSections {
   content: boolean;
   tasks: boolean;
   attachments: boolean;
   bookmarks: boolean;
   secrets: boolean;
+  events: boolean;
 }
 
 interface SharedNote {
@@ -59,6 +69,8 @@ interface SharedNote {
   attachments?: SharedAttachment[];
   bookmarks?: SharedBookmark[];
   secrets?: SharedSecret[];
+  events?: SharedEvent[];
+  visibility?: string;
 }
 
 function formatBytes(bytes: number): string {
@@ -116,15 +128,28 @@ function SecretRow({ secret, token }: { secret: SharedSecret; token: string }) {
 export default function SharePage({ params }: { params: { token: string } }) {
   const [note, setNote] = useState<SharedNote | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api
       .get<SharedNote>(`/api/share/${params.token}`)
       .then((r) => setNote(r.data))
-      .catch(() => setError('This share link is invalid or has been removed.'))
+      .catch((err) => {
+        const status = err?.response?.status ?? null;
+        setErrorStatus(status);
+        if (status === 401) {
+          setError('login_required');
+        } else if (status === 403) {
+          setError('access_denied');
+        } else {
+          setError('not_found');
+        }
+      })
       .finally(() => setLoading(false));
   }, [params.token]);
+
+  const loginUrl = `/en/auth/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '')}`;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10 px-4">
@@ -161,9 +186,39 @@ export default function SharePage({ params }: { params: { token: string } }) {
           </div>
         )}
 
-        {error && (
+        {error === 'login_required' && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-indigo-200 dark:border-indigo-800 p-8 text-center space-y-4">
+            <svg className="w-10 h-10 text-indigo-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <p className="text-gray-700 dark:text-gray-300 font-medium">
+              You must be logged in to view this shared note.
+            </p>
+            <a
+              href={loginUrl}
+              className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Log in to NoteVault
+            </a>
+          </div>
+        )}
+
+        {error === 'access_denied' && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800 p-8 text-center space-y-3">
+            <svg className="w-10 h-10 text-red-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            <p className="text-red-600 dark:text-red-400 font-medium">
+              You do not have permission to view this shared note.
+            </p>
+          </div>
+        )}
+
+        {error === 'not_found' && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800 p-8 text-center">
-            <p className="text-red-600 dark:text-red-400 font-medium">{error}</p>
+            <p className="text-red-600 dark:text-red-400 font-medium">
+              This share link is invalid or has been removed.
+            </p>
           </div>
         )}
 
@@ -368,6 +423,47 @@ export default function SharePage({ params }: { params: { token: string } }) {
                     <SecretRow key={secret.id} secret={secret} token={params.token} />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Events section */}
+            {note.share_sections.events && note.events && note.events.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Events
+                </h2>
+                <ul className="space-y-3">
+                  {note.events.map((ev) => (
+                    <li key={ev.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{ev.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {new Date(ev.start_datetime).toLocaleString()}
+                        {ev.end_datetime && ` — ${new Date(ev.end_datetime).toLocaleString()}`}
+                      </p>
+                      {ev.description && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{ev.description}</p>
+                      )}
+                      {ev.url && (
+                        <a
+                          href={ev.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 block truncate"
+                        >
+                          {ev.url}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

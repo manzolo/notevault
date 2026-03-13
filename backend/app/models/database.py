@@ -26,6 +26,8 @@ class User(Base):
     notes = relationship("Note", back_populates="owner", cascade="all, delete-orphan")
     categories = relationship("Category", back_populates="owner", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
+    events = relationship("Event", back_populates="user", cascade="all, delete-orphan")
+    event_attachments = relationship("EventAttachment", back_populates="user", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -71,6 +73,7 @@ class Note(Base):
     bookmarks = relationship("Bookmark", back_populates="note", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="note", cascade="all, delete-orphan")
     share_tokens = relationship("ShareToken", back_populates="note", cascade="all, delete-orphan")
+    events = relationship("Event", back_populates="note", cascade="all, delete-orphan")
 
 
 class Tag(Base):
@@ -212,8 +215,46 @@ class ShareToken(Base):
     share_sections = Column(
         JSON,
         nullable=False,
-        server_default='{"content":true,"tasks":false,"attachments":false,"bookmarks":false,"secrets":false}',
+        server_default='{"content":true,"tasks":false,"attachments":false,"bookmarks":false,"secrets":false,"events":false}',
     )
+    visibility = Column(String(20), nullable=False, default="public", server_default="public")
+    allowed_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     note = relationship("Note", back_populates="share_tokens")
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(500), nullable=False)
+    description = Column(Text, nullable=True)
+    start_datetime = Column(DateTime(timezone=True), nullable=False)
+    end_datetime = Column(DateTime(timezone=True), nullable=True)
+    url = Column(String(2048), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    note = relationship("Note", back_populates="events")
+    user = relationship("User", back_populates="events")
+    attachments = relationship("EventAttachment", back_populates="event", cascade="all, delete-orphan")
+
+
+class EventAttachment(Base):
+    __tablename__ = "event_attachments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    filename = Column(String(255), nullable=False)
+    stored_filename = Column(String(255), nullable=False)
+    mime_type = Column(String(100), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    event = relationship("Event", back_populates="attachments")
+    user = relationship("User", back_populates="event_attachments")

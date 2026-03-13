@@ -98,6 +98,12 @@ export default function Navbar() {
                   {t('tasks')}
                 </Link>
                 <Link
+                  href={`/${locale}/calendar`}
+                  className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                >
+                  {t('calendar')}
+                </Link>
+                <Link
                   href={`/${locale}/settings`}
                   className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                 >
@@ -168,6 +174,13 @@ export default function Navbar() {
               onClick={closeMenu}
             >
               {t('tasks')}
+            </Link>
+            <Link
+              href={`/${locale}/calendar`}
+              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
+              onClick={closeMenu}
+            >
+              {t('calendar')}
             </Link>
             <Link
               href={`/${locale}/settings`}

@@ -4,6 +4,7 @@
     "newNote": "New Note",
     "settings": "Settings",
     "tasks": "Tasks",
+    "calendar": "Calendar",
     "logout": "Logout",
     "brand": "NoteVault"
   },
@@ -228,7 +229,44 @@
     "sectionAttachments": "Attachments",
     "sectionBookmarks": "Bookmarks",
     "sectionSecrets": "Secrets",
-    "secretsWarning": "Warning: secrets will be visible to anyone with this link."
+    "sectionEvents": "Events",
+    "secretsWarning": "Warning: secrets will be visible to anyone with this link.",
+    "visibilityLabel": "Who can view",
+    "visibilityPublic": "Anyone",
+    "visibilityUsers": "Logged-in users",
+    "visibilitySpecific": "Specific user",
+    "searchUser": "Search by username or email...",
+    "userNotFound": "No users found.",
+    "selectedUser": "Shared with",
+    "loginRequired": "Only logged-in users can view this shared note.",
+    "accessDenied": "Only the specified user can access this link.",
+    "loginLink": "Log in to NoteVault"
+  },
+  "events": {
+    "events": "Events",
+    "addEvent": "Add Event",
+    "editEvent": "Edit Event",
+    "noEvents": "No events yet.",
+    "title": "Title",
+    "description": "Description",
+    "startDatetime": "Start",
+    "endDatetime": "End (optional)",
+    "url": "URL (Google Meet, Zoom...)",
+    "pastEvents": "Past events",
+    "attachments": "Attachments",
+    "addAttachment": "Add attachment",
+    "deleteConfirm": "Delete this event?",
+    "saveFailed": "Failed to save event",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "prev": "Previous month",
+    "next": "Next month",
+    "today": "Today",
+    "more": "more",
+    "noItems": "No events or tasks this month."
   },
   "common": {
     "loading": "Loading...",

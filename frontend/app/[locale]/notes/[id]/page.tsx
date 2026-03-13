@@ -23,6 +23,7 @@ import AttachmentEditForm from '@/components/attachments/AttachmentEditForm';
 import BookmarkList from '@/components/bookmarks/BookmarkList';
 import BookmarkForm from '@/components/bookmarks/BookmarkForm';
 import TaskPanel from '@/components/tasks/TaskPanel';
+import EventPanel from '@/components/events/EventPanel';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -826,6 +827,11 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           onToggle={async (id, isDone) => { await updateTask(id, { is_done: isDone }); }}
           onDelete={deleteTask}
         />
+      </div>
+
+      {/* Events Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <EventPanel noteId={noteId} />
       </div>
 
       <Modal isOpen={showSecretModal} onClose={() => setShowSecretModal(false)} title={tSecrets('addSecret')}>

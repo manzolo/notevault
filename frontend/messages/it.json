@@ -4,6 +4,7 @@
     "newNote": "Nuova Nota",
     "settings": "Impostazioni",
     "tasks": "Attività",
+    "calendar": "Calendario",
     "logout": "Esci",
     "brand": "NoteVault"
   },
@@ -228,7 +229,44 @@
     "sectionAttachments": "Allegati",
     "sectionBookmarks": "Segnalibri",
     "sectionSecrets": "Segreti",
-    "secretsWarning": "Attenzione: i segreti saranno visibili a chiunque abbia questo link."
+    "sectionEvents": "Eventi",
+    "secretsWarning": "Attenzione: i segreti saranno visibili a chiunque abbia questo link.",
+    "visibilityLabel": "Chi può visualizzare",
+    "visibilityPublic": "Chiunque",
+    "visibilityUsers": "Utenti registrati",
+    "visibilitySpecific": "Utente specifico",
+    "searchUser": "Cerca per nome utente o email...",
+    "userNotFound": "Nessun utente trovato.",
+    "selectedUser": "Condiviso con",
+    "loginRequired": "Solo gli utenti registrati possono visualizzare questa nota condivisa.",
+    "accessDenied": "Solo l'utente specificato può accedere a questo link.",
+    "loginLink": "Accedi a NoteVault"
+  },
+  "events": {
+    "events": "Eventi",
+    "addEvent": "Aggiungi evento",
+    "editEvent": "Modifica evento",
+    "noEvents": "Nessun evento.",
+    "title": "Titolo",
+    "description": "Descrizione",
+    "startDatetime": "Inizio",
+    "endDatetime": "Fine (opzionale)",
+    "url": "URL (Google Meet, Zoom...)",
+    "pastEvents": "Eventi passati",
+    "attachments": "Allegati",
+    "addAttachment": "Aggiungi allegato",
+    "deleteConfirm": "Eliminare questo evento?",
+    "saveFailed": "Salvataggio evento fallito",
+    "cancel": "Annulla",
+    "save": "Salva"
+  },
+  "calendar": {
+    "title": "Calendario",
+    "prev": "Mese precedente",
+    "next": "Mese successivo",
+    "today": "Oggi",
+    "more": "altri",
+    "noItems": "Nessun evento o task questo mese."
   },
   "common": {
     "loading": "Caricamento...",
