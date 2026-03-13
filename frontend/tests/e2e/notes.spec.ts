@@ -30,7 +30,8 @@ test.describe('Notes', () => {
     await page.waitForURL(/\/it\/notes\/new/);
 
     await page.fill('input[id]', 'E2E Test Note');
-    await page.fill('textarea', 'This note was created by Playwright E2E tests.');
+    await page.locator('.ProseMirror').click();
+    await page.locator('.ProseMirror').fill('This note was created by Playwright E2E tests.');
     await page.click('button[type="submit"]');
 
     // After save, should land on note detail page
