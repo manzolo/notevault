@@ -17,7 +17,12 @@ interface Props {
   emlAttachmentCount?: number;
 }
 
-const INLINE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'message/rfc822', 'application/zip']);
+const INLINE_MIMES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
+  'message/rfc822', 'application/zip',
+  'text/plain', 'text/markdown', 'text/csv', 'text/html', 'text/xml',
+  'application/json', 'application/xml',
+]);
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -71,6 +76,33 @@ function FileIcon({ mime }: { mime: string }) {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
         d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13l1.5 2L12 13l1.5 2L15 13M9 9h6" />
+    </svg>
+  );
+  if (mime === 'text/plain' || mime === 'text/csv' || mime === 'application/json' || mime === 'application/xml' || mime === 'text/xml') return (
+    <svg className="w-8 h-8 text-teal-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 9h6M9 13h6M9 17h4" />
+    </svg>
+  );
+  if (mime === 'text/html') return (
+    <svg className="w-8 h-8 text-orange-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13l-2 2 2 2M15 13l2 2-2 2" />
+    </svg>
+  );
+  if (mime === 'application/x-msdownload') return (
+    <svg className="w-8 h-8 text-gray-600 dark:text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V9l-6-6z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v6h6M12 12v6M9 15l3 3 3-3" />
+    </svg>
+  );
+  if (mime === 'application/octet-stream') return (
+    <svg className="w-8 h-8 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
     </svg>
   );
   if (mime === 'message/rfc822') return (

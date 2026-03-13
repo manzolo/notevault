@@ -171,7 +171,9 @@
     "category_markdown": "Markdown",
     "category_archives": "Archivi",
     "category_emails": "Email",
-    "category_other": "Altro"
+    "category_other": "Altro",
+    "category_scripts": "Script e Configurazioni",
+    "category_executables": "Eseguibili e Binari"
   },
   "bookmarks": {
     "bookmarks": "Segnalibri",

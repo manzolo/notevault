@@ -171,7 +171,9 @@
     "category_markdown": "Markdown",
     "category_archives": "Archives",
     "category_emails": "Emails",
-    "category_other": "Other"
+    "category_other": "Other",
+    "category_scripts": "Scripts & Configs",
+    "category_executables": "Executables & Binaries"
   },
   "bookmarks": {
     "bookmarks": "Bookmarks",

@@ -144,11 +144,12 @@ async def test_upload_exceeds_size_limit(client, auth_headers, note_id):
 
 
 async def test_upload_unsupported_type(client, auth_headers, note_id):
-    """An .exe file should be rejected with 415."""
-    exe_bytes = b"MZ" + b"\x00" * 50  # PE/COFF magic
+    """An unsupported file type (.iso) should be rejected with 415."""
+    # Use an extension + magic bytes not in the allowed list
+    iso_bytes = b"\x00" * 4 + b"CDROM" + b"\x00" * 50
     resp = await client.post(
         f"/api/notes/{note_id}/attachments",
-        files={"file": ("malware.exe", io.BytesIO(exe_bytes), "application/octet-stream")},
+        files={"file": ("disk.iso", io.BytesIO(iso_bytes), "application/x-iso9660-image")},
         headers=auth_headers,
     )
     assert resp.status_code == 415

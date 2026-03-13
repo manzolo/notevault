@@ -40,6 +40,13 @@ const INLINE_MIMES = new Set([
   'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
   'message/rfc822',
   'application/zip',
+  'text/plain', 'text/markdown', 'text/csv', 'text/html', 'text/xml',
+  'application/json', 'application/xml',
+]);
+
+const TEXT_PREVIEW_MIMES = new Set([
+  'text/plain', 'text/markdown', 'text/csv', 'text/html', 'text/xml',
+  'application/json', 'application/xml',
 ]);
 
 export default function NotePage({ params }: { params: { id: string; locale: string } }) {
@@ -76,6 +83,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [previewState, setPreviewState] = useState<{ attachment: Attachment; url: string } | null>(null);
   const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
+
+  // Text file preview state
+  const [textContent, setTextContent] = useState<string | null>(null);
 
   // Email preview state
   const [emailContent, setEmailContent] = useState<{ headers: Record<string, string>; body: string } | null>(null);
@@ -360,6 +370,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const handleClosePreview = () => {
     if (previewState?.url) URL.revokeObjectURL(previewState.url);
     setPreviewState(null);
+    setTextContent(null);
     setEmailContent(null);
     setEmlView('raw');
     setEmlParsed(null);
@@ -559,6 +570,11 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         } finally {
           setZipLoading(false);
         }
+      } else if (TEXT_PREVIEW_MIMES.has(attachment.mime_type)) {
+        const text = await fetch(url).then((r) => r.text());
+        URL.revokeObjectURL(url);
+        setTextContent(text);
+        setPreviewState({ attachment, url: '' });
       } else {
         setPreviewState({ attachment, url });
       }
@@ -1283,6 +1299,10 @@ export default function NotePage({ params }: { params: { id: string; locale: str
                     )
                   ) : null}
                 </div>
+              ) : textContent !== null ? (
+                <pre className="w-full h-[70vh] overflow-auto p-4 text-xs font-mono text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700 whitespace-pre-wrap break-all leading-relaxed">
+                  {textContent}
+                </pre>
               ) : (
                 <img src={previewState.url} alt={previewState.attachment.filename} className="max-w-full max-h-[70vh] object-contain rounded" />
               )}

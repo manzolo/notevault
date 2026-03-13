@@ -45,6 +45,9 @@ ALLOWED_MIME_TYPES = {
     "application/gzip": ".gz",
     # Email
     "message/rfc822": ".eml",
+    # Executables / binaries
+    "application/x-msdownload": ".exe",
+    "application/octet-stream": ".bin",
 }
 
 # Extensions where the declared extension wins over magic-byte detection.
@@ -79,14 +82,46 @@ EXTENSION_PRIORITY: dict[str, str] = {
     ".py": "text/plain",
     ".js": "text/plain",
     ".ts": "text/plain",
+    ".tsx": "text/plain",
+    ".jsx": "text/plain",
     ".css": "text/plain",
     ".sh": "text/plain",
+    ".bash": "text/plain",
+    ".zsh": "text/plain",
+    ".fish": "text/plain",
+    ".ps1": "text/plain",
+    ".bat": "text/plain",
+    ".cmd": "text/plain",
     ".yaml": "text/plain",
     ".yml": "text/plain",
     ".toml": "text/plain",
     ".ini": "text/plain",
     ".sql": "text/plain",
     ".env": "text/plain",
+    # Network / VPN / system config
+    ".conf": "text/plain",
+    ".ovpn": "text/plain",
+    ".cfg": "text/plain",
+    ".config": "text/plain",
+    ".properties": "text/plain",
+    ".service": "text/plain",
+    ".htaccess": "text/plain",
+    # Dev / dotfiles
+    ".dockerfile": "text/plain",
+    ".gitignore": "text/plain",
+    ".gitattributes": "text/plain",
+    ".editorconfig": "text/plain",
+    ".npmrc": "text/plain",
+    ".bashrc": "text/plain",
+    ".bash_profile": "text/plain",
+    ".profile": "text/plain",
+    ".zshrc": "text/plain",
+    # Executables / binaries (extension-priority, no magic byte check)
+    ".exe": "application/x-msdownload",
+    ".dll": "application/x-msdownload",
+    ".bin": "application/octet-stream",
+    ".so": "application/octet-stream",
+    ".dylib": "application/octet-stream",
 }
 
 

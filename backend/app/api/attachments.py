@@ -28,7 +28,9 @@ settings = get_settings()
 
 # MIME types shown inline in browser
 _INLINE_MIMES = {
-    "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"
+    "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf",
+    "text/plain", "text/markdown", "text/csv", "text/html", "text/xml",
+    "application/json", "application/xml",
 }
 
 

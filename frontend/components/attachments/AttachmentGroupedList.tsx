@@ -16,11 +16,13 @@ type MimeCategory =
   | 'markdown'
   | 'archives'
   | 'emails'
+  | 'scripts'
+  | 'executables'
   | 'other';
 
 const CATEGORY_ORDER: MimeCategory[] = [
   'images', 'pdf', 'video', 'documents', 'spreadsheets', 'presentations',
-  'markdown', 'archives', 'emails', 'other',
+  'markdown', 'archives', 'emails', 'scripts', 'executables', 'other',
 ];
 
 function getMimeCategory(mime: string): MimeCategory {
@@ -50,6 +52,11 @@ function getMimeCategory(mime: string): MimeCategory {
     mime === 'application/x-gzip'
   ) return 'archives';
   if (mime === 'message/rfc822') return 'emails';
+  if (mime === 'application/x-msdownload') return 'executables';
+  if (mime === 'application/octet-stream') return 'executables';
+  if (mime === 'text/plain') return 'scripts';
+  if (mime === 'text/csv' || mime === 'application/json' || mime === 'application/xml' || mime === 'text/xml') return 'other';
+  if (mime === 'text/html') return 'other';
   return 'other';
 }
 
