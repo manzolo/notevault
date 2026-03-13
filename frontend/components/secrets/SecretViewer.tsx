@@ -104,7 +104,7 @@ export default function SecretViewer({
             {revealed && (
               <div className="mt-2">
                 {secret.secret_type === 'totp_seed' ? (
-                  <TotpLiveWidget seed={revealed.value} />
+                  <TotpLiveWidget seed={revealed.value} labelInvalidSeed={t('totpInvalidSeed')} labelCopy={t('totpCopyCode')} />
                 ) : (
                   <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded px-3 py-2 font-mono text-sm break-all">
                     {revealed.value}

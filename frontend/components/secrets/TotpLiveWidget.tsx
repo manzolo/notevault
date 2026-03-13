@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { copyToClipboard } from '@/lib/utils';
 import { ClipboardCheckIcon, ClipboardIcon } from '@/components/common/Icons';
 
 interface TotpLiveWidgetProps {
   seed: string;
+  labelInvalidSeed?: string;
+  labelCopy?: string;
 }
 
 function generateTotp(seed: string): string | null {
@@ -30,8 +31,7 @@ function getSecondsRemaining(): number {
   return 30 - (Math.floor(Date.now() / 1000) % 30);
 }
 
-export default function TotpLiveWidget({ seed }: TotpLiveWidgetProps) {
-  const t = useTranslations('secrets');
+export default function TotpLiveWidget({ seed, labelInvalidSeed = 'Invalid TOTP seed', labelCopy = 'Copy code' }: TotpLiveWidgetProps) {
   const [code, setCode] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(getSecondsRemaining());
   const [copied, setCopied] = useState(false);
@@ -53,7 +53,7 @@ export default function TotpLiveWidget({ seed }: TotpLiveWidgetProps) {
 
   if (code === null) {
     return (
-      <p className="text-xs text-red-500 mt-1">{t('totpInvalidSeed')}</p>
+      <p className="text-xs text-red-500 mt-1">{labelInvalidSeed}</p>
     );
   }
 
@@ -111,7 +111,7 @@ export default function TotpLiveWidget({ seed }: TotpLiveWidgetProps) {
       <button
         type="button"
         onClick={handleCopy}
-        title={t('totpCopyCode')}
+        title={labelCopy}
         className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
       >
         {copied ? <ClipboardCheckIcon className="h-4 w-4 text-green-500" /> : <ClipboardIcon className="h-4 w-4" />}
