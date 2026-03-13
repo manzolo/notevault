@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { MatchingAttachment, Note } from '@/lib/types';
-import { formatRelative, truncate } from '@/lib/utils';
+import { formatRelative, stripMarkdown, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
-import { EyeIcon, FolderIcon, TrashIcon } from '@/components/common/Icons';
+import { EyeIcon, FolderIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
@@ -19,6 +19,7 @@ const INLINE_MIMES = new Set([
 interface NoteCardProps {
   note: Note;
   onDelete: (id: number) => void;
+  onPin?: (id: number, pinned: boolean) => void;
   categoryName?: string;
   matchInAttachment?: boolean;
   matchInBookmark?: boolean;
@@ -44,7 +45,7 @@ function GlobeIcon() {
   );
 }
 
-export default function NoteCard({ note, onDelete, categoryName, matchInAttachment, matchInBookmark, matchingAttachments, onPreviewAttachment }: NoteCardProps) {
+export default function NoteCard({ note, onDelete, onPin, categoryName, matchInAttachment, matchInBookmark, matchingAttachments, onPreviewAttachment }: NoteCardProps) {
   const locale = useLocale();
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
@@ -54,6 +55,10 @@ export default function NoteCard({ note, onDelete, categoryName, matchInAttachme
 
   const handleDelete = async () => {
     if (await confirm(t('deleteConfirm'))) onDelete(note.id);
+  };
+
+  const handlePin = () => {
+    onPin?.(note.id, !note.is_pinned);
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -84,7 +89,7 @@ export default function NoteCard({ note, onDelete, categoryName, matchInAttachme
                 {note.title}
               </Link>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{truncate(note.content, 120)}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{truncate(stripMarkdown(note.content), 120)}</p>
             <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
               {note.tags.map((tag) => (
                 <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full">
@@ -143,9 +148,22 @@ export default function NoteCard({ note, onDelete, categoryName, matchInAttachme
             )}
           </div>
 
-          <Button variant="ghost-danger" size="sm" title={t('delete')} onClick={handleDelete}>
-            <TrashIcon />
-          </Button>
+          <div className="flex items-center gap-1">
+            {onPin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                title={note.is_pinned ? t('unpin') : t('pin')}
+                onClick={handlePin}
+                className={note.is_pinned ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'}
+              >
+                <PinIcon filled={note.is_pinned} />
+              </Button>
+            )}
+            <Button variant="ghost-danger" size="sm" title={t('delete')} onClick={handleDelete}>
+              <TrashIcon />
+            </Button>
+          </div>
         </div>
       </div>
     </>

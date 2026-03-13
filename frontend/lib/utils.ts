@@ -15,6 +15,28 @@ export function truncate(str: string, maxLength: number): string {
   return str.slice(0, maxLength) + '...';
 }
 
+/** Strip common markdown syntax for plain-text previews */
+export function stripMarkdown(text: string): string {
+  return text
+    .replace(/\\\[/g, '[').replace(/\\\]/g, ']')   // unescape \[ \]
+    .replace(/\[\[([^\]]+)\]\]/g, '$1')             // [[wiki]] → title
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')           // images
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')        // [text](url) → text
+    .replace(/#{1,6}\s+/gm, '')                     // headings
+    .replace(/\*\*([^*]+)\*\*/g, '$1')              // **bold**
+    .replace(/\*([^*]+)\*/g, '$1')                  // *italic*
+    .replace(/__([^_]+)__/g, '$1')                  // __bold__
+    .replace(/_([^_]+)_/g, '$1')                    // _italic_
+    .replace(/~~([^~]+)~~/g, '$1')                  // ~~strike~~
+    .replace(/`([^`]+)`/g, '$1')                    // `code`
+    .replace(/```[\s\S]*?```/g, '')                 // code blocks
+    .replace(/^[-*+]\s+/gm, '')                     // list items
+    .replace(/^\d+\.\s+/gm, '')                     // ordered lists
+    .replace(/^>\s+/gm, '')                         // blockquotes
+    .replace(/\n+/g, ' ')
+    .trim();
+}
+
 export function classNames(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ');
 }

@@ -17,6 +17,7 @@ export function useNotes() {
     createdAfter?: string | null,
     createdBefore?: string | null,
     categoryId?: number | null,
+    pinnedOnly?: boolean,
   ) => {
     setLoading(true);
     setError(null);
@@ -30,6 +31,7 @@ export function useNotes() {
       } else if (categoryId === null) {
         params.unfiled = true;
       }
+      if (pinnedOnly) params.pinned_only = true;
       const response = await api.get<NoteListResponse>('/api/notes', { params });
       setNotes(response.data.items);
       setTotal(response.data.total);

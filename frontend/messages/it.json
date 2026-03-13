@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "newNote": "Nuova Nota",
     "settings": "Impostazioni",
+    "tasks": "Attività",
     "logout": "Esci",
     "brand": "NoteVault"
   },
@@ -84,7 +85,11 @@
     "dateFrom": "Da",
     "dateTo": "A",
     "clearDate": "Cancella",
-    "noFolder": "Nessuna cartella"
+    "noFolder": "Nessuna cartella",
+    "pin": "In evidenza",
+    "unpin": "Togli evidenza",
+    "pinnedOnly": "Solo in evidenza",
+    "wikiLinks": "Note collegate"
   },
   "secrets": {
     "secrets": "Segreti",
@@ -113,7 +118,12 @@
     "creating": "Creazione...",
     "create": "Crea Segreto",
     "delete": "Elimina",
-    "deleteConfirm": "Sei sicuro di voler eliminare questo segreto?"
+    "deleteConfirm": "Sei sicuro di voler eliminare questo segreto?",
+    "totpSeed": "TOTP Seed (Base32)",
+    "totpSeedPlaceholder": "es. JBSWY3DPEHPK3PXP",
+    "totpCodeLabel": "Codice OTP corrente",
+    "totpCopyCode": "Copia codice",
+    "totpInvalidSeed": "Seed Base32 non valido"
   },
   "attachments": {
     "attachments": "Allegati",
@@ -169,6 +179,18 @@
     "deleteConfirm": "Sei sicuro di voler eliminare questo segnalibro?",
     "saveFailed": "Impossibile salvare il segnalibro"
   },
+  "tasks": {
+    "tasks": "Attività",
+    "add": "Aggiungi",
+    "addPlaceholder": "Nuova attività...",
+    "noTasks": "Nessuna attività.",
+    "done": "Completate",
+    "todo": "Da fare",
+    "all": "Tutte",
+    "filterStatus": "Filtra",
+    "noTasksFiltered": "Nessuna attività trovata.",
+    "noteLink": "Nella nota"
+  },
   "search": {
     "placeholder": "Cerca note...",
     "results": "Risultati di ricerca ({count})",
@@ -187,6 +209,19 @@
     "folders": "Cartelle",
     "searchFolders": "Cerca cartelle…",
     "noResults": "Nessuna cartella trovata"
+  },
+  "share": {
+    "share": "Condividi",
+    "shareNote": "Condividi nota",
+    "shareDesc": "Chiunque abbia questo link può visualizzare la nota (sola lettura).",
+    "shareLink": "Link di condivisione",
+    "copy": "Copia link",
+    "copied": "Copiato!",
+    "enable": "Crea link di condivisione",
+    "disable": "Rimuovi link di condivisione",
+    "disableConfirm": "Sei sicuro di voler rimuovere il link di condivisione? Chi possiede il link perderà l'accesso.",
+    "notShared": "Questa nota non è condivisa.",
+    "close": "Chiudi"
   },
   "common": {
     "loading": "Caricamento...",

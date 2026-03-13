@@ -14,7 +14,7 @@ import TagFilter from '@/components/search/TagFilter';
 import FolderSelector from '@/components/folders/FolderSelector';
 import Pagination from '@/components/common/Pagination';
 import Button from '@/components/common/Button';
-import { PlusIcon } from '@/components/common/Icons';
+import { PinIcon, PlusIcon } from '@/components/common/Icons';
 import api from '@/lib/api';
 import { MatchingAttachment, SearchResponse } from '@/lib/types';
 
@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [pinnedOnly, setPinnedOnly] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
@@ -57,9 +58,9 @@ export default function DashboardPage() {
     if (user) {
       const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
       const before = dateTo ? `${dateTo}T23:59:59` : undefined;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId).then(() => {});
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly).then(() => {});
     }
-  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId]);
+  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly]);
 
   const handleTagSelect = (tagId: number | null) => {
     setSelectedTagId(tagId);
@@ -98,7 +99,19 @@ export default function DashboardPage() {
 
   const handleDelete = async (id: number) => {
     await deleteNote(id);
-    fetchNotes(page, PER_PAGE, selectedTagId, undefined, undefined, selectedCategoryId);
+    fetchNotes(page, PER_PAGE, selectedTagId, undefined, undefined, selectedCategoryId, pinnedOnly);
+  };
+
+  const handlePin = async (id: number, pinned: boolean) => {
+    await updateNote(id, { is_pinned: pinned });
+    const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
+    const before = dateTo ? `${dateTo}T23:59:59` : undefined;
+    fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly);
+  };
+
+  const handlePinnedOnlyToggle = () => {
+    setPinnedOnly((prev) => !prev);
+    setPage(1);
   };
 
   const handlePreviewAttachment = async (noteId: number, att: MatchingAttachment) => {
@@ -180,9 +193,22 @@ export default function DashboardPage() {
               fetchCategories();
             }}
           />
-          {tags.length > 0 && (
-            <TagFilter tags={tags} selectedTagId={selectedTagId} onSelect={handleTagSelect} />
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {tags.length > 0 && (
+              <TagFilter tags={tags} selectedTagId={selectedTagId} onSelect={handleTagSelect} />
+            )}
+            <button
+              onClick={handlePinnedOnlyToggle}
+              className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                pinnedOnly
+                  ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-600'
+                  : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-600'
+              }`}
+            >
+              <PinIcon className="h-3.5 w-3.5" filled={pinnedOnly} />
+              {t('pinnedOnly')}
+            </button>
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('filterByDate')}:</span>
             <div className="flex items-center gap-2 flex-wrap">
@@ -229,6 +255,7 @@ export default function DashboardPage() {
           notes={displayNotes}
           loading={displayLoading}
           onDelete={handleDelete}
+          onPin={!searchResults ? handlePin : undefined}
           categories={categories}
           filterActive={!searchResults}
           matchMap={matchMap}

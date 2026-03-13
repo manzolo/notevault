@@ -92,6 +92,12 @@ export default function Navbar() {
                   {t('newNote')}
                 </Link>
                 <Link
+                  href={`/${locale}/tasks`}
+                  className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                >
+                  {t('tasks')}
+                </Link>
+                <Link
                   href={`/${locale}/settings`}
                   className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                 >
@@ -155,6 +161,13 @@ export default function Navbar() {
               onClick={closeMenu}
             >
               {t('newNote')}
+            </Link>
+            <Link
+              href={`/${locale}/tasks`}
+              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
+              onClick={closeMenu}
+            >
+              {t('tasks')}
             </Link>
             <Link
               href={`/${locale}/settings`}

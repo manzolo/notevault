@@ -10,7 +10,7 @@ interface SecretFormProps {
   onSubmit: (data: SecretCreate) => Promise<void>;
 }
 
-const SECRET_TYPES: SecretType[] = ['password', 'api_key', 'token', 'ssh_key', 'certificate', 'other'];
+const SECRET_TYPES: SecretType[] = ['password', 'api_key', 'token', 'ssh_key', 'certificate', 'totp_seed', 'other'];
 
 const SHOW_USERNAME: SecretType[] = ['password', 'api_key', 'ssh_key'];
 const SHOW_URL: SecretType[] = ['password', 'api_key', 'token', 'ssh_key'];
@@ -155,15 +155,15 @@ export default function SecretForm({ onSubmit }: SecretFormProps) {
       )}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          {secretType === 'ssh_key' ? t('privateKey') : t('secretValue')}
+          {secretType === 'ssh_key' ? t('privateKey') : secretType === 'totp_seed' ? t('totpSeed') : t('secretValue')}
         </label>
         <textarea
           value={value}
           onChange={(e) => handleValueChange(e.target.value)}
           required
-          rows={3}
+          rows={secretType === 'totp_seed' ? 1 : 3}
           className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Secret value..."
+          placeholder={secretType === 'totp_seed' ? t('totpSeedPlaceholder') : 'Secret value...'}
         />
         {detectedType && (
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">

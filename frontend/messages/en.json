@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "newNote": "New Note",
     "settings": "Settings",
+    "tasks": "Tasks",
     "logout": "Logout",
     "brand": "NoteVault"
   },
@@ -84,7 +85,11 @@
     "dateFrom": "From",
     "dateTo": "To",
     "clearDate": "Clear",
-    "noFolder": "No folder"
+    "noFolder": "No folder",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "pinnedOnly": "Pinned only",
+    "wikiLinks": "Linked notes"
   },
   "secrets": {
     "secrets": "Secrets",
@@ -113,7 +118,12 @@
     "creating": "Creating...",
     "create": "Create Secret",
     "delete": "Delete",
-    "deleteConfirm": "Are you sure you want to delete this secret?"
+    "deleteConfirm": "Are you sure you want to delete this secret?",
+    "totpSeed": "TOTP Seed (Base32)",
+    "totpSeedPlaceholder": "e.g. JBSWY3DPEHPK3PXP",
+    "totpCodeLabel": "Current OTP",
+    "totpCopyCode": "Copy code",
+    "totpInvalidSeed": "Invalid Base32 seed"
   },
   "attachments": {
     "attachments": "Attachments",
@@ -169,6 +179,18 @@
     "deleteConfirm": "Are you sure you want to delete this bookmark?",
     "saveFailed": "Failed to save bookmark"
   },
+  "tasks": {
+    "tasks": "Tasks",
+    "add": "Add",
+    "addPlaceholder": "New task...",
+    "noTasks": "No tasks yet.",
+    "done": "Done",
+    "todo": "To do",
+    "all": "All",
+    "filterStatus": "Filter",
+    "noTasksFiltered": "No tasks found.",
+    "noteLink": "In note"
+  },
   "search": {
     "placeholder": "Search notes...",
     "results": "Search Results ({count})",
@@ -187,6 +209,19 @@
     "folders": "Folders",
     "searchFolders": "Search folders…",
     "noResults": "No folders found"
+  },
+  "share": {
+    "share": "Share",
+    "shareNote": "Share note",
+    "shareDesc": "Anyone with this link can view the note (read-only).",
+    "shareLink": "Share link",
+    "copy": "Copy link",
+    "copied": "Copied!",
+    "enable": "Create share link",
+    "disable": "Remove share link",
+    "disableConfirm": "Are you sure you want to remove the share link? Anyone with the link will lose access.",
+    "notShared": "This note is not shared.",
+    "close": "Close"
   },
   "common": {
     "loading": "Loading...",

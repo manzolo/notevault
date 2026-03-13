@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
@@ -12,6 +12,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useSecrets } from '@/hooks/useSecrets';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useBookmarks } from '@/hooks/useBookmarks';
+import { useTasks } from '@/hooks/useTasks';
 import { Attachment, Bookmark, Note } from '@/lib/types';
 import NoteEditor from '@/components/notes/NoteEditor';
 import SecretList from '@/components/secrets/SecretList';
@@ -21,12 +22,15 @@ import AttachmentUploadForm from '@/components/attachments/AttachmentUploadForm'
 import AttachmentEditForm from '@/components/attachments/AttachmentEditForm';
 import BookmarkList from '@/components/bookmarks/BookmarkList';
 import BookmarkForm from '@/components/bookmarks/BookmarkForm';
+import TaskPanel from '@/components/tasks/TaskPanel';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { ArrowDownTrayIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
+import { ArrowDownTrayIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
+import ShareModal from '@/components/notes/ShareModal';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
+import api from '@/lib/api';
 
 const INLINE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
@@ -41,6 +45,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const tSecrets = useTranslations('secrets');
   const tAttachments = useTranslations('attachments');
   const tBookmarks = useTranslations('bookmarks');
+  const tTasks = useTranslations('tasks');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
@@ -53,9 +58,13 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret } = useSecrets(noteId);
   const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, deleteAttachment, previewAttachment, parseZip, previewZipEntry, downloadZipEntry, parseZipEml, previewZipEmlPart, downloadZipEmlPart, parseEml, previewEmlPart, downloadEmlPart } = useAttachments(noteId);
   const { bookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark } = useBookmarks(noteId);
+  const { tasks, loading: tasksLoading, fetchTasks, createTask, updateTask, deleteTask } = useTasks(noteId);
 
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
+  const [wikiLinksMap, setWikiLinksMap] = useState<Map<string, { id: number; title: string }>>(new Map());
+  const [backlinks, setBacklinks] = useState<{ id: number; title: string }[]>([]);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showSecretModal, setShowSecretModal] = useState(false);
@@ -106,11 +115,45 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
 
+  const fetchBacklinks = useCallback(async () => {
+    try {
+      const r = await api.get<{ id: number; title: string }[]>(`/api/notes/${noteId}/backlinks`);
+      setBacklinks(r.data);
+    } catch {
+      setBacklinks([]);
+    }
+  }, [noteId]);
+
+  const resolveWikiLinks = useCallback(async (content: string) => {
+    // Normalize escaped \[\[title\]\] → [[title]] (from older tiptap-markdown saves)
+    const normalized = content.replace(/\\\[\\\[([^\]]+)\\\]\\\]/g, '[[$1]]');
+    const titles = [...new Set([...normalized.matchAll(/\[\[([^\]]+)\]\]/g)].map((m) => m[1]))];
+    if (titles.length === 0) {
+      setWikiLinksMap(new Map());
+      return normalized;
+    }
+    const resolved = await Promise.all(
+      titles.map((title) =>
+        api.get<{ id: number; title: string }[]>('/api/notes/resolve', { params: { q: title, exact: true } })
+          .then((r) => r.data[0] ? { title, note: r.data[0] } : null)
+          .catch(() => null)
+      )
+    );
+    const map = new Map<string, { id: number; title: string }>();
+    resolved.forEach((r) => r && map.set(r.title, r.note));
+    setWikiLinksMap(map);
+    return normalized;
+  }, []);
+
   useEffect(() => {
     const load = async () => {
       try {
         const n = await getNote(noteId);
         setNote(n);
+
+        // Resolve wiki-links and normalize content; fetch backlinks in parallel
+        const [normalized] = await Promise.all([resolveWikiLinks(n.content), fetchBacklinks()]);
+        if (normalized !== n.content) setNote({ ...n, content: normalized });
         await fetchSecrets();
         const loadedAttachments = await fetchAttachments();
         if (loadedAttachments) {
@@ -122,6 +165,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           });
         }
         await fetchBookmarks();
+        await fetchTasks();
         await fetchTags();
         await fetchCategories();
       } catch {
@@ -264,7 +308,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     setSaving(true);
     try {
       const updated = await updateNote(noteId, data);
-      setNote(updated);
+      // Re-resolve wiki-links and backlinks from the new content
+      const [normalized] = await Promise.all([resolveWikiLinks(updated.content), fetchBacklinks()]);
+      setNote(normalized !== updated.content ? { ...updated, content: normalized } : updated);
       setEditing(false);
       toast.success('Note saved!');
     } catch {
@@ -550,6 +596,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   return (
     <div className="space-y-6">
       {confirmDialog}
+      {showShareModal && <ShareModal noteId={noteId} onClose={() => setShowShareModal(false)} />}
 
       {/* Drag-and-drop overlay */}
       {isDragging && (
@@ -608,6 +655,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
         </div>
         <div className="flex gap-2 shrink-0">
+          <Button variant="secondary" size="sm" onClick={() => setShowShareModal(true)}>
+            <ShareIcon />
+          </Button>
           <Button variant="secondary" size="sm" onClick={() => setEditing(!editing)}>
             {editing ? <XMarkIcon /> : <PencilIcon />}
             {editing ? 'Cancel' : 'Edit'}
@@ -635,9 +685,67 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           />
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-indigo-500 border border-gray-200 dark:border-gray-700 p-6 prose prose-sm max-w-none dark:prose-invert">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.content || '*No content*'}</ReactMarkdown>
-        </div>
+        <>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-indigo-500 border border-gray-200 dark:border-gray-700 p-6 prose prose-sm max-w-none dark:prose-invert">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                a({ href, children }) {
+                  if (href?.startsWith('wiki-link:')) {
+                    const wikiNoteId = parseInt(href.replace('wiki-link:', ''));
+                    return (
+                      <a href={`/${locale}/notes/${wikiNoteId}`} className="wiki-link" onClick={(e) => { e.preventDefault(); router.push(`/${locale}/notes/${wikiNoteId}`); }}>
+                        {children}
+                      </a>
+                    );
+                  }
+                  return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+                },
+              }}
+            >
+              {(note.content || '*No content*').replace(
+                /\[\[([^\]]+)\]\]/g,
+                (_, title) => {
+                  const linked = wikiLinksMap.get(title);
+                  return linked ? `[${title}](wiki-link:${linked.id})` : `[[${title}]]`;
+                }
+              )}
+            </ReactMarkdown>
+          </div>
+
+          {(wikiLinksMap.size > 0 || backlinks.length > 0) && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('wikiLinks')}</h3>
+              <div className="flex flex-wrap gap-2">
+                {[...wikiLinksMap.values()].map((linked) => (
+                  <a
+                    key={`out-${linked.id}`}
+                    href={`/${locale}/notes/${linked.id}`}
+                    onClick={(e) => { e.preventDefault(); router.push(`/${locale}/notes/${linked.id}`); }}
+                    className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                  >
+                    <LinkIcon className="w-3 h-3 shrink-0" />
+                    {linked.title}
+                  </a>
+                ))}
+                {backlinks
+                  .filter((bl) => ![...wikiLinksMap.values()].some((v) => v.id === bl.id))
+                  .map((bl) => (
+                    <a
+                      key={`in-${bl.id}`}
+                      href={`/${locale}/notes/${bl.id}`}
+                      onClick={(e) => { e.preventDefault(); router.push(`/${locale}/notes/${bl.id}`); }}
+                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors opacity-70"
+                      title="Citata da questa nota"
+                    >
+                      <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
+                      {bl.title}
+                    </a>
+                  ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {note.tags.length > 0 && (
@@ -705,6 +813,18 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           loading={bookmarksLoading}
           onEdit={(bm) => setEditingBookmark(bm)}
           onDelete={deleteBookmark}
+        />
+      </div>
+
+      {/* Tasks Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold mb-4">{tTasks('tasks')}</h2>
+        <TaskPanel
+          tasks={tasks}
+          loading={tasksLoading}
+          onCreate={async (title) => { await createTask({ title }); }}
+          onToggle={async (id, isDone) => { await updateTask(id, { is_done: isDone }); }}
+          onDelete={deleteTask}
         />
       </div>
 

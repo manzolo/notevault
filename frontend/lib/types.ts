@@ -61,7 +61,37 @@ export interface NoteUpdate {
   tag_ids?: number[];
 }
 
-export type SecretType = 'password' | 'api_key' | 'token' | 'ssh_key' | 'certificate' | 'other';
+export interface Task {
+  id: number;
+  note_id: number;
+  user_id: number;
+  title: string;
+  is_done: boolean;
+  due_date?: string | null;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskWithNote extends Task {
+  note_title: string;
+}
+
+export interface TaskCreate {
+  title: string;
+  is_done?: boolean;
+  due_date?: string | null;
+  position?: number;
+}
+
+export interface TaskUpdate {
+  title?: string;
+  is_done?: boolean;
+  due_date?: string | null;
+  position?: number;
+}
+
+export type SecretType = 'password' | 'api_key' | 'token' | 'ssh_key' | 'certificate' | 'totp_seed' | 'other';
 
 export interface Secret {
   id: number;

@@ -204,3 +204,24 @@ async def test_list_notes_tag_filter_user_isolation(client, auth_headers, second
     response = await client.get(f"/api/notes?tag_id={tag_id}", headers=second_auth_headers)
     assert response.status_code == 200
     assert response.json()["total"] == 0
+
+
+async def test_list_notes_pinned_only(client, auth_headers):
+    await client.post("/api/notes", json={"title": "Normal", "content": "", "is_pinned": False}, headers=auth_headers)
+    await client.post("/api/notes", json={"title": "Pinned", "content": "", "is_pinned": True}, headers=auth_headers)
+
+    response = await client.get("/api/notes?pinned_only=true", headers=auth_headers)
+    data = response.json()
+    assert data["total"] == 1
+    assert data["items"][0]["title"] == "Pinned"
+    assert data["items"][0]["is_pinned"] is True
+
+
+async def test_list_notes_pinned_sort_first(client, auth_headers):
+    await client.post("/api/notes", json={"title": "Normal", "content": ""}, headers=auth_headers)
+    await client.post("/api/notes", json={"title": "Pinned", "content": "", "is_pinned": True}, headers=auth_headers)
+
+    response = await client.get("/api/notes", headers=auth_headers)
+    items = response.json()["items"]
+    assert items[0]["is_pinned"] is True
+    assert items[0]["title"] == "Pinned"

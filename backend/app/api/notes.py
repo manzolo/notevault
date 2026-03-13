@@ -24,6 +24,7 @@ async def list_notes(
     tag_id: Optional[int] = Query(None),
     category_id: Optional[int] = Query(None),
     unfiled: bool = Query(False),
+    pinned_only: bool = Query(False),
     created_after: Optional[datetime] = Query(None),
     created_before: Optional[datetime] = Query(None),
     updated_after: Optional[datetime] = Query(None),
@@ -46,6 +47,9 @@ async def list_notes(
         base_filter = base_filter & (Note.category_id == category_id)
     elif unfiled:
         base_filter = base_filter & Note.category_id.is_(None)
+
+    if pinned_only:
+        base_filter = base_filter & (Note.is_pinned == True)
 
     if created_after is not None:
         base_filter = base_filter & (Note.created_at >= created_after)
@@ -101,6 +105,63 @@ async def create_note(
         select(Note).options(selectinload(Note.tags)).where(Note.id == note.id)
     )
     return result.scalar_one()
+
+
+@router.get("/resolve")
+async def resolve_notes(
+    q: str = Query(""),
+    exact: bool = Query(False),
+    limit: int = Query(10, ge=1, le=20),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Resolve note titles for wiki-links. Returns [{id, title}]."""
+    if exact:
+        if not q:
+            return []
+        stmt = select(Note.id, Note.title).where(
+            Note.user_id == current_user.id,
+            func.lower(Note.title) == q.lower()
+        ).limit(1)
+    elif q:
+        stmt = select(Note.id, Note.title).where(
+            Note.user_id == current_user.id,
+            Note.title.ilike(f'%{q}%')
+        ).order_by(Note.title).limit(limit)
+    else:
+        stmt = select(Note.id, Note.title).where(
+            Note.user_id == current_user.id
+        ).order_by(Note.updated_at.desc()).limit(limit)
+
+    result = await db.execute(stmt)
+    return [{"id": row.id, "title": row.title} for row in result.all()]
+
+
+@router.get("/{note_id}/backlinks")
+async def get_backlinks(
+    note_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return notes that contain [[this note's title]] in their content (incoming wiki-links)."""
+    result = await db.execute(
+        select(Note.id, Note.title).where(
+            Note.id == note_id,
+            Note.user_id == current_user.id,
+        )
+    )
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Note not found")
+
+    pattern = f"%[[{row.title}]]%"
+    stmt = select(Note.id, Note.title).where(
+        Note.user_id == current_user.id,
+        Note.id != note_id,
+        Note.content.ilike(pattern),
+    ).order_by(Note.title)
+    result = await db.execute(stmt)
+    return [{"id": r.id, "title": r.title} for r in result.all()]
 
 
 @router.get("/{note_id}", response_model=NoteResponse)

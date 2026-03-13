@@ -25,6 +25,7 @@ class User(Base):
 
     notes = relationship("Note", back_populates="owner", cascade="all, delete-orphan")
     categories = relationship("Category", back_populates="owner", cascade="all, delete-orphan")
+    tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -68,6 +69,8 @@ class Note(Base):
     secrets = relationship("Secret", back_populates="note", cascade="all, delete-orphan")
     attachments = relationship("Attachment", back_populates="note", cascade="all, delete-orphan")
     bookmarks = relationship("Bookmark", back_populates="note", cascade="all, delete-orphan")
+    tasks = relationship("Task", back_populates="note", cascade="all, delete-orphan")
+    share_tokens = relationship("ShareToken", back_populates="note", cascade="all, delete-orphan")
 
 
 class Tag(Base):
@@ -180,3 +183,32 @@ class BookmarkTag(Base):
 
     bookmark_id = Column(Integer, ForeignKey("bookmarks.id", ondelete="CASCADE"), primary_key=True)
     tag_id = Column(Integer, ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True)
+
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(500), nullable=False)
+    is_done = Column(Boolean, default=False, nullable=False)
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    position = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    note = relationship("Note", back_populates="tasks")
+    user = relationship("User", back_populates="tasks")
+
+
+class ShareToken(Base):
+    __tablename__ = "share_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token = Column(String(64), nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    note = relationship("Note", back_populates="share_tokens")

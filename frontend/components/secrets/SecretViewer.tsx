@@ -8,6 +8,7 @@ import Button from '@/components/common/Button';
 import { ClipboardCheckIcon, ClipboardIcon, EyeIcon, EyeOffIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
+import TotpLiveWidget from './TotpLiveWidget';
 
 interface SecretViewerProps {
   secret: Secret;
@@ -102,9 +103,13 @@ export default function SecretViewer({
             )}
             {revealed && (
               <div className="mt-2">
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded px-3 py-2 font-mono text-sm break-all">
-                  {revealed.value}
-                </div>
+                {secret.secret_type === 'totp_seed' ? (
+                  <TotpLiveWidget seed={revealed.value} />
+                ) : (
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded px-3 py-2 font-mono text-sm break-all">
+                    {revealed.value}
+                  </div>
+                )}
                 {countdownSeconds !== undefined && (
                   <p className="text-xs text-amber-600 mt-1">
                     {t('autoHide', { seconds: countdownSeconds })}
