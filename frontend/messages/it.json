@@ -160,7 +160,18 @@
     "zipUnlock": "Sblocca",
     "zipPasswordWrong": "Password errata, riprova",
     "zipEmpty": "Archivio vuoto",
-    "emlHasAttachments": "Questa email contiene allegati"
+    "emlHasAttachments": "Questa email contiene allegati",
+    "xMore": "altri {count}",
+    "category_images": "Immagini",
+    "category_pdf": "PDF",
+    "category_video": "Video",
+    "category_documents": "Documenti",
+    "category_spreadsheets": "Fogli di calcolo",
+    "category_presentations": "Presentazioni",
+    "category_markdown": "Markdown",
+    "category_archives": "Archivi",
+    "category_emails": "Email",
+    "category_other": "Altro"
   },
   "bookmarks": {
     "bookmarks": "Segnalibri",

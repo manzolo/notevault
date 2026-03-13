@@ -11,6 +11,8 @@ import api from "@/lib/api";
 
 interface Props {
   noteId: number;
+  onCountChange?: (count: number) => void;
+  onAdd?: React.MutableRefObject<(() => void) | null>;
 }
 
 function formatSize(bytes: number): string {
@@ -26,7 +28,7 @@ function formatDatetime(iso: string): string {
   });
 }
 
-export default function EventPanel({ noteId }: Props) {
+export default function EventPanel({ noteId, onCountChange, onAdd }: Props) {
   const t = useTranslations("events");
   const { events, loading, fetchEvents, createEvent, updateEvent, deleteEvent } = useEvents(noteId);
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -37,6 +39,17 @@ export default function EventPanel({ noteId }: Props) {
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  useEffect(() => {
+    if (!loading) onCountChange?.(events.length);
+  }, [events.length, loading]);
+
+  useEffect(() => {
+    if (onAdd) {
+      onAdd.current = () => { setEditingEvent(undefined); setShowModal(true); };
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const now = new Date();
   const upcoming = events.filter((e) => new Date(e.start_datetime) >= now);

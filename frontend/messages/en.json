@@ -160,7 +160,18 @@
     "zipUnlock": "Unlock",
     "zipPasswordWrong": "Incorrect password, try again",
     "zipEmpty": "Empty archive",
-    "emlHasAttachments": "This email has embedded attachments"
+    "emlHasAttachments": "This email has embedded attachments",
+    "xMore": "{count} more",
+    "category_images": "Images",
+    "category_pdf": "PDF",
+    "category_video": "Video",
+    "category_documents": "Documents",
+    "category_spreadsheets": "Spreadsheets",
+    "category_presentations": "Presentations",
+    "category_markdown": "Markdown",
+    "category_archives": "Archives",
+    "category_emails": "Emails",
+    "category_other": "Other"
   },
   "bookmarks": {
     "bookmarks": "Bookmarks",

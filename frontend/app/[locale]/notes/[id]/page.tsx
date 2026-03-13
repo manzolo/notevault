@@ -17,7 +17,7 @@ import { Attachment, Bookmark, Note } from '@/lib/types';
 import NoteEditor from '@/components/notes/NoteEditor';
 import SecretList from '@/components/secrets/SecretList';
 import SecretForm from '@/components/secrets/SecretForm';
-import AttachmentList from '@/components/attachments/AttachmentList';
+import AttachmentGroupedList from '@/components/attachments/AttachmentGroupedList';
 import AttachmentUploadForm from '@/components/attachments/AttachmentUploadForm';
 import AttachmentEditForm from '@/components/attachments/AttachmentEditForm';
 import BookmarkList from '@/components/bookmarks/BookmarkList';
@@ -27,7 +27,8 @@ import EventPanel from '@/components/events/EventPanel';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { ArrowDownTrayIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
+import CollapsedSection from '@/components/common/CollapsedSection';
+import { ArrowDownTrayIcon, CalendarIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
 import ShareModal from '@/components/notes/ShareModal';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
@@ -47,6 +48,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const tAttachments = useTranslations('attachments');
   const tBookmarks = useTranslations('bookmarks');
   const tTasks = useTranslations('tasks');
+  const tEvents = useTranslations('events');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
@@ -103,6 +105,11 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [zipEntryLoadingPath, setZipEntryLoadingPath] = useState<string | null>(null);
   const [zipEmlPartPreview, setZipEmlPartPreview] = useState<{ url: string; filename: string; content_type: string } | null>(null);
   const [zipEmlPartLoadingIndex, setZipEmlPartLoadingIndex] = useState<number | null>(null);
+
+  // Collapsed section state
+  const [eventsCount, setEventsCount] = useState<number | null>(null);
+  const [forceTasksExpanded, setForceTasksExpanded] = useState(false);
+  const eventPanelAddRef = useRef<(() => void) | null>(null); // MutableRefObject by default
 
   // Paste-image state (images: quick modal with preview)
   const [pasteFile, setPasteFile] = useState<File | null>(null);
@@ -760,78 +767,127 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       )}
 
       {/* Secrets Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">{tSecrets('secrets')}</h2>
-          <Button size="sm" variant="secondary" onClick={() => setShowSecretModal(true)}>
-            <KeyIcon />
-            {tSecrets('addSecret')}
-          </Button>
+      {secretsLoading || secrets.length > 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">{tSecrets('secrets')}</h2>
+            <Button size="sm" variant="secondary" onClick={() => setShowSecretModal(true)}>
+              <KeyIcon />
+              {tSecrets('addSecret')}
+            </Button>
+          </div>
+          <SecretList
+            secrets={secrets}
+            revealedSecrets={revealedSecrets}
+            countdown={countdown}
+            loading={secretsLoading}
+            onReveal={revealSecret}
+            onHide={hideSecret}
+            onDelete={deleteSecret}
+            onCopyDirect={copySecret}
+          />
         </div>
-        <SecretList
-          secrets={secrets}
-          revealedSecrets={revealedSecrets}
-          countdown={countdown}
-          loading={secretsLoading}
-          onReveal={revealSecret}
-          onHide={hideSecret}
-          onDelete={deleteSecret}
-          onCopyDirect={copySecret}
+      ) : (
+        <CollapsedSection
+          icon={<KeyIcon />}
+          label={tSecrets('secrets')}
+          onAdd={() => setShowSecretModal(true)}
+          addLabel={`+ ${tSecrets('addSecret')}`}
         />
-      </div>
+      )}
 
       {/* Attachments Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">{tAttachments('attachments')}</h2>
-          <Button size="sm" variant="secondary" onClick={() => setShowUploadModal(true)}>
-            <PaperclipUploadIcon />
-            {tAttachments('upload')}
-          </Button>
+      {attachmentsLoading || attachments.length > 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">{tAttachments('attachments')}</h2>
+            <Button size="sm" variant="secondary" onClick={() => setShowUploadModal(true)}>
+              <PaperclipUploadIcon />
+              {tAttachments('upload')}
+            </Button>
+          </div>
+          <AttachmentGroupedList
+            attachments={attachments}
+            loading={attachmentsLoading}
+            onPreview={handlePreview}
+            onDownload={handleDownload}
+            onDelete={deleteAttachment}
+            onEdit={(att) => setEditingAttachment(att)}
+            emlAttachmentsMap={emlAttachmentsMap}
+          />
         </div>
-        <AttachmentList
-          attachments={attachments}
-          loading={attachmentsLoading}
-          onPreview={handlePreview}
-          onDownload={handleDownload}
-          onDelete={deleteAttachment}
-          onEdit={(att) => setEditingAttachment(att)}
-          emlAttachmentsMap={emlAttachmentsMap}
+      ) : (
+        <CollapsedSection
+          icon={<PaperclipIcon />}
+          label={tAttachments('attachments')}
+          onAdd={() => setShowUploadModal(true)}
+          addLabel={`+ ${tAttachments('upload')}`}
         />
-      </div>
+      )}
 
       {/* Bookmarks Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">{tBookmarks('bookmarks')}</h2>
-          <Button size="sm" variant="secondary" onClick={() => setShowBookmarkModal(true)}>
-            <LinkIcon />
-            {tBookmarks('add')}
-          </Button>
+      {bookmarksLoading || bookmarks.length > 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">{tBookmarks('bookmarks')}</h2>
+            <Button size="sm" variant="secondary" onClick={() => setShowBookmarkModal(true)}>
+              <LinkIcon />
+              {tBookmarks('add')}
+            </Button>
+          </div>
+          <BookmarkList
+            bookmarks={bookmarks}
+            loading={bookmarksLoading}
+            onEdit={(bm) => setEditingBookmark(bm)}
+            onDelete={deleteBookmark}
+          />
         </div>
-        <BookmarkList
-          bookmarks={bookmarks}
-          loading={bookmarksLoading}
-          onEdit={(bm) => setEditingBookmark(bm)}
-          onDelete={deleteBookmark}
+      ) : (
+        <CollapsedSection
+          icon={<LinkIcon />}
+          label={tBookmarks('bookmarks')}
+          onAdd={() => setShowBookmarkModal(true)}
+          addLabel={`+ ${tBookmarks('add')}`}
         />
-      </div>
+      )}
 
       {/* Tasks Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <h2 className="text-lg font-semibold mb-4">{tTasks('tasks')}</h2>
-        <TaskPanel
-          tasks={tasks}
-          loading={tasksLoading}
-          onCreate={async (title) => { await createTask({ title }); }}
-          onToggle={async (id, isDone) => { await updateTask(id, { is_done: isDone }); }}
-          onDelete={deleteTask}
+      {tasksLoading || tasks.length > 0 || forceTasksExpanded ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <h2 className="text-lg font-semibold mb-4">{tTasks('tasks')}</h2>
+          <TaskPanel
+            tasks={tasks}
+            loading={tasksLoading}
+            onCreate={async (title) => { await createTask({ title }); }}
+            onToggle={async (id, isDone) => { await updateTask(id, { is_done: isDone }); }}
+            onDelete={deleteTask}
+          />
+        </div>
+      ) : (
+        <CollapsedSection
+          icon={
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          }
+          label={tTasks('tasks')}
+          onAdd={() => setForceTasksExpanded(true)}
+          addLabel={`+ ${tTasks('add')}`}
         />
-      </div>
+      )}
 
       {/* Events Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <EventPanel noteId={noteId} />
+      {eventsCount === 0 && (
+        <CollapsedSection
+          icon={<CalendarIcon />}
+          label={tEvents('events')}
+          onAdd={() => eventPanelAddRef.current?.()}
+          addLabel={`+ ${tEvents('addEvent')}`}
+        />
+      )}
+      <div className={eventsCount === 0 ? 'h-0 overflow-hidden' : 'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6'}>
+        <EventPanel noteId={noteId} onCountChange={setEventsCount} onAdd={eventPanelAddRef} />
       </div>
 
       <Modal isOpen={showSecretModal} onClose={() => setShowSecretModal(false)} title={tSecrets('addSecret')}>
