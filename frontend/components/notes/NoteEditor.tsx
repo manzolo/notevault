@@ -148,11 +148,6 @@ export default function NoteEditor({
         </div>
       )}
 
-      <div className="flex justify-end">
-        <Button type="submit" variant="secondary" loading={loading}>
-          {loading ? t('saving') : t('save')}
-        </Button>
-      </div>
     </form>
   );
 }

@@ -137,6 +137,7 @@ const INLINE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
   'application/pdf',
   'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+  'text/plain', 'text/markdown', 'text/csv', 'text/html',
 ]);
 
 function formatBytesShare(bytes: number): string {
@@ -150,16 +151,24 @@ export default function SharePage({ params }: { params: { token: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [previewAtt, setPreviewAtt] = useState<{ att: SharedAttachment; url: string } | null>(null);
+  const [previewAtt, setPreviewAtt] = useState<{ att: SharedAttachment | SharedEventAttachment; url: string } | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
   const previewUrlRef = useRef<string | null>(null);
 
-  const handlePreview = async (att: SharedAttachment) => {
+  const handlePreview = async (att: SharedAttachment | SharedEventAttachment, url: string) => {
     try {
-      const response = await fetch(`/api/share/${params.token}/attachments/${att.id}`);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      previewUrlRef.current = url;
-      setPreviewAtt({ att, url });
+      if (att.mime_type.startsWith('text/')) {
+        const response = await fetch(url);
+        const text = await response.text();
+        setPreviewText(text);
+        setPreviewAtt({ att, url: '' });
+      } else {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        previewUrlRef.current = objectUrl;
+        setPreviewAtt({ att, url: objectUrl });
+      }
     } catch {
       // ignore
     }
@@ -171,6 +180,7 @@ export default function SharePage({ params }: { params: { token: string } }) {
       previewUrlRef.current = null;
     }
     setPreviewAtt(null);
+    setPreviewText(null);
   };
 
   useEffect(() => {
@@ -311,6 +321,11 @@ export default function SharePage({ params }: { params: { token: string } }) {
                         className="max-w-full max-h-[75vh] mx-auto rounded"
                       />
                     )}
+                    {previewText !== null && (
+                      <pre className="text-xs font-mono bg-gray-50 dark:bg-gray-950 rounded p-3 overflow-auto max-h-[75vh] whitespace-pre-wrap break-words">
+                        {previewText}
+                      </pre>
+                    )}
                   </div>
                 </div>
               </div>
@@ -342,7 +357,7 @@ export default function SharePage({ params }: { params: { token: string } }) {
             {note.share_sections.content && note.content !== undefined && (
               <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-indigo-500 border border-gray-200 dark:border-gray-700 p-6 prose prose-sm max-w-none dark:prose-invert">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {(note.content || '*No content*').replace(/\[\[([^\]]+)\]\]/g, '\\[\\[$1\\]\\]')}
+                  {(note.content || '*No content*').replace(/\[\[([^\]]+)\]\]/g, '$1')}
                 </ReactMarkdown>
               </div>
             )}
@@ -428,7 +443,7 @@ export default function SharePage({ params }: { params: { token: string } }) {
                         <div className="flex items-center gap-2 shrink-0">
                           {INLINE_MIMES.has(att.mime_type) && (
                             <button
-                              onClick={() => handlePreview(att)}
+                              onClick={() => handlePreview(att, `/api/share/${params.token}/attachments/${att.id}`)}
                               className="text-xs px-2.5 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                             >
                               Preview
@@ -566,12 +581,30 @@ export default function SharePage({ params }: { params: { token: string } }) {
                       {ev.attachments && ev.attachments.length > 0 && (
                         <div className="mt-1.5 space-y-1">
                           {ev.attachments.map((a) => (
-                            <div key={a.id} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
-                              <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                              </svg>
-                              <span className="truncate">{a.filename}</span>
-                              <span className="text-gray-400 shrink-0">({formatBytesShare(a.size_bytes)})</span>
+                            <div key={a.id} className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{a.filename}</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500">
+                                  {a.mime_type} · {formatBytesShare(a.size_bytes)}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {INLINE_MIMES.has(a.mime_type) && (
+                                  <button
+                                    onClick={() => handlePreview(a, `/api/share/${params.token}/events/${ev.id}/attachments/${a.id}`)}
+                                    className="text-xs px-2.5 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                  >
+                                    Preview
+                                  </button>
+                                )}
+                                <a
+                                  href={`/api/share/${params.token}/events/${ev.id}/attachments/${a.id}`}
+                                  download={a.filename}
+                                  className="text-xs px-2.5 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                                >
+                                  Download
+                                </a>
+                              </div>
                             </div>
                           ))}
                         </div>

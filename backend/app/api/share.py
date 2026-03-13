@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 
 from app.config import get_settings
 from app.database.connection import get_db
-from app.models.database import Attachment, Bookmark, Event, Note, Secret, ShareToken, Tag, Task, User
+from app.models.database import Attachment, Bookmark, Event, EventAttachment, Note, Secret, ShareToken, Tag, Task, User
 from app.schemas.note import NoteResponse
 from app.security.auth import verify_token
 from app.security.dependencies import get_current_user
@@ -402,6 +402,81 @@ async def download_shared_attachment(
         str(share.note_id),
     )
     full_path = os.path.join(upload_dir, attachment.stored_filename)
+
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=404, detail="File not found on disk")
+
+    encoded_name = quote(attachment.filename, safe="")
+    if attachment.mime_type in _INLINE_MIMES:
+        disposition = f"inline; filename*=UTF-8''{encoded_name}"
+    else:
+        disposition = f"attachment; filename*=UTF-8''{encoded_name}"
+
+    return FileResponse(
+        full_path,
+        media_type=attachment.mime_type,
+        headers={"Content-Disposition": disposition},
+    )
+
+
+@router.get("/api/share/{token}/events/{event_id}/attachments/{attachment_id}")
+@limiter.limit("60/minute")
+async def download_shared_event_attachment(
+    token: str,
+    event_id: int,
+    attachment_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    """Public endpoint to stream an event attachment from a shared note."""
+    result = await db.execute(
+        select(ShareToken).where(ShareToken.token == token)
+    )
+    share = result.scalar_one_or_none()
+    if not share:
+        raise HTTPException(status_code=404, detail="Share link not found or expired")
+
+    visibility = share.visibility or "public"
+
+    if visibility == "users":
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Login required to access this attachment")
+    elif visibility == "specific":
+        if current_user is None:
+            raise HTTPException(status_code=401, detail="Login required to access this attachment")
+        if current_user.id != share.allowed_user_id and current_user.id != share.user_id:
+            raise HTTPException(status_code=403, detail="You are not authorized to access this attachment")
+
+    sections: dict = share.share_sections or _DEFAULT_SECTIONS
+    if not sections.get("events", False):
+        raise HTTPException(status_code=403, detail="Events are not shared for this link")
+
+    # Verify the event belongs to the shared note
+    ev_result = await db.execute(
+        select(Event).where(Event.id == event_id, Event.note_id == share.note_id)
+    )
+    if not ev_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Verify the attachment belongs to the event
+    att_result = await db.execute(
+        select(EventAttachment).where(
+            EventAttachment.id == attachment_id,
+            EventAttachment.event_id == event_id,
+        )
+    )
+    attachment = att_result.scalar_one_or_none()
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    full_path = os.path.join(
+        settings.upload_dir,
+        str(share.user_id),
+        "events",
+        str(event_id),
+        attachment.stored_filename,
+    )
 
     if not os.path.exists(full_path):
         raise HTTPException(status_code=404, detail="File not found on disk")

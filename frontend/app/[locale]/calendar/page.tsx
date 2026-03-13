@@ -31,11 +31,6 @@ function buildCalendarGrid(year: number, month: number): (number | null)[][] {
   return grid;
 }
 
-const MONTH_NAMES_EN = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function CalendarPage() {
   const t = useTranslations("calendar");
@@ -49,6 +44,7 @@ export default function CalendarPage() {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth(); // 0-indexed
   const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
+  const localeStr = locale === "it" ? "it-IT" : "en-US";
 
   const { events, fetchEvents } = useAllEvents(monthStr);
   const { tasks: allTasks, fetchAllTasks } = useAllTasks();
@@ -105,8 +101,8 @@ export default function CalendarPage() {
           >
             &#8249;
           </button>
-          <span className="text-lg font-semibold text-gray-800 dark:text-white min-w-[160px] text-center">
-            {MONTH_NAMES_EN[month]} {year}
+          <span className="text-lg font-semibold text-gray-800 dark:text-white min-w-[160px] text-center capitalize">
+            {new Date(year, month, 1).toLocaleString(localeStr, { month: "long", year: "numeric" })}
           </span>
           <button
             onClick={next}
@@ -122,8 +118,10 @@ export default function CalendarPage() {
       <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         {/* Day headers */}
         <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          {DAY_NAMES.map((d) => (
-            <div key={d} className="py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400">
+          {Array.from({ length: 7 }, (_, i) =>
+            new Date(2024, 0, 7 + i).toLocaleString(localeStr, { weekday: "short" })
+          ).map((d) => (
+            <div key={d} className="py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 capitalize">
               {d}
             </div>
           ))}
@@ -164,20 +162,25 @@ export default function CalendarPage() {
                       {day}
                     </span>
                   )}
-                  {shown.map(({ type, item }, i) => (
-                    <button
-                      key={i}
-                      onClick={() => router.push(`/${locale}/notes/${item.note_id}`)}
-                      className={`w-full text-left text-xs truncate rounded px-1.5 py-0.5 ${
-                        type === "event"
-                          ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
-                          : "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300"
-                      }`}
-                      title={item.title}
-                    >
-                      {item.title}
-                    </button>
-                  ))}
+                  {shown.map(({ type, item }, i) => {
+                    const timeStr = type === "event"
+                      ? new Date((item as CalendarEventWithNote).start_datetime).toLocaleTimeString(localeStr, { hour: "2-digit", minute: "2-digit" })
+                      : null;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => router.push(`/${locale}/notes/${item.note_id}`)}
+                        className={`w-full text-left text-xs truncate rounded px-1.5 py-0.5 ${
+                          type === "event"
+                            ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
+                            : "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300"
+                        }`}
+                        title={timeStr ? `${item.title} — ${timeStr}` : item.title}
+                      >
+                        {timeStr ? `${timeStr} ${item.title}` : item.title}
+                      </button>
+                    );
+                  })}
                   {more > 0 && (
                     <span className="text-xs text-gray-400 pl-1">
                       +{more} {t("more")}
