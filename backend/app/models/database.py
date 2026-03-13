@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy import (
     Column, Integer, String, Text, Boolean, DateTime, ForeignKey,
-    UniqueConstraint, Index, Enum as SAEnum
+    UniqueConstraint, Index, Enum as SAEnum, JSON
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR, BYTEA
 from sqlalchemy.orm import relationship
@@ -209,6 +209,11 @@ class ShareToken(Base):
     note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     token = Column(String(64), nullable=False, unique=True, index=True)
+    share_sections = Column(
+        JSON,
+        nullable=False,
+        server_default='{"content":true,"tasks":false,"attachments":false,"bookmarks":false,"secrets":false}',
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     note = relationship("Note", back_populates="share_tokens")

@@ -221,7 +221,14 @@
     "disable": "Rimuovi link di condivisione",
     "disableConfirm": "Sei sicuro di voler rimuovere il link di condivisione? Chi possiede il link perderà l'accesso.",
     "notShared": "Questa nota non è condivisa.",
-    "close": "Chiudi"
+    "close": "Chiudi",
+    "sectionsLabel": "Sezioni condivise",
+    "sectionContent": "Contenuto",
+    "sectionTasks": "Attività",
+    "sectionAttachments": "Allegati",
+    "sectionBookmarks": "Segnalibri",
+    "sectionSecrets": "Segreti",
+    "secretsWarning": "Attenzione: i segreti saranno visibili a chiunque abbia questo link."
   },
   "common": {
     "loading": "Caricamento...",

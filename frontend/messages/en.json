@@ -221,7 +221,14 @@
     "disable": "Remove share link",
     "disableConfirm": "Are you sure you want to remove the share link? Anyone with the link will lose access.",
     "notShared": "This note is not shared.",
-    "close": "Close"
+    "close": "Close",
+    "sectionsLabel": "Shared sections",
+    "sectionContent": "Content",
+    "sectionTasks": "Tasks",
+    "sectionAttachments": "Attachments",
+    "sectionBookmarks": "Bookmarks",
+    "sectionSecrets": "Secrets",
+    "secretsWarning": "Warning: secrets will be visible to anyone with this link."
   },
   "common": {
     "loading": "Loading...",
