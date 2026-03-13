@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '@/lib/api';
+import TotpLiveWidget from '@/components/secrets/TotpLiveWidget';
 
 interface SharedTask {
   id: number;
@@ -97,9 +98,11 @@ function SecretRow({ secret, token }: { secret: SharedSecret; token: string }) {
         </button>
       </div>
       {revealed && (
-        <pre className="mt-1 text-xs font-mono bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 whitespace-pre-wrap break-all select-all">
-          {secret.value}
-        </pre>
+        secret.secret_type === 'totp_seed'
+          ? <TotpLiveWidget seed={secret.value} />
+          : <pre className="mt-1 text-xs font-mono bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 whitespace-pre-wrap break-all select-all">
+              {secret.value}
+            </pre>
       )}
       {secret.public_key && (
         <pre className="text-xs font-mono bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 whitespace-pre-wrap break-all text-gray-500 dark:text-gray-400">
