@@ -71,8 +71,17 @@ export default function CalendarPage() {
 
   const eventsOnDay = (day: number): CalendarEventWithNote[] =>
     events.filter((e) => {
-      const d = new Date(e.start_datetime);
-      return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+      const start = new Date(e.start_datetime);
+      const end = e.end_datetime ? new Date(e.end_datetime) : start;
+      
+      // Create a Date object for the current day being checked at 00:00:00
+      const current = new Date(year, month, day, 0, 0, 0);
+      
+      // Create Date objects for the start and end of the event's days
+      const eventStartDay = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0);
+      const eventEndDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59);
+
+      return current >= eventStartDay && current <= eventEndDay;
     });
 
   const tasksOnDay = (day: number): TaskWithNote[] =>

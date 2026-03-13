@@ -43,11 +43,20 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
     setSaving(true);
     setError("");
     try {
+      const startT = startTime || "00:00";
+      let endD = endDate;
+      let endT = endTime;
+      
+      // If user provided an endDate but no endTime, default to end of day
+      if (endDate && !endTime) {
+        endT = "23:59";
+      }
+
       const data: CalendarEventCreate = {
         title: title.trim(),
         description: description.trim() || undefined,
-        start_datetime: new Date(`${startDate}T${startTime || "00:00"}`).toISOString(),
-        end_datetime: (endDate && endTime) ? new Date(`${endDate}T${endTime}`).toISOString() : undefined,
+        start_datetime: new Date(`${startDate}T${startT}:00`).toISOString(),
+        end_datetime: (endD && endT) ? new Date(`${endD}T${endT}:00`).toISOString() : undefined,
         url: url.trim() || undefined,
       };
       await onSave(data);
