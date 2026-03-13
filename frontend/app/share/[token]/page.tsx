@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '@/lib/api';
@@ -39,6 +39,13 @@ interface SharedSecret {
   value: string;
 }
 
+interface SharedEventAttachment {
+  id: number;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+}
+
 interface SharedEvent {
   id: number;
   title: string;
@@ -46,6 +53,7 @@ interface SharedEvent {
   start_datetime: string;
   end_datetime: string | null;
   url: string | null;
+  attachments?: SharedEventAttachment[];
 }
 
 interface ShareSections {
@@ -125,11 +133,45 @@ function SecretRow({ secret, token }: { secret: SharedSecret; token: string }) {
   );
 }
 
+const INLINE_MIMES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+  'application/pdf',
+  'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+]);
+
+function formatBytesShare(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function SharePage({ params }: { params: { token: string } }) {
   const [note, setNote] = useState<SharedNote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [previewAtt, setPreviewAtt] = useState<{ att: SharedAttachment; url: string } | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  const handlePreview = async (att: SharedAttachment) => {
+    try {
+      const response = await fetch(`/api/share/${params.token}/attachments/${att.id}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      previewUrlRef.current = url;
+      setPreviewAtt({ att, url });
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleClosePreview = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setPreviewAtt(null);
+  };
 
   useEffect(() => {
     api
@@ -224,6 +266,56 @@ export default function SharePage({ params }: { params: { token: string } }) {
 
         {note && (
           <div className="space-y-4">
+            {/* Attachment preview overlay */}
+            {previewAtt && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+                onClick={handleClosePreview}
+              >
+                <div
+                  className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate pr-4">
+                      {previewAtt.att.filename}
+                    </span>
+                    <button
+                      onClick={handleClosePreview}
+                      className="shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="p-4">
+                    {previewAtt.att.mime_type.startsWith('image/') && (
+                      <img
+                        src={previewAtt.url}
+                        alt={previewAtt.att.filename}
+                        className="max-w-full max-h-[75vh] mx-auto object-contain rounded"
+                      />
+                    )}
+                    {previewAtt.att.mime_type === 'application/pdf' && (
+                      <iframe
+                        src={previewAtt.url}
+                        title={previewAtt.att.filename}
+                        className="w-full h-[75vh] rounded"
+                      />
+                    )}
+                    {previewAtt.att.mime_type.startsWith('video/') && (
+                      <video
+                        src={previewAtt.url}
+                        controls
+                        className="max-w-full max-h-[75vh] mx-auto rounded"
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Note header card */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
@@ -250,7 +342,7 @@ export default function SharePage({ params }: { params: { token: string } }) {
             {note.share_sections.content && note.content !== undefined && (
               <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-indigo-500 border border-gray-200 dark:border-gray-700 p-6 prose prose-sm max-w-none dark:prose-invert">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {note.content || '*No content*'}
+                  {(note.content || '*No content*').replace(/\[\[([^\]]+)\]\]/g, '\\[\\[$1\\]\\]')}
                 </ReactMarkdown>
               </div>
             )}
@@ -333,13 +425,23 @@ export default function SharePage({ params }: { params: { token: string } }) {
                             {att.description && ` · ${att.description}`}
                           </p>
                         </div>
-                        <a
-                          href={`/api/share/${params.token}/attachments/${att.id}`}
-                          download={att.filename}
-                          className="shrink-0 text-xs px-2.5 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
-                        >
-                          Download
-                        </a>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {INLINE_MIMES.has(att.mime_type) && (
+                            <button
+                              onClick={() => handlePreview(att)}
+                              className="text-xs px-2.5 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            >
+                              Preview
+                            </button>
+                          )}
+                          <a
+                            href={`/api/share/${params.token}/attachments/${att.id}`}
+                            download={att.filename}
+                            className="text-xs px-2.5 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                          >
+                            Download
+                          </a>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -442,24 +544,37 @@ export default function SharePage({ params }: { params: { token: string } }) {
                 </h2>
                 <ul className="space-y-3">
                   {note.events.map((ev) => (
-                    <li key={ev.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3">
+                    <li key={ev.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3 space-y-1">
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{ev.title}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {new Date(ev.start_datetime).toLocaleString()}
                         {ev.end_datetime && ` — ${new Date(ev.end_datetime).toLocaleString()}`}
                       </p>
                       {ev.description && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{ev.description}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{ev.description}</p>
                       )}
                       {ev.url && (
                         <a
                           href={ev.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 block truncate"
+                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline block truncate"
                         >
                           {ev.url}
                         </a>
+                      )}
+                      {ev.attachments && ev.attachments.length > 0 && (
+                        <div className="mt-1.5 space-y-1">
+                          {ev.attachments.map((a) => (
+                            <div key={a.id} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                              <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                              </svg>
+                              <span className="truncate">{a.filename}</span>
+                              <span className="text-gray-400 shrink-0">({formatBytesShare(a.size_bytes)})</span>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </li>
                   ))}

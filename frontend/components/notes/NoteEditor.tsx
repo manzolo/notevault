@@ -64,6 +64,13 @@ export default function NoteEditor({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Sticky save bar at the top */}
+      <div className="sticky top-0 z-10 flex justify-end py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur border-b border-gray-100 dark:border-gray-700 -mx-1 px-1 -mt-1">
+        <Button type="submit" variant="secondary" loading={loading}>
+          {loading ? t('saving') : t('save')}
+        </Button>
+      </div>
+
       <Input
         label={t('title')}
         value={title}

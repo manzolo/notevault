@@ -62,6 +62,23 @@ export default function EventPanel({ noteId }: Props) {
     await fetchEvents();
   };
 
+  const handleDownloadAttachment = async (eventId: number, att: { id: number; filename: string; mime_type: string }) => {
+    try {
+      const response = await api.get(`/api/events/${eventId}/attachments/${att.id}/stream`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: att.mime_type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently ignore
+    }
+  };
+
   const renderEvent = (ev: CalendarEvent) => (
     <div key={ev.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
       <div className="flex items-start justify-between gap-2">
@@ -97,14 +114,13 @@ export default function EventPanel({ noteId }: Props) {
         <div className="space-y-1 ml-2">
           {ev.attachments.map((att) => (
             <div key={att.id} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-              <a
-                href={`/api/events/${ev.id}/attachments/${att.id}/stream`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline text-indigo-600 dark:text-indigo-400 truncate max-w-xs"
+              <button
+                type="button"
+                onClick={() => handleDownloadAttachment(ev.id, att)}
+                className="hover:underline text-indigo-600 dark:text-indigo-400 truncate max-w-xs text-left"
               >
                 {att.filename}
-              </a>
+              </button>
               <span className="text-gray-400">({formatSize(att.size_bytes)})</span>
               <button
                 onClick={() => handleDeleteAttachment(ev.id, att.id)}

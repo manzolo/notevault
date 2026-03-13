@@ -321,6 +321,7 @@ async def get_shared_note(
     if sections.get("events", False):
         ev_result = await db.execute(
             select(Event)
+            .options(selectinload(Event.attachments))
             .where(Event.note_id == note.id)
             .order_by(Event.start_datetime)
         )
@@ -333,6 +334,15 @@ async def get_shared_note(
                 "start_datetime": e.start_datetime,
                 "end_datetime": e.end_datetime,
                 "url": e.url,
+                "attachments": [
+                    {
+                        "id": a.id,
+                        "filename": a.filename,
+                        "mime_type": a.mime_type,
+                        "size_bytes": a.size_bytes,
+                    }
+                    for a in e.attachments
+                ],
             }
             for e in events
         ]
