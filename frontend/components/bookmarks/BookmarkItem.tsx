@@ -1,11 +1,14 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Bookmark } from '@/lib/types';
 import Button from '@/components/common/Button';
 import { PencilIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
+import { useServerConfig } from '@/hooks/useServerConfig';
+import { getCached, setCached } from '@/lib/faviconCache';
 
 interface Props {
   bookmark: Bookmark;
@@ -22,9 +25,36 @@ function GlobeIcon() {
   );
 }
 
+function getFaviconUrl(url: string): { domain: string; faviconUrl: string } | null {
+  try {
+    const origin = new URL(url).origin;
+    return { domain: origin, faviconUrl: `${origin}/favicon.ico` };
+  } catch {
+    return null;
+  }
+}
+
 export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
   const t = useTranslations('bookmarks');
   const { confirm, dialog } = useConfirm();
+  const { favicon_fetch_enabled } = useServerConfig();
+
+  const favicon = getFaviconUrl(bookmark.url);
+  const cached = favicon ? getCached(favicon.domain) : null;
+  const [imgError, setImgError] = useState<boolean>(
+    cached !== null ? !cached.ok : false
+  );
+
+  // If the cached entry is a failure, skip the <img> entirely
+  const showFavicon = favicon_fetch_enabled && favicon !== null && !imgError;
+  const skipImg = cached?.ok === false;
+
+  useEffect(() => {
+    if (favicon && cached !== null) {
+      setImgError(!cached.ok);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [favicon?.domain]);
 
   const handleDelete = async () => {
     if (await confirm(t('deleteConfirm'))) onDelete(bookmark.id);
@@ -34,7 +64,22 @@ export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
     <>
       {dialog}
       <div className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-        <GlobeIcon />
+        {showFavicon && !skipImg ? (
+          <img
+            src={favicon.faviconUrl}
+            alt=""
+            width={20}
+            height={20}
+            className="w-5 h-5 rounded-sm shrink-0 mt-0.5"
+            onLoad={() => setCached(favicon.domain, true)}
+            onError={() => {
+              setCached(favicon.domain, false);
+              setImgError(true);
+            }}
+          />
+        ) : (
+          <GlobeIcon />
+        )}
 
         <div className="flex-1 min-w-0">
           <a

@@ -59,4 +59,7 @@ async def health():
 @app.get("/api/config")
 async def public_config():
     """Public endpoint: exposes runtime-configurable limits to the frontend."""
-    return {"max_upload_bytes": settings.max_upload_bytes}
+    return {
+        "max_upload_bytes": settings.max_upload_bytes,
+        "favicon_fetch_enabled": settings.favicon_fetch_enabled,
+    }

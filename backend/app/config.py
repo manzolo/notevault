@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # TOTP — set TOTP_REQUIRED=false to disable 2FA enforcement (e.g. local dev)
     totp_required: bool = True
 
+    # Bookmarks — fetch favicon from origin/favicon.ico (off by default, privacy-preserving)
+    favicon_fetch_enabled: bool = False
+
     # App
     app_name: str = "NoteVault"
     debug: bool = False
