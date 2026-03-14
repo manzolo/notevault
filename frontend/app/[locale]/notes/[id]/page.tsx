@@ -716,12 +716,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
               components={{
                 a({ href, children }) {
                   if (href?.startsWith('wiki-link:')) {
-                    const wikiNoteId = parseInt(href.replace('wiki-link:', ''));
-                    return (
-                      <a href={`/${locale}/notes/${wikiNoteId}`} className="wiki-link" onClick={(e) => { e.preventDefault(); router.push(`/${locale}/notes/${wikiNoteId}`); }}>
-                        {children}
-                      </a>
-                    );
+                    return <span className="text-gray-700 dark:text-gray-300">{children}</span>;
                   }
                   return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
                 },
