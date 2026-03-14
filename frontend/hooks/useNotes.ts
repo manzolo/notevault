@@ -20,6 +20,7 @@ export function useNotes() {
     pinnedOnly?: boolean,
     archivedOnly?: boolean,
     includeArchived?: boolean,
+    recursive?: boolean,
   ) => {
     setLoading(true);
     setError(null);
@@ -36,6 +37,7 @@ export function useNotes() {
       if (pinnedOnly) params.pinned_only = true;
       if (archivedOnly) params.archived_only = true;
       if (includeArchived) params.include_archived = true;
+      if (recursive) params.recursive = true;
       const response = await api.get<NoteListResponse>('/api/notes', { params });
       setNotes(response.data.items);
       setTotal(response.data.total);

@@ -95,7 +95,12 @@
     "unarchive": "Unarchive",
     "archivedOnly": "Archived only",
     "filters": "Filters",
-    "wikiLinks": "Linked notes"
+    "tagsLabel": "Tags",
+    "showLabel": "Show",
+    "dateFilterHint": "Also matches notes with events in this range",
+    "resetFilters": "Reset all filters",
+    "wikiLinks": "Linked notes",
+    "includeSubfolders": "Include subfolders"
   },
   "secrets": {
     "secrets": "Secrets",

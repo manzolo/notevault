@@ -17,6 +17,7 @@ import Button from '@/components/common/Button';
 import { PlusIcon } from '@/components/common/Icons';
 import api from '@/lib/api';
 import { MatchingAttachment, SearchResponse } from '@/lib/types';
+import { dateToLocalStart, dateToLocalEnd } from '@/lib/utils';
 
 export default function DashboardPage() {
   const t = useTranslations('notes');
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   const [dateTo, setDateTo] = useState('');
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [archivedOnly, setArchivedOnly] = useState(false);
+  const [recursive, setRecursive] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
@@ -57,11 +59,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
-      const before = dateTo ? `${dateTo}T23:59:59` : undefined;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly).then(() => {});
+      const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
+      const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive).then(() => {});
     }
-  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly, archivedOnly]);
+  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly, archivedOnly, recursive]);
 
   const handleTagSelect = (tagId: number | null) => {
     setSelectedTagId(tagId);
@@ -70,6 +72,7 @@ export default function DashboardPage() {
 
   const handleCategorySelect = (categoryId: number | null) => {
     setSelectedCategoryId(categoryId);
+    if (categoryId === null) setRecursive(false);
     setPage(1);
   };
 
@@ -100,23 +103,31 @@ export default function DashboardPage() {
 
   const handleDelete = async (id: number) => {
     await deleteNote(id);
-    const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
-    const before = dateTo ? `${dateTo}T23:59:59` : undefined;
-    fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly);
+    const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
+    const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
+    fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
   };
 
   const handlePin = async (id: number, pinned: boolean) => {
     await updateNote(id, { is_pinned: pinned });
-    const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
-    const before = dateTo ? `${dateTo}T23:59:59` : undefined;
-    fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly);
+    if (searchQuery) {
+      await doSearch(searchQuery, searchPage);
+    } else {
+      const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
+      const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
+    }
   };
 
   const handleArchive = async (id: number, archived: boolean) => {
     await updateNote(id, { is_archived: archived });
-    const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
-    const before = dateTo ? `${dateTo}T23:59:59` : undefined;
-    fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly);
+    if (searchQuery) {
+      await doSearch(searchQuery, searchPage);
+    } else {
+      const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
+      const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
+    }
   };
 
   const handlePinnedOnlyToggle = () => {
@@ -202,12 +213,23 @@ export default function DashboardPage() {
             isDragging={isDragging}
             onDropNote={async (noteId, categoryId) => {
               await updateNote(noteId, { category_id: categoryId });
-              const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
-              const before = dateTo ? `${dateTo}T23:59:59` : undefined;
-              fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly);
+              const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
+              const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
+              fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
               fetchCategories();
             }}
           />
+          {selectedCategoryId !== null && (
+            <label className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-pointer ml-1">
+              <input
+                type="checkbox"
+                checked={recursive}
+                onChange={(e) => { setRecursive(e.target.checked); setPage(1); }}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              {t('includeSubfolders')}
+            </label>
+          )}
           <AdvancedFiltersPanel
             tags={tags}
             selectedTagId={selectedTagId}
@@ -231,8 +253,8 @@ export default function DashboardPage() {
           notes={displayNotes}
           loading={displayLoading}
           onDelete={handleDelete}
-          onPin={!searchResults ? handlePin : undefined}
-          onArchive={!searchResults ? handleArchive : undefined}
+          onPin={handlePin}
+          onArchive={handleArchive}
           categories={categories}
           filterActive={!searchResults}
           matchMap={matchMap}

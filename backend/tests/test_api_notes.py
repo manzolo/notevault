@@ -277,3 +277,309 @@ async def test_list_notes_include_archived(client, auth_headers):
     response = await client.get("/api/notes?include_archived=true", headers=auth_headers)
     data = response.json()
     assert data["total"] == 2
+
+
+# --- Date filter + event interaction tests ---
+
+async def test_date_filter_note_without_events_matches_created_at(client, auth_headers):
+    """Note with no events: filter by creation date works normally."""
+    resp = await client.post("/api/notes", json={"title": "Old note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    # The note was just created (today), so filtering with a very wide range should find it
+    import datetime
+    today = datetime.date.today().isoformat()
+    response = await client.get(f"/api/notes?created_after={today}T00:00:00&created_before={today}T23:59:59", headers=auth_headers)
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id in ids
+
+
+async def test_date_filter_note_with_event_in_range_is_shown(client, auth_headers):
+    """Note that has an event starting in the search range → must appear."""
+    resp = await client.post("/api/notes", json={"title": "Event note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    # Create event on 2026-03-12
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Ev", "start_datetime": "2026-03-12T10:00:00", "end_datetime": "2026-03-12T11:00:00"},
+        headers=auth_headers,
+    )
+    response = await client.get(
+        "/api/notes?created_after=2026-03-12T00:00:00&created_before=2026-03-13T23:59:59",
+        headers=auth_headers,
+    )
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id in ids
+
+
+async def test_date_filter_note_with_event_outside_range_is_hidden(client, auth_headers):
+    """Note whose event is on 2026-03-15 must NOT appear in a 2026-03-12/13 filter,
+    even if the note itself was created earlier (within range)."""
+    resp = await client.post("/api/notes", json={"title": "Future event note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    # Create event outside the filter range
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Ev", "start_datetime": "2026-03-15T10:00:00", "end_datetime": "2026-03-17T11:00:00"},
+        headers=auth_headers,
+    )
+    # Filter 12-13: the note's creation date might be "now" (irrelevant), event is 15-17 → not in range
+    response = await client.get(
+        "/api/notes?created_after=2026-03-12T00:00:00&created_before=2026-03-13T23:59:59",
+        headers=auth_headers,
+    )
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id not in ids
+
+
+async def test_date_filter_open_end_includes_future_events(client, auth_headers):
+    """Filter with only created_after and no created_before: events after that date must appear."""
+    resp = await client.post("/api/notes", json={"title": "Open end note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Far future", "start_datetime": "2030-01-01T10:00:00"},
+        headers=auth_headers,
+    )
+    response = await client.get(
+        "/api/notes?created_after=2026-03-01T00:00:00",
+        headers=auth_headers,
+    )
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id in ids
+
+
+async def test_date_filter_multi_day_event_overlap(client, auth_headers):
+    """Event from Mar 15 16:00 UTC to Mar 16 21:00 UTC must appear when filtering from Mar 16 00:00 UTC (no end).
+    Uses UTC naive datetimes to avoid + sign URL encoding issues."""
+    resp = await client.post("/api/notes", json={"title": "Multi-day", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Ev", "start_datetime": "2026-03-15T16:00:00", "end_datetime": "2026-03-16T21:00:00"},
+        headers=auth_headers,
+    )
+    # Filter: from Mar 16 00:00 UTC — event ends Mar 16 21:00 UTC which is after filter start, should appear
+    response = await client.get(
+        "/api/notes",
+        params={"created_after": "2026-03-16T00:00:00"},
+        headers=auth_headers,
+    )
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id in ids
+
+    # Filter: Mar 12-13 — event does not overlap, should NOT appear
+    response2 = await client.get(
+        "/api/notes",
+        params={"created_after": "2026-03-12T00:00:00", "created_before": "2026-03-13T23:59:59"},
+        headers=auth_headers,
+    )
+    ids2 = [n["id"] for n in response2.json()["items"]]
+    assert note_id not in ids2
+
+
+async def test_date_filter_event_entirely_before_range(client, auth_headers):
+    """Event ends before filter start → hidden."""
+    resp = await client.post("/api/notes", json={"title": "Before range note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Ev", "start_datetime": "2026-03-10T10:00:00", "end_datetime": "2026-03-10T11:00:00"},
+        headers=auth_headers,
+    )
+    # Filter: Mar 12-13: event ended Mar 10 → NOT in range
+    response = await client.get(
+        "/api/notes",
+        params={"created_after": "2026-03-12T00:00:00", "created_before": "2026-03-13T23:59:59"},
+        headers=auth_headers,
+    )
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id not in ids
+
+
+async def test_date_filter_event_entirely_after_range(client, auth_headers):
+    """Event starts after filter end → hidden."""
+    resp = await client.post("/api/notes", json={"title": "After range note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Ev", "start_datetime": "2026-03-15T10:00:00", "end_datetime": "2026-03-15T11:00:00"},
+        headers=auth_headers,
+    )
+    # Filter: Mar 12-13: event starts Mar 15 → NOT in range
+    response = await client.get(
+        "/api/notes",
+        params={"created_after": "2026-03-12T00:00:00", "created_before": "2026-03-13T23:59:59"},
+        headers=auth_headers,
+    )
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id not in ids
+
+
+async def test_date_filter_event_starts_in_range_ends_after(client, auth_headers):
+    """Event starts inside range, ends after range end → shown."""
+    resp = await client.post("/api/notes", json={"title": "Starts in range note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Ev", "start_datetime": "2026-03-13T18:00:00", "end_datetime": "2026-03-14T18:00:00"},
+        headers=auth_headers,
+    )
+    # Filter: Mar 12-13 23:59:59: event starts Mar 13 18:00 (in range), ends Mar 14 (outside) → IN range
+    response = await client.get(
+        "/api/notes",
+        params={"created_after": "2026-03-12T00:00:00", "created_before": "2026-03-13T23:59:59"},
+        headers=auth_headers,
+    )
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id in ids
+
+
+async def test_date_filter_event_spans_entire_range(client, auth_headers):
+    """Event starts before range start AND ends after range end → shown."""
+    resp = await client.post("/api/notes", json={"title": "Spanning note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Ev", "start_datetime": "2026-03-11T00:00:00", "end_datetime": "2026-03-15T00:00:00"},
+        headers=auth_headers,
+    )
+    # Filter: Mar 12-13: event spans the whole range → IN range
+    response = await client.get(
+        "/api/notes",
+        params={"created_after": "2026-03-12T00:00:00", "created_before": "2026-03-13T23:59:59"},
+        headers=auth_headers,
+    )
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id in ids
+
+
+async def test_date_filter_event_no_end_in_range(client, auth_headers):
+    """Event with no end_datetime, starts within range → shown."""
+    resp = await client.post("/api/notes", json={"title": "No end in range note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Ev", "start_datetime": "2026-03-12T10:00:00"},
+        headers=auth_headers,
+    )
+    # Filter: Mar 12-13: event starts Mar 12 (in range), no end → IN range
+    response = await client.get(
+        "/api/notes",
+        params={"created_after": "2026-03-12T00:00:00", "created_before": "2026-03-13T23:59:59"},
+        headers=auth_headers,
+    )
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id in ids
+
+
+async def test_date_filter_event_no_end_before_range(client, auth_headers):
+    """Event with no end_datetime, starts before range → hidden."""
+    resp = await client.post("/api/notes", json={"title": "No end before range note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Ev", "start_datetime": "2026-03-10T10:00:00"},
+        headers=auth_headers,
+    )
+    # Filter: Mar 12-13: event starts Mar 10 (before range), no end → NOT in range
+    # coalesce(null, Mar10) = Mar10, which is < Mar12 → event ends before range start → hidden
+    response = await client.get(
+        "/api/notes",
+        params={"created_after": "2026-03-12T00:00:00", "created_before": "2026-03-13T23:59:59"},
+        headers=auth_headers,
+    )
+    ids = [n["id"] for n in response.json()["items"]]
+    assert note_id not in ids
+
+
+async def test_date_filter_timezone_midnight_boundary(client, auth_headers):
+    """Event at 2026-03-14T00:00:00+01:00 (= 2026-03-13T23:00:00Z) should appear in Mar 14 CET filter
+    but NOT appear in Mar 13 CET filter.
+    Uses params={} dict to properly encode the + sign in timezone offset."""
+    resp = await client.post("/api/notes", json={"title": "TZ midnight note", "content": ""}, headers=auth_headers)
+    note_id = resp.json()["id"]
+    await client.post(
+        f"/api/notes/{note_id}/events",
+        json={"title": "Ev", "start_datetime": "2026-03-14T00:00:00+01:00"},
+        headers=auth_headers,
+    )
+
+    # Should appear in Mar 14 CET filter (2026-03-14T00:00:00+01:00 to 2026-03-14T23:59:59+01:00)
+    # = 2026-03-13T23:00:00Z to 2026-03-14T22:59:59Z
+    # event start = 2026-03-13T23:00:00Z: coalesce(null, 23:00Z) = 23:00Z >= 23:00Z AND 23:00Z <= 22:59:59Z+1day
+    r1 = await client.get(
+        "/api/notes",
+        params={"created_after": "2026-03-14T00:00:00+01:00", "created_before": "2026-03-14T23:59:59+01:00"},
+        headers=auth_headers,
+    )
+    ids1 = [n["id"] for n in r1.json()["items"]]
+    assert note_id in ids1
+
+    # Should NOT appear in Mar 13 CET filter (2026-03-13T00:00:00+01:00 to 2026-03-13T23:59:59+01:00)
+    # = 2026-03-12T23:00:00Z to 2026-03-13T22:59:59Z
+    # event start = 2026-03-13T23:00:00Z > 22:59:59Z → NOT in range
+    r2 = await client.get(
+        "/api/notes",
+        params={"created_after": "2026-03-13T00:00:00+01:00", "created_before": "2026-03-13T23:59:59+01:00"},
+        headers=auth_headers,
+    )
+    ids2 = [n["id"] for n in r2.json()["items"]]
+    assert note_id not in ids2
+
+
+async def test_list_notes_recursive_includes_subcategories(client, auth_headers):
+    """Filter by parent category with recursive=true → notes in child category appear."""
+    # Create parent category
+    parent_resp = await client.post("/api/categories", json={"name": "Parent Cat"}, headers=auth_headers)
+    parent_id = parent_resp.json()["id"]
+
+    # Create child category under parent
+    child_resp = await client.post("/api/categories", json={"name": "Child Cat", "parent_id": parent_id}, headers=auth_headers)
+    child_id = child_resp.json()["id"]
+
+    # Create note in parent category and note in child category
+    parent_note_resp = await client.post("/api/notes", json={"title": "Parent note", "content": "", "category_id": parent_id}, headers=auth_headers)
+    parent_note_id = parent_note_resp.json()["id"]
+
+    child_note_resp = await client.post("/api/notes", json={"title": "Child note", "content": "", "category_id": child_id}, headers=auth_headers)
+    child_note_id = child_note_resp.json()["id"]
+
+    # Filter by parent with recursive=true → both notes appear
+    response = await client.get(
+        "/api/notes",
+        params={"category_id": parent_id, "recursive": "true"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    ids = [n["id"] for n in response.json()["items"]]
+    assert parent_note_id in ids
+    assert child_note_id in ids
+
+
+async def test_list_notes_recursive_false_excludes_subcategories(client, auth_headers):
+    """Filter by parent category with recursive=false (default) → notes in child category do NOT appear."""
+    # Create parent category
+    parent_resp = await client.post("/api/categories", json={"name": "Parent Cat2"}, headers=auth_headers)
+    parent_id = parent_resp.json()["id"]
+
+    # Create child category under parent
+    child_resp = await client.post("/api/categories", json={"name": "Child Cat2", "parent_id": parent_id}, headers=auth_headers)
+    child_id = child_resp.json()["id"]
+
+    # Create note in parent category and note in child category
+    parent_note_resp = await client.post("/api/notes", json={"title": "Parent note2", "content": "", "category_id": parent_id}, headers=auth_headers)
+    parent_note_id = parent_note_resp.json()["id"]
+
+    child_note_resp = await client.post("/api/notes", json={"title": "Child note2", "content": "", "category_id": child_id}, headers=auth_headers)
+    child_note_id = child_note_resp.json()["id"]
+
+    # Filter by parent with recursive=false (default) → only parent note appears
+    response = await client.get(
+        "/api/notes",
+        params={"category_id": parent_id, "recursive": "false"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    ids = [n["id"] for n in response.json()["items"]]
+    assert parent_note_id in ids
+    assert child_note_id not in ids

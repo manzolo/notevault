@@ -4,10 +4,10 @@ from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_, and_
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Note, Tag, NoteTag, Attachment
+from app.models.database import Note, Tag, NoteTag, Attachment, Event, Category
 from app.schemas.note import NoteCreate, NoteUpdate, NoteResponse, NoteListResponse
 from app.security.dependencies import get_current_user
 from app.models.database import User
@@ -24,6 +24,7 @@ async def list_notes(
     tag_id: Optional[int] = Query(None),
     category_id: Optional[int] = Query(None),
     unfiled: bool = Query(False),
+    recursive: bool = Query(False),
     pinned_only: bool = Query(False),
     include_archived: bool = Query(False),
     archived_only: bool = Query(False),
@@ -46,7 +47,19 @@ async def list_notes(
         base_filter = base_filter & Note.id.in_(tag_subq)
 
     if category_id is not None:
-        base_filter = base_filter & (Note.category_id == category_id)
+        if recursive:
+            # Recursive CTE: category + all descendants
+            cat_cte = (
+                select(Category.id.label('id'))
+                .where(Category.id == category_id)
+                .cte(name='cat_tree', recursive=True)
+            )
+            cat_cte = cat_cte.union_all(
+                select(Category.id).where(Category.parent_id == cat_cte.c.id)
+            )
+            base_filter = base_filter & Note.category_id.in_(select(cat_cte.c.id))
+        else:
+            base_filter = base_filter & (Note.category_id == category_id)
     elif unfiled:
         base_filter = base_filter & Note.category_id.is_(None)
 
@@ -58,10 +71,28 @@ async def list_notes(
     elif not include_archived:
         base_filter = base_filter & (Note.is_archived == False)
 
-    if created_after is not None:
-        base_filter = base_filter & (Note.created_at >= created_after)
-    if created_before is not None:
-        base_filter = base_filter & (Note.created_at <= created_before)
+    if created_after is not None or created_before is not None:
+        note_date_conds = []
+        # Overlap check: event overlaps [created_after, created_before] when:
+        #   COALESCE(end_datetime, start_datetime) >= created_after  (event ends after range start)
+        #   AND start_datetime <= created_before                      (event starts before range end)
+        event_match_conds = [Event.note_id == Note.id]
+        if created_after is not None:
+            note_date_conds.append(Note.created_at >= created_after)
+            event_match_conds.append(
+                func.coalesce(Event.end_datetime, Event.start_datetime) >= created_after
+            )
+        if created_before is not None:
+            note_date_conds.append(Note.created_at <= created_before)
+            event_match_conds.append(Event.start_datetime <= created_before)
+        # Note has an event overlapping the range
+        event_in_range = select(Event.id).where(*event_match_conds).exists()
+        # Note has no events at all (fall back to creation date)
+        note_has_no_events = ~select(Event.id).where(Event.note_id == Note.id).exists()
+        base_filter = base_filter & or_(
+            event_in_range,
+            and_(note_has_no_events, *note_date_conds),
+        )
     if updated_after is not None:
         base_filter = base_filter & (Note.updated_at >= updated_after)
     if updated_before is not None:

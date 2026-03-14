@@ -95,7 +95,12 @@
     "unarchive": "Ripristina",
     "archivedOnly": "Solo archiviate",
     "filters": "Filtri",
-    "wikiLinks": "Note collegate"
+    "tagsLabel": "Tag",
+    "showLabel": "Mostra",
+    "dateFilterHint": "Include anche le note con eventi in questo intervallo",
+    "resetFilters": "Azzera tutti i filtri",
+    "wikiLinks": "Note collegate",
+    "includeSubfolders": "Includi sottocartelle"
   },
   "secrets": {
     "secrets": "Segreti",

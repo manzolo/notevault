@@ -44,3 +44,22 @@ export function classNames(...classes: (string | undefined | null | false)[]): s
 export function copyToClipboard(text: string): Promise<void> {
   return navigator.clipboard.writeText(text);
 }
+
+/** Returns the local timezone offset as "+HH:MM" or "-HH:MM" */
+function localOffset(): string {
+  const off = -new Date().getTimezoneOffset(); // minutes ahead of UTC
+  const sign = off >= 0 ? '+' : '-';
+  const h = String(Math.floor(Math.abs(off) / 60)).padStart(2, '0');
+  const m = String(Math.abs(off) % 60).padStart(2, '0');
+  return `${sign}${h}:${m}`;
+}
+
+/** "YYYY-MM-DD" → "YYYY-MM-DDT00:00:00+HH:MM" (start of day, local time) */
+export function dateToLocalStart(date: string): string {
+  return `${date}T00:00:00${localOffset()}`;
+}
+
+/** "YYYY-MM-DD" → "YYYY-MM-DDT23:59:59+HH:MM" (end of day, local time) */
+export function dateToLocalEnd(date: string): string {
+  return `${date}T23:59:59${localOffset()}`;
+}
