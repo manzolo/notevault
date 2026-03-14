@@ -18,6 +18,7 @@ import NoteEditor from '@/components/notes/NoteEditor';
 import SecretList from '@/components/secrets/SecretList';
 import SecretForm from '@/components/secrets/SecretForm';
 import AttachmentGroupedList from '@/components/attachments/AttachmentGroupedList';
+import AttachmentFlatList from '@/components/attachments/AttachmentFlatList';
 import AttachmentUploadForm from '@/components/attachments/AttachmentUploadForm';
 import AttachmentEditForm from '@/components/attachments/AttachmentEditForm';
 import BookmarkList from '@/components/bookmarks/BookmarkList';
@@ -80,6 +81,12 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
+  const [attachmentView, setAttachmentView] = useState<'flat' | 'grouped'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('attachmentView') as 'flat' | 'grouped') ?? 'flat';
+    }
+    return 'flat';
+  });
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [previewState, setPreviewState] = useState<{ attachment: Attachment; url: string } | null>(null);
   const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
@@ -812,24 +819,54 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       {/* Attachments Section */}
       {attachmentsLoading || attachments.length > 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <h2 className="text-lg font-semibold">{tAttachments('attachments')}</h2>
-            <Button size="sm" variant="secondary" onClick={() => setShowUploadModal(true)}>
-              <PaperclipUploadIcon />
-              {tAttachments('upload')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 text-xs">
+                <button
+                  onClick={() => { setAttachmentView('flat'); localStorage.setItem('attachmentView', 'flat'); }}
+                  className={`px-2.5 py-1 transition-colors ${attachmentView === 'flat' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                >
+                  {tAttachments('viewFlat')}
+                </button>
+                <button
+                  onClick={() => { setAttachmentView('grouped'); localStorage.setItem('attachmentView', 'grouped'); }}
+                  className={`px-2.5 py-1 transition-colors border-l border-gray-200 dark:border-gray-600 ${attachmentView === 'grouped' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                >
+                  {tAttachments('viewGrouped')}
+                </button>
+              </div>
+              <Button size="sm" variant="secondary" onClick={() => setShowUploadModal(true)}>
+                <PaperclipUploadIcon />
+                {tAttachments('upload')}
+              </Button>
+            </div>
           </div>
-          <AttachmentGroupedList
-            attachments={attachments}
-            loading={attachmentsLoading}
-            onPreview={handlePreview}
-            onDownload={handleDownload}
-            onDelete={deleteAttachment}
-            onEdit={(att) => setEditingAttachment(att)}
-            emlAttachmentsMap={emlAttachmentsMap}
-            onReorder={reorderAttachments}
-            setAttachments={setAttachments}
-          />
+          {attachmentView === 'grouped' ? (
+            <AttachmentGroupedList
+              attachments={attachments}
+              loading={attachmentsLoading}
+              onPreview={handlePreview}
+              onDownload={handleDownload}
+              onDelete={deleteAttachment}
+              onEdit={(att) => setEditingAttachment(att)}
+              emlAttachmentsMap={emlAttachmentsMap}
+              onReorder={reorderAttachments}
+              setAttachments={setAttachments}
+            />
+          ) : (
+            <AttachmentFlatList
+              attachments={attachments}
+              loading={attachmentsLoading}
+              onPreview={handlePreview}
+              onDownload={handleDownload}
+              onDelete={deleteAttachment}
+              onEdit={(att) => setEditingAttachment(att)}
+              emlAttachmentsMap={emlAttachmentsMap}
+              onReorder={reorderAttachments}
+              setAttachments={setAttachments}
+            />
+          )}
         </div>
       ) : (
         <CollapsedSection

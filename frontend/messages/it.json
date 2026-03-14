@@ -138,6 +138,8 @@
   },
   "attachments": {
     "attachments": "Allegati",
+    "viewFlat": "Tutti",
+    "viewGrouped": "Raggruppati",
     "upload": "Carica file",
     "uploading": "Caricamento...",
     "noAttachments": "Nessun allegato per questa nota.",

@@ -138,6 +138,8 @@
   },
   "attachments": {
     "attachments": "Attachments",
+    "viewFlat": "All",
+    "viewGrouped": "Grouped",
     "upload": "Upload File",
     "uploading": "Uploading...",
     "noAttachments": "No attachments for this note.",

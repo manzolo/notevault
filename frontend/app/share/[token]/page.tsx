@@ -5,6 +5,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '@/lib/api';
 import TotpLiveWidget from '@/components/secrets/TotpLiveWidget';
+import { groupAttachments, CATEGORY_ORDER, MimeCategory } from '@/lib/attachmentUtils';
+
+const CATEGORY_LABELS: Record<MimeCategory, string> = {
+  images: 'Images', pdf: 'PDF', video: 'Video', documents: 'Documents',
+  spreadsheets: 'Spreadsheets', presentations: 'Presentations', markdown: 'Markdown',
+  archives: 'Archives', emails: 'Emails', scripts: 'Scripts & Configs',
+  executables: 'Executables', other: 'Other',
+};
 
 interface SharedTask {
   id: number;
@@ -153,6 +161,12 @@ export default function SharePage({ params }: { params: { token: string } }) {
   const [loading, setLoading] = useState(true);
   const [previewAtt, setPreviewAtt] = useState<{ att: SharedAttachment | SharedEventAttachment; url: string } | null>(null);
   const [previewText, setPreviewText] = useState<string | null>(null);
+  const [attachmentView, setAttachmentView] = useState<'flat' | 'grouped'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('attachmentView') as 'flat' | 'grouped') ?? 'flat';
+    }
+    return 'flat';
+  });
   const previewUrlRef = useRef<string | null>(null);
 
   const handlePreview = async (att: SharedAttachment | SharedEventAttachment, url: string) => {
@@ -412,31 +426,37 @@ export default function SharePage({ params }: { params: { token: string } }) {
               note.attachments &&
               note.attachments.length > 0 && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                  <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                      />
-                    </svg>
-                    Attachments
-                  </h2>
-                  <ul className="space-y-2">
-                    {note.attachments.map((att) => (
-                      <li key={att.id} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                      Attachments
+                    </h2>
+                    <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 text-xs">
+                      <button
+                        onClick={() => { setAttachmentView('flat'); localStorage.setItem('attachmentView', 'flat'); }}
+                        className={`px-2.5 py-1 transition-colors ${attachmentView === 'flat' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => { setAttachmentView('grouped'); localStorage.setItem('attachmentView', 'grouped'); }}
+                        className={`px-2.5 py-1 transition-colors border-l border-gray-200 dark:border-gray-600 ${attachmentView === 'grouped' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                      >
+                        Grouped
+                      </button>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const renderAttachment = (att: SharedAttachment) => (
+                      <li key={att.id} className="flex items-center justify-between gap-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
                         <div className="min-w-0">
-                          <p className="text-sm text-gray-800 dark:text-gray-200 truncate">
-                            {att.filename}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            {att.mime_type} · {formatBytes(att.size_bytes)}
+                          <p className="text-sm text-gray-800 dark:text-gray-200 break-all leading-snug">{att.filename}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                            {formatBytes(att.size_bytes)}
                             {att.description && ` · ${att.description}`}
                           </p>
                         </div>
@@ -458,8 +478,31 @@ export default function SharePage({ params }: { params: { token: string } }) {
                           </a>
                         </div>
                       </li>
-                    ))}
-                  </ul>
+                    );
+
+                    if (attachmentView === 'flat') {
+                      return <ul className="divide-y-0">{note.attachments!.map(renderAttachment)}</ul>;
+                    }
+
+                    const groups = groupAttachments(note.attachments!);
+                    return (
+                      <div className="space-y-4">
+                        {CATEGORY_ORDER.filter((cat) => groups.has(cat)).map((cat) => {
+                          const items = groups.get(cat)!;
+                          return (
+                            <div key={cat}>
+                              {groups.size > 1 && (
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1">
+                                  {CATEGORY_LABELS[cat]} ({items.length})
+                                </p>
+                              )}
+                              <ul>{items.map(renderAttachment)}</ul>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
