@@ -13,10 +13,12 @@ interface AdvancedFiltersPanelProps {
   dateTo: string;
   pinnedOnly: boolean;
   archivedOnly: boolean;
+  recursive: boolean;
   onTagSelect: (tagId: number | null) => void;
   onDateChange: (from: string, to: string) => void;
   onPinnedOnlyToggle: () => void;
   onArchivedOnlyToggle: () => void;
+  onRecursiveToggle: () => void;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -34,10 +36,12 @@ export default function AdvancedFiltersPanel({
   dateTo,
   pinnedOnly,
   archivedOnly,
+  recursive,
   onTagSelect,
   onDateChange,
   onPinnedOnlyToggle,
   onArchivedOnlyToggle,
+  onRecursiveToggle,
 }: AdvancedFiltersPanelProps) {
   const t = useTranslations('notes');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -61,6 +65,7 @@ export default function AdvancedFiltersPanel({
     !!dateTo,
     pinnedOnly,
     archivedOnly,
+    recursive,
   ].filter(Boolean).length;
 
   const hasAnyActive = activeFilterCount > 0;
@@ -154,6 +159,15 @@ export default function AdvancedFiltersPanel({
                 {t('archivedOnly')}
               </button>
             </div>
+            <label className="inline-flex items-center gap-2 cursor-pointer mt-1">
+              <input
+                type="checkbox"
+                checked={recursive}
+                onChange={onRecursiveToggle}
+                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0"
+              />
+              <span className="text-xs text-gray-600 dark:text-gray-300">{t('includeSubfolders')}</span>
+            </label>
           </div>
 
           {/* Date range */}
@@ -198,7 +212,7 @@ export default function AdvancedFiltersPanel({
           {hasAnyActive && (
             <div className="px-3 py-2">
               <button
-                onClick={() => { onTagSelect(null); if (pinnedOnly) onPinnedOnlyToggle(); if (archivedOnly) onArchivedOnlyToggle(); onDateChange('', ''); }}
+                onClick={() => { onTagSelect(null); if (pinnedOnly) onPinnedOnlyToggle(); if (archivedOnly) onArchivedOnlyToggle(); if (recursive) onRecursiveToggle(); onDateChange('', ''); }}
                 className="text-xs text-red-500 dark:text-red-400 hover:underline"
               >
                 {t('resetFilters')}

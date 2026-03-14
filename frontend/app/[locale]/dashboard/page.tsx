@@ -140,6 +140,11 @@ export default function DashboardPage() {
     setPage(1);
   };
 
+  const handleRecursiveToggle = () => {
+    setRecursive((prev) => !prev);
+    setPage(1);
+  };
+
   const handlePreviewAttachment = async (noteId: number, att: MatchingAttachment) => {
     try {
       const response = await api.get(`/api/notes/${noteId}/attachments/${att.id}/stream`, { responseType: 'blob' });
@@ -219,17 +224,6 @@ export default function DashboardPage() {
               fetchCategories();
             }}
           />
-          {selectedCategoryId !== null && (
-            <label className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-pointer ml-1">
-              <input
-                type="checkbox"
-                checked={recursive}
-                onChange={(e) => { setRecursive(e.target.checked); setPage(1); }}
-                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              {t('includeSubfolders')}
-            </label>
-          )}
           <AdvancedFiltersPanel
             tags={tags}
             selectedTagId={selectedTagId}
@@ -237,10 +231,12 @@ export default function DashboardPage() {
             dateTo={dateTo}
             pinnedOnly={pinnedOnly}
             archivedOnly={archivedOnly}
+            recursive={recursive}
             onTagSelect={handleTagSelect}
             onDateChange={handleDateChange}
             onPinnedOnlyToggle={handlePinnedOnlyToggle}
             onArchivedOnlyToggle={handleArchivedOnlyToggle}
+            onRecursiveToggle={handleRecursiveToggle}
           />
         </div>
       )}
