@@ -8,29 +8,25 @@
 ![Docker Hub](https://img.shields.io/badge/Docker%20Hub-manzolo%2Fnotevault-blue.svg)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow.svg)](https://buymeacoffee.com/manzolo)
 
-NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un editor di note in Markdown a una cassaforte per segreti completamente cifrata. Le note sono organizzate con tag, ricercabili tramite la ricerca full-text di PostgreSQL, e possono avere allegati e segnalibri URL. Tutti i valori sensibili sono memorizzati cifrati a riposo con AES-256-GCM. L'intero stack gira in Docker ed è gestito tramite un unico `Makefile`.
-
----
-
-## Screenshot
-
-### Dashboard — ricerca full-text con corrispondenza in allegato
-
-![Dashboard ricerca](docs/screenshots/dashboard-search.png)
-
-La barra di ricerca interroga in tempo reale titoli, contenuto, testo estratto dagli allegati, descrizioni, segnalibri e URL. Quando la corrispondenza è trovata all'interno di un file allegato, il nome del file appare come chip cliccabile direttamente nella card del risultato — cliccando **Anteprima** il file si apre inline senza lasciare la pagina.
-
-### Dettaglio nota — segreti, allegati e segnalibri
-
-![Dettaglio nota](docs/screenshots/note-detail.png)
-
-Ogni nota è uno spazio di lavoro autonomo: corpo in Markdown, cassaforte di segreti cifrati (chiavi API, password, certificati, chiavi SSH…), allegati con anteprima inline e segnalibri URL — tutto su un'unica pagina. I segreti possono essere copiati negli appunti in modo silenzioso (senza mai mostrare il valore sullo schermo) oppure rivelati per 30 secondi, dopodiché vengono nascosti automaticamente.
+NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un editor WYSIWYG Markdown a una cassaforte per segreti completamente cifrata, allegati, task, un calendario ed una potente ricerca full-text — il tutto in Docker.
 
 ---
 
 ## Indice
 
-- [Funzionalità](#funzionalità)
+- [Funzionalità in Breve](#funzionalità-in-breve)
+- [Panoramica delle Funzionalità](#panoramica-delle-funzionalità)
+  - [Dashboard e Filtri](#dashboard-e-filtri)
+  - [Editor Note](#editor-note)
+  - [Cartelle e Organizzazione](#cartelle-e-organizzazione)
+  - [Ricerca Full-Text](#ricerca-full-text)
+  - [Allegati](#allegati)
+  - [Task](#task)
+  - [Calendario ed Eventi](#calendario-ed-eventi)
+  - [Wiki-link](#wiki-link)
+  - [Condivisione Note](#condivisione-note)
+  - [Cassaforte Segreti Cifrata](#cassaforte-segreti-cifrata)
+  - [Autenticazione a Due Fattori (TOTP)](#autenticazione-a-due-fattori-totp)
 - [Avvio Rapido](#avvio-rapido)
 - [Comandi Make](#comandi-make)
 - [Architettura](#architettura)
@@ -43,20 +39,181 @@ Ogni nota è uno spazio di lavoro autonomo: corpo in Markdown, cassaforte di seg
 
 ---
 
-## Funzionalità
+## Funzionalità in Breve
 
-- **Multi-utente con autenticazione JWT** — ogni utente dispone di uno spazio di lavoro isolato; i token usano HS256 e scadono dopo 7 giorni.
-- **Note con editor Markdown e anteprima live** — scrivi in Markdown e visualizza il risultato renderizzato in tempo reale, affiancato al testo.
-- **Tag** — organizza le note liberamente con tag colorati; i tag sono assegnabili anche ad allegati e segnalibri.
-- **Ricerca full-text con paginazione** — basata su colonne `tsvector` di PostgreSQL e un indice `GIN`; la ricerca copre titoli, contenuti, testo estratto dagli allegati, descrizioni, segnalibri e URL. I risultati sono paginati.
-- **Allegati** — carica file sulle note (PDF, immagini, testo, Markdown, …); il testo viene estratto automaticamente per la ricerca full-text. Ogni allegato può avere una descrizione opzionale e tag.
-- **Segnalibri URL** — aggiungi URL segnalibro con titolo, descrizione e tag a qualsiasi nota; i segnalibri sono completamente ricercabili.
-- **Cassaforte per segreti cifrati (AES-256-GCM)** — salva chiavi API, password e altri valori sensibili cifrati con AES-256-GCM tramite una `MASTER_KEY` che non viene mai scritta nel database. I segreti di tipo password supportano un campo `username` opzionale (in chiaro).
-- **Rivelazione segreti con rate limiting** — i segreti vengono mostrati su richiesta e nascosti automaticamente dopo 30 secondi; l'endpoint di rivelazione è soggetto a rate limiting tramite Redis. È possibile copiare il valore negli appunti senza mai visualizzarlo sullo schermo.
-- **Log di audit** — ogni azione viene registrata con timestamp e contesto utente; i valori dei segreti vengono oscurati nei log.
-- **Modalità scura** — supporto completo al dark mode in tutte le pagine e componenti.
-- **Internazionalizzazione (Italiano + Inglese)** — il frontend include traduzioni complete per `en` e `it`; la lingua è determinata dal prefisso URL (`/en/...`, `/it/...`).
-- **Deploy basato su Docker** — lo stack (PostgreSQL, Redis, backend, frontend) è gestito interamente tramite Docker Compose e un `Makefile`.
+| Area | Punti salienti |
+|---|---|
+| **Note** | Editor WYSIWYG (TipTap), salvataggio in Markdown, tag, cartelle, pin, archiviazione |
+| **Ricerca** | Full-text PostgreSQL su note, allegati e segnalibri |
+| **Allegati** | Drag & drop, incolla (Ctrl+V), ZIP (anche protetti da password), EML, anteprima inline |
+| **Task** | Checklist inline per nota + pagina task globale |
+| **Calendario** | Eventi con data/ora, multi-giorno, file allegati; vista calendario mensile |
+| **Filtri** | Tag, intervallo date, ricorsivo nelle sottocartelle, solo in evidenza, solo archiviate |
+| **Wiki-link** | Link bidirezionali `[[Titolo nota]]` con autocompletamento |
+| **Condivisione** | Link pubblici o ristretti per utente, granularità per sezione |
+| **Segreti** | Cassaforte AES-256-GCM: password, chiavi API, SSH, seed TOTP con codici live |
+| **2FA** | Autenticazione TOTP a due fattori per il login |
+
+---
+
+## Panoramica delle Funzionalità
+
+### Dashboard e Filtri
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+La dashboard elenca tutte le note con un **pannello filtri avanzato** a scomparsa. I filtri possono essere combinati liberamente:
+
+- **Tag** — seleziona un tag per restringere i risultati
+- **Solo in evidenza** — mostra in cima le note pinnate
+- **Solo archiviate** — sfoglia l'archivio senza intasare la vista principale
+- **Intervallo date** — filtra per data di creazione o per date degli eventi nelle note
+- **Includi sottocartelle** — ricerca ricorsiva in tutti i figli della cartella selezionata
+
+I filtri attivi compaiono come chip rimovibili anche quando il pannello è chiuso, così è sempre chiaro cosa è attivo.
+
+![Pannello filtri](docs/screenshots/filters.png)
+
+---
+
+### Editor Note
+
+![Editor note](docs/screenshots/note-editor.png)
+
+Le note si editano con un **editor WYSIWYG TipTap completo** che salva il contenuto in Markdown puro. La barra degli strumenti include:
+
+- Grassetto, corsivo, barrato, codice inline
+- Titoli H1–H3, liste puntate, liste numerate, liste di task
+- Citazioni, blocchi di codice, separatori, link
+- Autocompletamento wiki-link (`[[` apre un menu di ricerca live sui titoli)
+
+Le note possono essere **pinnate** (sempre in cima) o **archiviate** (nascoste dalla vista principale, ma ancora ricercabili).
+
+---
+
+### Cartelle e Organizzazione
+
+![Cartelle](docs/screenshots/folders.png)
+
+Le note sono organizzate in un **albero di cartelle gerarchico** (profondità illimitata). Dalla barra laterale è possibile:
+
+- Creare cartelle e sottocartelle
+- Rinominare ed eliminare cartelle
+- **Trascinare una card nota su una cartella** per spostarla istantaneamente
+- Attivare *Includi sottocartelle* per cercare in un intero ramo dell'albero
+
+---
+
+### Ricerca Full-Text
+
+![Risultati ricerca](docs/screenshots/dashboard-search.png)
+
+La barra di ricerca interroga simultaneamente tutti i contenuti tramite **PostgreSQL `tsvector` / GIN** full-text:
+
+- Titoli e testo del corpo delle note
+- Testo estratto dagli allegati (PDF, testo, Markdown…)
+- Titoli, URL e descrizioni dei segnalibri
+
+Quando una corrispondenza è trovata **all'interno di un allegato**, il nome del file appare come chip cliccabile nella card del risultato. Cliccandolo si apre il file inline senza lasciare la pagina di ricerca.
+
+---
+
+### Allegati
+
+![Pannello allegati](docs/screenshots/attachments-panel.png)
+
+Ogni nota dispone di un **pannello allegati** che supporta:
+
+- Click per selezionare un file
+- **Drag & drop** direttamente sulla nota
+- **Incolla** un'immagine dagli appunti con `Ctrl+V` (salva con nome personalizzato)
+
+Gli allegati sono raggruppati per tipo (immagini, PDF, documenti, fogli di calcolo, archivi, email, script…). Un'ampia gamma di formati può essere visualizzata in anteprima inline:
+
+| Formato | Anteprima |
+|---|---|
+| Immagini (PNG, JPG, GIF, WebP…) | Renderizzata direttamente |
+| PDF | Visualizzatore PDF integrato |
+| Testo, Markdown | Testo con evidenziazione |
+| ZIP / TAR | Albero file con anteprima delle singole voci |
+| ZIP protetto da password | Sblocca con password, poi naviga e visualizza in anteprima |
+| EML (email) | Corpo HTML renderizzato + lista allegati incorporati con anteprima |
+
+![Anteprima allegato — ZIP](docs/screenshots/attachment-preview-zip.png)
+
+![Anteprima allegato — EML](docs/screenshots/attachment-preview-eml.png)
+
+---
+
+### Task
+
+![Task](docs/screenshots/tasks.png)
+
+Ogni nota ha una **lista task inline**: aggiungi voci, spuntale, riordina trascinando, imposta scadenze opzionali. Una **pagina Task globale** raccoglie tutte le attività di tutte le note con filtro Da fare / Completate / Tutte.
+
+---
+
+### Calendario ed Eventi
+
+![Calendario](docs/screenshots/calendar.png)
+
+Le note possono avere **eventi** con data/ora di inizio, fine opzionale, URL (Google Meet, Zoom…) e file allegati. Tutti gli eventi appaiono in una **vista calendario mensile** insieme ai task con scadenza. Gli eventi multi-giorno si estendono su più colonne.
+
+Il filtro date della dashboard trova le note i cui eventi ricadono nell'intervallo selezionato — non solo la data di creazione della nota.
+
+---
+
+### Wiki-link
+
+![Wiki-link](docs/screenshots/wiki-links.png)
+
+Digita `[[` nell'editor per aprire un menu di autocompletamento che cerca i titoli delle note. Selezionando un titolo si inserisce un link `[[Titolo nota]]`. Nella visualizzazione della nota, i wiki-link vengono risolti in link cliccabili e la nota mostra:
+
+- **Note collegate** (in uscita) — note a cui questa nota fa riferimento
+- **Backlink** (in entrata) — note che fanno riferimento a questa
+
+I link sono bidirezionali e si aggiornano automaticamente ad ogni salvataggio.
+
+---
+
+### Condivisione Note
+
+![Modale condivisione](docs/screenshots/share-modal.png)
+
+Genera un **link di condivisione** per qualsiasi nota. La condivisione è configurabile:
+
+- **Pubblica** — chiunque con il link può vedere (nessun login richiesto)
+- **Solo utenti registrati** — richiede un account NoteVault
+- **Utente specifico** — solo un utente scelto può aprire il link
+
+Puoi scegliere **quali sezioni esporre**: contenuto, task, allegati, segnalibri, eventi e opzionalmente i segreti. Ogni sezione è un toggle indipendente.
+
+---
+
+### Cassaforte Segreti Cifrata
+
+![Cassaforte segreti](docs/screenshots/secrets.png)
+
+Ogni nota ha una **cassaforte segreti** cifrata con AES-256-GCM tramite una `MASTER_KEY` che non viene mai scritta nel database. Tipi di segreto supportati:
+
+| Tipo | Campi |
+|---|---|
+| Password | username, password, URL |
+| Chiave API | key ID, segreto, URL |
+| Chiave SSH | chiave privata, chiave pubblica opzionale, host |
+| Seed TOTP | seed Base32 → **codice OTP live con anello di countdown** |
+
+![Widget TOTP live](docs/screenshots/totp-live.png)
+
+I seed TOTP mostrano un codice a 6 cifre rotante con un anello SVG di countdown da 30 secondi, aggiornato in tempo reale. Qualsiasi segreto può essere **copiato silenziosamente** (valore mai mostrato) o **rivelato per 30 secondi** prima di essere nascosto automaticamente. L'endpoint di rivelazione è soggetto a rate limiting per utente tramite Redis.
+
+---
+
+### Autenticazione a Due Fattori (TOTP)
+
+![Login 2FA](docs/screenshots/login-2fa.png)
+
+Gli utenti possono abilitare **TOTP 2FA** nelle Impostazioni scansionando un QR code con qualsiasi app di autenticazione (Google Authenticator, Aegis, ecc.). Con il 2FA attivo, il login è in due fasi: prima la password, poi il codice OTP a 6 cifre. La configurazione può essere disabilitata in qualsiasi momento inserendo la password attuale.
 
 ---
 
@@ -89,34 +246,29 @@ cp .env.example .env
 make build
 make up
 
-# 5. Esegui le migrazioni del database
-make migrate
-
-# 6. Apri l'applicazione
+# 5. Apri l'applicazione
 # http://localhost:3000
 ```
 
-> **Nota:** Al primo avvio, `make build` compila le immagini del backend e del frontend. Questa operazione può richiedere alcuni minuti. Gli avvii successivi utilizzeranno la cache dei layer Docker.
+> **Nota:** Al primo avvio `make build` compila le immagini del backend e del frontend, operazione che può richiedere qualche minuto. Gli avvii successivi usano la cache Docker. Le migrazioni vengono applicate automaticamente all'avvio del container.
 
 ---
 
 ## Comandi Make
 
-Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make help` per visualizzare l'elenco completo.
+Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make help` per l'elenco completo.
 
 ### Sviluppo
 
 | Target | Descrizione |
 |---|---|
-| `build` | (Ri)costruisce le immagini per **sviluppo** (`NEXT_PUBLIC_API_URL` predefinito a `/api`) |
+| `build` | (Ri)costruisce le immagini per **sviluppo** |
 | `up` | Avvia tutti i servizi in modalità detached |
 | `down` | Ferma e rimuove i container |
 | `restart` | Riavvia tutti i servizi |
 | `migrate` | Applica tutte le migrazioni Alembic in attesa |
 | `migrate-down` | Annulla l'ultima migrazione Alembic |
-| `test` | Esegue l'intera suite di test (backend + frontend) |
-| `test-backend` | Esegue la suite pytest del backend |
-| `test-frontend` | Esegue la suite Jest/React del frontend in modalità CI |
+| `test-backend` | Esegue la suite pytest del backend nel container |
 | `test-e2e` | Esegue i test end-to-end Playwright (richiede lo stack attivo) |
 | `logs` | Segue i log di tutti i servizi |
 | `logs-backend` | Segue i log del solo servizio backend |
@@ -129,10 +281,10 @@ Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make h
 
 | Target | Descrizione |
 |---|---|
-| `build-prod` | Costruisce le immagini per la **produzione** (`NEXT_PUBLIC_API_URL` opzionale, predefinito a `/api`) |
+| `build-prod` | Costruisce le immagini per la **produzione** |
 | `tag` | Crea il tag git `vX.Y.Z` e tagga le immagini Docker — `make tag APP_VERSION=1.2.3` |
 | `publish` | Pubblica le immagini su Docker Hub e invia il tag git — `make publish APP_VERSION=1.2.3` |
-| `deploy` | **Prima installazione**: copia compose + `.env` sul server, scarica le immagini, avvia, migra |
+| `deploy` | **Prima installazione**: copia compose + `.env` sul server, scarica immagini, avvia, migra |
 | `deploy-update` | **Aggiornamento**: scarica la nuova versione e riavvia — `make deploy-update APP_VERSION=1.2.3` |
 
 > Le variabili di deploy (`DEPLOY_HOST`, `DEPLOY_PATH`) vengono lette da `.env.deploy` (gitignored). Vedi [Deploy in Produzione](#deploy-in-produzione).
@@ -164,7 +316,7 @@ Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make h
 └────────────────────────┘  └─────────────────────────────┘
 ```
 
-In produzione, un reverse proxy (es. Nginx Proxy Manager) è posizionato davanti al container frontend. Il server Next.js fa da proxy interno per tutte le richieste `/api/*` verso il backend — il backend non è mai esposto pubblicamente.
+In produzione un reverse proxy (es. Nginx Proxy Manager) è posizionato davanti al container frontend. Il server Next.js fa da proxy interno per tutte le richieste `/api/*` verso il backend — il backend non è mai esposto pubblicamente.
 
 ---
 
@@ -173,11 +325,11 @@ In produzione, un reverse proxy (es. Nginx Proxy Manager) è posizionato davanti
 - **Le chiavi non vengono mai registrate** — `SECRET_KEY` e `MASTER_KEY` vengono lette dalle variabili d'ambiente e non vengono mai scritte nei log né nel database.
 - **Segreti cifrati a riposo** — ogni valore segreto viene cifrato con AES-256-GCM prima di essere salvato. La `MASTER_KEY` è la radice unica della cifratura; perderla significa perdere l'accesso a tutti i segreti.
 - **Valori oscurati nei log di audit** — il log di audit registra eventi e nomi dei segreti, ma i valori vengono sempre sostituiti con `[REDACTED]`.
-- **Rate limiting sull'endpoint di rivelazione** — Redis impone un limite di richieste per utente su `POST /api/secrets/{id}/reveal`.
-- **Nascondimento automatico dopo 30 secondi** — un timer lato client nasconde automaticamente il valore in chiaro dopo 30 secondi.
+- **Rate limiting sull'endpoint di rivelazione** — Redis impone un limite di richieste per utente sulla rivelazione dei segreti.
+- **Nascondimento automatico dopo 30 secondi** — un timer lato client nasconde automaticamente il valore in chiaro.
 - **bcrypt a 12 iterazioni** — le password degli utenti sono sottoposte ad hash con bcrypt con fattore di costo 12.
+- **TOTP 2FA** — autenticazione a due fattori opzionale per il login.
 - **CORS** — il backend accetta richieste solo dalle origini elencate in `CORS_ORIGINS`.
-- **Configurazione deploy locale** — le informazioni sul server (`DEPLOY_HOST`, `DEPLOY_PATH`) risiedono in `.env.deploy`, gitignored e mai committato.
 
 > **Rotazione delle chiavi:** Per ruotare la `MASTER_KEY`, decifrare tutti i segreti con la vecchia chiave, riciclarli con la nuova, aggiornare `.env` e riavviare. Non è presente uno strumento di rotazione automatica nella versione attuale.
 
@@ -185,7 +337,7 @@ In produzione, un reverse proxy (es. Nginx Proxy Manager) è posizionato davanti
 
 ## Internazionalizzazione
 
-NoteVault utilizza [next-intl](https://next-intl-docs.vercel.app/) con la strategia `localePrefix: 'always'`. Ogni URL di pagina include il codice lingua come primo segmento del percorso.
+NoteVault utilizza [next-intl](https://next-intl-docs.vercel.app/) con la strategia `localePrefix: 'always'`. Ogni URL di pagina include il codice lingua come primo segmento.
 
 | Lingua | Prefisso URL | File di traduzione |
 |---|---|---|
@@ -200,16 +352,19 @@ La lingua predefinita è `en`. Visitare `/` reindirizza automaticamente a `/en/`
 
 L'API REST è servita da FastAPI su `http://localhost:8000`. La documentazione interattiva è disponibile su `/docs` (Swagger UI) quando `DEBUG=true`.
 
-| Gruppo di endpoint | Percorso base | Descrizione |
+| Gruppo endpoint | Percorso base | Descrizione |
 |---|---|---|
-| Autenticazione | `/api/auth` | Registrazione, accesso, rinnovo token |
-| Note | `/api/notes` | CRUD per le note con paginazione |
+| Autenticazione | `/api/auth` | Registrazione, accesso, verifica TOTP |
+| Note | `/api/notes` | CRUD, pin, archivio, resolve wiki-link, backlink |
 | Tag | `/api/tags` | Creazione, elenco, assegnazione tag |
+| Categorie | `/api/categories` | CRUD cartelle |
 | Ricerca | `/api/search` | Ricerca full-text con paginazione |
-| Allegati | `/api/notes/{id}/attachments` | Upload, elenco, stream, eliminazione allegati |
-| Segnalibri | `/api/notes/{id}/bookmarks` | CRUD per i segnalibri URL |
-| Segreti | `/api/secrets` | CRUD per i segreti cifrati, endpoint di rivelazione |
-| Stato database | `/api/database` | Controllo di salute interno usato da Docker |
+| Allegati | `/api/notes/{id}/attachments` | Upload, stream, anteprima ZIP/EML, eliminazione |
+| Segnalibri | `/api/notes/{id}/bookmarks` | CRUD segnalibri URL |
+| Segreti | `/api/secrets` | CRUD, rivelazione, seed TOTP |
+| Task | `/api/tasks` | Task per nota + lista task globale |
+| Eventi | `/api/notes/{id}/events` | CRUD eventi calendario |
+| Condivisione | `/api/notes/{id}/share` | Creazione/revoca token; vista pubblica |
 
 Tutti gli endpoint protetti richiedono un'intestazione `Authorization: Bearer <token>`.
 
@@ -226,27 +381,22 @@ Copia `.env.example` in `.env` e compila i valori prima di avviare lo stack.
 | `SECRET_KEY` | **sì** | — | Chiave di 32 byte in base64 per la firma dei token JWT. Generare con `make keygen`. |
 | `MASTER_KEY` | **sì** | — | Chiave di 32 byte in base64 per la cifratura AES-256-GCM. Generare con `make keygen`. |
 | `DB_PASSWORD` | **sì** | — | Password per l'utente PostgreSQL `notevault`. |
-| `DATABASE_URL` | no | impostata da compose | Stringa di connessione SQLAlchemy asincrona. Sovrascritta automaticamente da Docker Compose. |
+| `DATABASE_URL` | no | impostata da compose | Stringa di connessione SQLAlchemy asincrona. Sovrascritta da Docker Compose. |
 | `REDIS_URL` | no | `redis://redis:6379/0` | URL di connessione Redis. |
-| `CORS_ORIGINS` | no | `http://localhost:3000` | Origini CORS consentite, separate da virgola. In produzione impostare al proprio dominio pubblico. |
-| `NEXT_PUBLIC_API_URL` | no | `/api` | **Incorporato nel bundle frontend a build time.** Predefinito a `/api` (domain-agnostic). Impostare solo per configurazioni cross-origin (es. `http://notevault.lan`). |
-| `DEBUG` | no | `false` | Attiva la modalità debug di FastAPI e Swagger UI. Non impostare a `true` in produzione. |
+| `CORS_ORIGINS` | no | `http://localhost:3000` | Origini CORS consentite, separate da virgola. In produzione impostare al proprio dominio. |
+| `NEXT_PUBLIC_API_URL` | no | `/api` | **Incorporato nel bundle frontend a build time.** Solo per configurazioni cross-origin. |
+| `DEBUG` | no | `false` | Attiva la modalità debug di FastAPI e Swagger UI. Non usare in produzione. |
+| `TOTP_REQUIRED` | no | `false` | Impone il 2FA TOTP a tutti gli utenti al login. |
 
 ### Configurazione deploy (`.env.deploy`, gitignored)
 
-Copia `.env.deploy.example` in `.env.deploy` e inserisci le informazioni del server. Questo file **non viene mai committato**.
+Copia `.env.deploy.example` in `.env.deploy` e inserisci le informazioni del server.
 
 | Variabile | Descrizione |
 |---|---|
 | `DEPLOY_HOST` | Destinazione SSH, es. `root@your-server.lan` |
 | `DEPLOY_PATH` | Percorso assoluto sul server remoto, es. `/root/notevault` |
-| `NEXT_PUBLIC_API_URL` | Opzionale — predefinito a `/api` (domain-agnostic). Impostare solo per configurazioni cross-origin. |
-
-### Variabile di build frontend (incorporata a build time)
-
-| Variabile | Default nel Dockerfile | Descrizione |
-|---|---|---|
-| `BACKEND_INTERNAL_URL` | `http://notevault-backend:8000` | URL interno usato dal server Next.js per fare da proxy alle richieste `/api/*` verso il backend. Il default è corretto sia per sviluppo che per produzione Docker. |
+| `NEXT_PUBLIC_API_URL` | Opzionale — solo per configurazioni cross-origin. |
 
 ---
 

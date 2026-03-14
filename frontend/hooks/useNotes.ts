@@ -31,7 +31,7 @@ export function useNotes() {
       if (createdBefore) params.created_before = createdBefore;
       if (categoryId != null) {
         params.category_id = categoryId;
-      } else if (categoryId === null) {
+      } else if (categoryId === null && !recursive) {
         params.unfiled = true;
       }
       if (pinnedOnly) params.pinned_only = true;

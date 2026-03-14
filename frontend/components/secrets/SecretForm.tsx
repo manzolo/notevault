@@ -15,6 +15,11 @@ const SECRET_TYPES: SecretType[] = ['password', 'api_key', 'token', 'ssh_key', '
 const SHOW_USERNAME: SecretType[] = ['password', 'api_key', 'ssh_key'];
 const SHOW_URL: SecretType[] = ['password', 'api_key', 'token', 'ssh_key'];
 
+function isValidBase32Seed(seed: string): boolean {
+  const cleaned = seed.trim().toUpperCase().replace(/\s/g, '');
+  return cleaned.length > 0 && /^[A-Z2-7]+=*$/.test(cleaned);
+}
+
 function detectSecretType(value: string): SecretType | null {
   const trimmed = value.trim();
 
@@ -73,8 +78,11 @@ export default function SecretForm({ onSubmit }: SecretFormProps) {
     if (detected) setSecretType(detected);
   };
 
+  const totpSeedInvalid = secretType === 'totp_seed' && value.trim().length > 0 && !isValidBase32Seed(value);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (totpSeedInvalid) return;
     setLoading(true);
     try {
       await onSubmit({
@@ -165,13 +173,16 @@ export default function SecretForm({ onSubmit }: SecretFormProps) {
           className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder={secretType === 'totp_seed' ? t('totpSeedPlaceholder') : 'Secret value...'}
         />
-        {detectedType && (
+        {detectedType && !totpSeedInvalid && (
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
             {t('detectedType', { type: detectedType })}
           </p>
         )}
+        {totpSeedInvalid && (
+          <p className="text-xs text-red-500 dark:text-red-400 mt-1">{t('totpInvalidSeed')}</p>
+        )}
       </div>
-      <Button variant="secondary" type="submit" loading={loading} className="w-full">
+      <Button variant="secondary" type="submit" loading={loading} disabled={totpSeedInvalid} className="w-full">
         {loading ? t('creating') : t('create')}
       </Button>
     </form>
