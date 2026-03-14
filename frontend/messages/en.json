@@ -90,6 +90,11 @@
     "pin": "Pin",
     "unpin": "Unpin",
     "pinnedOnly": "Pinned only",
+    "archived": "Archived",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "archivedOnly": "Archived only",
+    "filters": "Filters",
     "wikiLinks": "Linked notes"
   },
   "secrets": {

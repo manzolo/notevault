@@ -9,12 +9,12 @@ import { useNotes } from '@/hooks/useNotes';
 import { useTags } from '@/hooks/useTags';
 import { useCategories } from '@/hooks/useCategories';
 import NoteList from '@/components/notes/NoteList';
+import AdvancedFiltersPanel from '@/components/notes/AdvancedFiltersPanel';
 import SearchBar from '@/components/search/SearchBar';
-import TagFilter from '@/components/search/TagFilter';
 import FolderSelector from '@/components/folders/FolderSelector';
 import Pagination from '@/components/common/Pagination';
 import Button from '@/components/common/Button';
-import { PinIcon, PlusIcon } from '@/components/common/Icons';
+import { PlusIcon } from '@/components/common/Icons';
 import api from '@/lib/api';
 import { MatchingAttachment, SearchResponse } from '@/lib/types';
 
@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [pinnedOnly, setPinnedOnly] = useState(false);
+  const [archivedOnly, setArchivedOnly] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
@@ -58,9 +59,9 @@ export default function DashboardPage() {
     if (user) {
       const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
       const before = dateTo ? `${dateTo}T23:59:59` : undefined;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly).then(() => {});
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly).then(() => {});
     }
-  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly]);
+  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly, archivedOnly]);
 
   const handleTagSelect = (tagId: number | null) => {
     setSelectedTagId(tagId);
@@ -99,18 +100,32 @@ export default function DashboardPage() {
 
   const handleDelete = async (id: number) => {
     await deleteNote(id);
-    fetchNotes(page, PER_PAGE, selectedTagId, undefined, undefined, selectedCategoryId, pinnedOnly);
+    const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
+    const before = dateTo ? `${dateTo}T23:59:59` : undefined;
+    fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly);
   };
 
   const handlePin = async (id: number, pinned: boolean) => {
     await updateNote(id, { is_pinned: pinned });
     const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
     const before = dateTo ? `${dateTo}T23:59:59` : undefined;
-    fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly);
+    fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly);
+  };
+
+  const handleArchive = async (id: number, archived: boolean) => {
+    await updateNote(id, { is_archived: archived });
+    const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
+    const before = dateTo ? `${dateTo}T23:59:59` : undefined;
+    fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly);
   };
 
   const handlePinnedOnlyToggle = () => {
     setPinnedOnly((prev) => !prev);
+    setPage(1);
+  };
+
+  const handleArchivedOnlyToggle = () => {
+    setArchivedOnly((prev) => !prev);
     setPage(1);
   };
 
@@ -189,61 +204,22 @@ export default function DashboardPage() {
               await updateNote(noteId, { category_id: categoryId });
               const after = dateFrom ? `${dateFrom}T00:00:00` : undefined;
               const before = dateTo ? `${dateTo}T23:59:59` : undefined;
-              fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId);
+              fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly);
               fetchCategories();
             }}
           />
-          <div className="flex items-center gap-2 flex-wrap">
-            {tags.length > 0 && (
-              <TagFilter tags={tags} selectedTagId={selectedTagId} onSelect={handleTagSelect} />
-            )}
-            <button
-              onClick={handlePinnedOnlyToggle}
-              className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                pinnedOnly
-                  ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-600'
-                  : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-600'
-              }`}
-            >
-              <PinIcon className="h-3.5 w-3.5" filled={pinnedOnly} />
-              {t('pinnedOnly')}
-            </button>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('filterByDate')}:</span>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{t('dateFrom')}</label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => handleDateChange(e.target.value, dateTo)}
-                  className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1
-                             bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
-                             focus:outline-none focus:ring-1 focus:ring-indigo-400 w-full sm:w-auto"
-                />
-              </div>
-              <div className="flex items-center gap-1.5">
-                <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{t('dateTo')}</label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => handleDateChange(dateFrom, e.target.value)}
-                  className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1
-                             bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200
-                             focus:outline-none focus:ring-1 focus:ring-indigo-400 w-full sm:w-auto"
-                />
-              </div>
-              {(dateFrom || dateTo) && (
-                <button
-                  onClick={() => handleDateChange('', '')}
-                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap"
-                >
-                  {t('clearDate')}
-                </button>
-              )}
-            </div>
-          </div>
+          <AdvancedFiltersPanel
+            tags={tags}
+            selectedTagId={selectedTagId}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            pinnedOnly={pinnedOnly}
+            archivedOnly={archivedOnly}
+            onTagSelect={handleTagSelect}
+            onDateChange={handleDateChange}
+            onPinnedOnlyToggle={handlePinnedOnlyToggle}
+            onArchivedOnlyToggle={handleArchivedOnlyToggle}
+          />
         </div>
       )}
 
@@ -256,6 +232,7 @@ export default function DashboardPage() {
           loading={displayLoading}
           onDelete={handleDelete}
           onPin={!searchResults ? handlePin : undefined}
+          onArchive={!searchResults ? handleArchive : undefined}
           categories={categories}
           filterActive={!searchResults}
           matchMap={matchMap}

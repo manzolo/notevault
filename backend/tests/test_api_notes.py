@@ -225,3 +225,55 @@ async def test_list_notes_pinned_sort_first(client, auth_headers):
     items = response.json()["items"]
     assert items[0]["is_pinned"] is True
     assert items[0]["title"] == "Pinned"
+
+
+async def test_create_note_default_not_archived(client, auth_headers):
+    response = await client.post("/api/notes", json={"title": "Normal Note", "content": ""}, headers=auth_headers)
+    assert response.status_code == 201
+    assert response.json()["is_archived"] is False
+
+
+async def test_archive_note(client, auth_headers):
+    create_resp = await client.post("/api/notes", json={"title": "To Archive", "content": ""}, headers=auth_headers)
+    note_id = create_resp.json()["id"]
+
+    response = await client.put(f"/api/notes/{note_id}", json={"is_archived": True}, headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()["is_archived"] is True
+
+    # Unarchive
+    response = await client.put(f"/api/notes/{note_id}", json={"is_archived": False}, headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()["is_archived"] is False
+
+
+async def test_list_notes_excludes_archived_by_default(client, auth_headers):
+    await client.post("/api/notes", json={"title": "Active", "content": ""}, headers=auth_headers)
+    archived_resp = await client.post("/api/notes", json={"title": "Archived", "content": "", "is_archived": True}, headers=auth_headers)
+    archived_id = archived_resp.json()["id"]
+
+    response = await client.get("/api/notes", headers=auth_headers)
+    data = response.json()
+    ids = [item["id"] for item in data["items"]]
+    assert archived_id not in ids
+    assert data["total"] == 1
+
+
+async def test_list_notes_archived_only(client, auth_headers):
+    await client.post("/api/notes", json={"title": "Active", "content": ""}, headers=auth_headers)
+    await client.post("/api/notes", json={"title": "Archived", "content": "", "is_archived": True}, headers=auth_headers)
+
+    response = await client.get("/api/notes?archived_only=true", headers=auth_headers)
+    data = response.json()
+    assert data["total"] == 1
+    assert data["items"][0]["title"] == "Archived"
+    assert data["items"][0]["is_archived"] is True
+
+
+async def test_list_notes_include_archived(client, auth_headers):
+    await client.post("/api/notes", json={"title": "Active", "content": ""}, headers=auth_headers)
+    await client.post("/api/notes", json={"title": "Archived", "content": "", "is_archived": True}, headers=auth_headers)
+
+    response = await client.get("/api/notes?include_archived=true", headers=auth_headers)
+    data = response.json()
+    assert data["total"] == 2

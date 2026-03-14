@@ -59,6 +59,7 @@ class Note(Base):
     title = Column(String(500), nullable=False)
     content = Column(Text, nullable=False, default="")
     is_pinned = Column(Boolean, default=False)
+    is_archived = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     fts_vector = Column(TSVECTOR)  # populated by DB trigger only

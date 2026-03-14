@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { MatchingAttachment, Note } from '@/lib/types';
 import { formatRelative, stripMarkdown, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
-import { EyeIcon, FolderIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, EyeIcon, FolderIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
@@ -20,6 +20,7 @@ interface NoteCardProps {
   note: Note;
   onDelete: (id: number) => void;
   onPin?: (id: number, pinned: boolean) => void;
+  onArchive?: (id: number, archived: boolean) => void;
   categoryName?: string;
   matchInAttachment?: boolean;
   matchInBookmark?: boolean;
@@ -45,7 +46,7 @@ function GlobeIcon() {
   );
 }
 
-export default function NoteCard({ note, onDelete, onPin, categoryName, matchInAttachment, matchInBookmark, matchingAttachments, onPreviewAttachment }: NoteCardProps) {
+export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchingAttachments, onPreviewAttachment }: NoteCardProps) {
   const locale = useLocale();
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
@@ -59,6 +60,10 @@ export default function NoteCard({ note, onDelete, onPin, categoryName, matchInA
 
   const handlePin = () => {
     onPin?.(note.id, !note.is_pinned);
+  };
+
+  const handleArchive = () => {
+    onArchive?.(note.id, !note.is_archived);
   };
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -81,6 +86,9 @@ export default function NoteCard({ note, onDelete, onPin, categoryName, matchInA
             <div className="flex items-center gap-2 mb-1">
               {note.is_pinned && (
                 <span className="text-indigo-600 text-xs font-medium">📌 {t('pinned')}</span>
+              )}
+              {note.is_archived && (
+                <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded font-medium">🗄 {t('archived')}</span>
               )}
               <Link
                 href={`/${locale}/notes/${note.id}`}
@@ -158,6 +166,17 @@ export default function NoteCard({ note, onDelete, onPin, categoryName, matchInA
                 className={note.is_pinned ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'}
               >
                 <PinIcon filled={note.is_pinned} />
+              </Button>
+            )}
+            {onArchive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                title={note.is_archived ? t('unarchive') : t('archive')}
+                onClick={handleArchive}
+                className={note.is_archived ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}
+              >
+                <ArchiveIcon />
               </Button>
             )}
             <Button variant="ghost-danger" size="sm" title={t('delete')} onClick={handleDelete}>

@@ -90,6 +90,11 @@
     "pin": "In evidenza",
     "unpin": "Togli evidenza",
     "pinnedOnly": "Solo in evidenza",
+    "archived": "Archiviata",
+    "archive": "Archivia",
+    "unarchive": "Ripristina",
+    "archivedOnly": "Solo archiviate",
+    "filters": "Filtri",
     "wikiLinks": "Note collegate"
   },
   "secrets": {

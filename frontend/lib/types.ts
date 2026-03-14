@@ -30,6 +30,7 @@ export interface Note {
   title: string;
   content: string;
   is_pinned: boolean;
+  is_archived: boolean;
   user_id: number;
   category_id: number | null;
   tags: Tag[];
@@ -57,6 +58,7 @@ export interface NoteUpdate {
   title?: string;
   content?: string;
   is_pinned?: boolean;
+  is_archived?: boolean;
   category_id?: number | null;
   tag_ids?: number[];
 }

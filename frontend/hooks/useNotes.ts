@@ -18,6 +18,8 @@ export function useNotes() {
     createdBefore?: string | null,
     categoryId?: number | null,
     pinnedOnly?: boolean,
+    archivedOnly?: boolean,
+    includeArchived?: boolean,
   ) => {
     setLoading(true);
     setError(null);
@@ -32,6 +34,8 @@ export function useNotes() {
         params.unfiled = true;
       }
       if (pinnedOnly) params.pinned_only = true;
+      if (archivedOnly) params.archived_only = true;
+      if (includeArchived) params.include_archived = true;
       const response = await api.get<NoteListResponse>('/api/notes', { params });
       setNotes(response.data.items);
       setTotal(response.data.total);

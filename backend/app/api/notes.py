@@ -25,6 +25,8 @@ async def list_notes(
     category_id: Optional[int] = Query(None),
     unfiled: bool = Query(False),
     pinned_only: bool = Query(False),
+    include_archived: bool = Query(False),
+    archived_only: bool = Query(False),
     created_after: Optional[datetime] = Query(None),
     created_before: Optional[datetime] = Query(None),
     updated_after: Optional[datetime] = Query(None),
@@ -50,6 +52,11 @@ async def list_notes(
 
     if pinned_only:
         base_filter = base_filter & (Note.is_pinned == True)
+
+    if archived_only:
+        base_filter = base_filter & (Note.is_archived == True)
+    elif not include_archived:
+        base_filter = base_filter & (Note.is_archived == False)
 
     if created_after is not None:
         base_filter = base_filter & (Note.created_at >= created_after)
@@ -82,6 +89,7 @@ async def create_note(
         title=note_data.title,
         content=note_data.content,
         is_pinned=note_data.is_pinned,
+        is_archived=note_data.is_archived,
         user_id=current_user.id,
         category_id=note_data.category_id,
     )
@@ -201,6 +209,8 @@ async def update_note(
         note.content = note_data.content
     if note_data.is_pinned is not None:
         note.is_pinned = note_data.is_pinned
+    if note_data.is_archived is not None:
+        note.is_archived = note_data.is_archived
     if "category_id" in note_data.model_fields_set:
         note.category_id = note_data.category_id
 

@@ -17,6 +17,7 @@ interface NoteListProps {
   loading: boolean;
   onDelete: (id: number) => void;
   onPin?: (id: number, pinned: boolean) => void;
+  onArchive?: (id: number, archived: boolean) => void;
   categories?: Category[];
   filterActive?: boolean;
   matchMap?: Map<number, MatchInfo>;
@@ -33,7 +34,7 @@ function findCategoryName(cats: Category[], id: number): string | undefined {
   return undefined;
 }
 
-export default function NoteList({ notes, loading, onDelete, onPin, categories, filterActive, matchMap, matchingAttachmentsMap, onPreviewAttachment }: NoteListProps) {
+export default function NoteList({ notes, loading, onDelete, onPin, onArchive, categories, filterActive, matchMap, matchingAttachmentsMap, onPreviewAttachment }: NoteListProps) {
   const t = useTranslations('notes');
 
   if (loading) return <LoadingSpinner className="py-12" />;
@@ -58,6 +59,7 @@ export default function NoteList({ notes, loading, onDelete, onPin, categories, 
             note={note}
             onDelete={onDelete}
             onPin={onPin}
+            onArchive={onArchive}
             categoryName={categoryName}
             matchInAttachment={match?.attachment ?? false}
             matchInBookmark={match?.bookmark ?? false}
