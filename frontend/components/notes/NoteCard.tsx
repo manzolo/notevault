@@ -14,6 +14,9 @@ const INLINE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
   'application/pdf',
   'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+  'message/rfc822', 'application/zip',
+  'text/plain', 'text/markdown', 'text/csv', 'text/html', 'text/xml',
+  'application/json', 'application/xml',
 ]);
 
 interface NoteCardProps {

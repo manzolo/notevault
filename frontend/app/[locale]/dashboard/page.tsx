@@ -18,6 +18,7 @@ import { PlusIcon } from '@/components/common/Icons';
 import api from '@/lib/api';
 import { MatchingAttachment, SearchResponse } from '@/lib/types';
 import { dateToLocalStart, dateToLocalEnd } from '@/lib/utils';
+import AttachmentPreviewModal from '@/components/attachments/AttachmentPreviewModal';
 
 export default function DashboardPage() {
   const t = useTranslations('notes');
@@ -38,7 +39,7 @@ export default function DashboardPage() {
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
-  const [attachPreview, setAttachPreview] = useState<{ url: string; filename: string; mime_type: string } | null>(null);
+  const [attachPreview, setAttachPreview] = useState<{ noteId: number; attachment: MatchingAttachment } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const PER_PAGE = 20;
@@ -145,18 +146,11 @@ export default function DashboardPage() {
     setPage(1);
   };
 
-  const handlePreviewAttachment = async (noteId: number, att: MatchingAttachment) => {
-    try {
-      const response = await api.get(`/api/notes/${noteId}/attachments/${att.id}/stream`, { responseType: 'blob' });
-      const url = URL.createObjectURL(response.data as Blob);
-      setAttachPreview({ url, filename: att.filename, mime_type: att.mime_type });
-    } catch {
-      // silently ignore
-    }
+  const handlePreviewAttachment = (noteId: number, att: MatchingAttachment) => {
+    setAttachPreview({ noteId, attachment: att });
   };
 
   const handleCloseAttachPreview = () => {
-    if (attachPreview) URL.revokeObjectURL(attachPreview.url);
     setAttachPreview(null);
   };
 
@@ -266,25 +260,11 @@ export default function DashboardPage() {
       )}
 
       {attachPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={handleCloseAttachPreview}>
-          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{attachPreview.filename}</span>
-              <button onClick={handleCloseAttachPreview} className="ml-4 text-gray-400 hover:text-gray-600">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50">
-              {attachPreview.mime_type === 'application/pdf' ? (
-                <iframe src={attachPreview.url} className="w-full h-[70vh] rounded" title={attachPreview.filename} />
-              ) : (
-                <img src={attachPreview.url} alt={attachPreview.filename} className="max-w-full max-h-[70vh] object-contain rounded" />
-              )}
-            </div>
-          </div>
-        </div>
+        <AttachmentPreviewModal
+          noteId={attachPreview.noteId}
+          attachment={attachPreview.attachment}
+          onClose={handleCloseAttachPreview}
+        />
       )}
     </div>
   );
