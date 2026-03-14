@@ -12,6 +12,7 @@ class AttachmentResponse(BaseModel):
     size_bytes: int
     description: Optional[str] = None
     file_modified_at: Optional[datetime] = None
+    position: int = 0
     tags: List[TagResponse] = []
     created_at: datetime
     updated_at: datetime

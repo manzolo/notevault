@@ -82,8 +82,13 @@ export function useSecrets(noteId: number) {
     await copyToClipboard(response.data.value);
   }, [noteId]);
 
+  const reorderSecrets = useCallback(async (items: { id: number; position: number }[]): Promise<void> => {
+    await api.patch(`/api/notes/${noteId}/secrets/reorder`, items);
+  }, [noteId]);
+
   return {
     secrets,
+    setSecrets,
     revealedSecrets,
     countdown,
     loading,
@@ -93,5 +98,6 @@ export function useSecrets(noteId: number) {
     hideSecret,
     deleteSecret,
     copySecret,
+    reorderSecrets,
   };
 }

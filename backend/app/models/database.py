@@ -114,6 +114,7 @@ class Secret(Base):
     public_key = Column(Text, nullable=True)  # SSH public key, stored plain (not a secret)
     encrypted_value = Column(BYTEA, nullable=False)  # nonce(12B) || ciphertext
     note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False)
+    position = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -152,6 +153,7 @@ class Attachment(Base):
     description = Column(Text, nullable=True)
     file_modified_at = Column(DateTime(timezone=True), nullable=True)
     fts_vector = Column(TSVECTOR)  # populated by DB trigger only
+    position = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -175,6 +177,7 @@ class Bookmark(Base):
     title = Column(String(500), nullable=True)
     description = Column(Text, nullable=True)
     fts_vector = Column(TSVECTOR)  # populated by DB trigger only
+    position = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

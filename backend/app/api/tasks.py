@@ -1,11 +1,17 @@
-from typing import Optional
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from app.database.connection import get_db
 from app.models.database import Task, Note, User
 from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskWithNoteResponse
 from app.security.dependencies import get_current_user
+
+
+class ReorderItem(BaseModel):
+    id: int
+    position: int
 
 router = APIRouter(tags=["tasks"])
 
@@ -65,6 +71,24 @@ async def create_task(
     await db.flush()
     await db.refresh(task)
     return task
+
+
+@router.patch("/api/notes/{note_id}/tasks/reorder", status_code=status.HTTP_200_OK)
+async def reorder_tasks(
+    note_id: int,
+    items: List[ReorderItem],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_note_owned(note_id, current_user, db)
+    for item in items:
+        await db.execute(
+            update(Task)
+            .where(Task.id == item.id, Task.note_id == note_id, Task.user_id == current_user.id)
+            .values(position=item.position)
+        )
+    await db.commit()
+    return {"ok": True}
 
 
 @router.put("/api/notes/{note_id}/tasks/{task_id}", response_model=TaskResponse)

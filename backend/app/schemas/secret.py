@@ -24,6 +24,7 @@ class SecretResponse(BaseModel):
     url: Optional[str] = None
     public_key: Optional[str] = None
     note_id: int
+    position: int = 0
     created_at: datetime
     updated_at: datetime
 

@@ -11,7 +11,8 @@ from uuid import uuid4
 import aiofiles
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
-from sqlalchemy import select
+from pydantic import BaseModel
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -25,6 +26,11 @@ from app.services.text_extraction import extract_text
 
 router = APIRouter(prefix="/api/notes", tags=["attachments"])
 settings = get_settings()
+
+
+class ReorderItem(BaseModel):
+    id: int
+    position: int
 
 # MIME types shown inline in browser
 _INLINE_MIMES = {
@@ -150,8 +156,27 @@ async def list_attachments(
         select(Attachment)
         .options(selectinload(Attachment.tags))
         .where(Attachment.note_id == note_id)
+        .order_by(Attachment.position, Attachment.created_at)
     )
     return result.scalars().all()
+
+
+@router.patch("/{note_id}/attachments/reorder", status_code=status.HTTP_200_OK)
+async def reorder_attachments(
+    note_id: int,
+    items: List[ReorderItem],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_owned_note(note_id, current_user, db)
+    for item in items:
+        await db.execute(
+            update(Attachment)
+            .where(Attachment.id == item.id, Attachment.note_id == note_id)
+            .values(position=item.position)
+        )
+    await db.commit()
+    return {"ok": True}
 
 
 @router.get("/{note_id}/attachments/{attachment_id}", response_model=AttachmentResponse)

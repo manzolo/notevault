@@ -261,7 +261,7 @@ async def get_shared_note(
     # Attachments section (metadata only; download via dedicated endpoint)
     if sections.get("attachments", False):
         att_result = await db.execute(
-            select(Attachment).where(Attachment.note_id == note.id)
+            select(Attachment).where(Attachment.note_id == note.id).order_by(Attachment.position, Attachment.created_at)
         )
         attachments = att_result.scalars().all()
         response["attachments"] = [
@@ -278,7 +278,7 @@ async def get_shared_note(
     # Bookmarks section
     if sections.get("bookmarks", False):
         bm_result = await db.execute(
-            select(Bookmark).where(Bookmark.note_id == note.id)
+            select(Bookmark).where(Bookmark.note_id == note.id).order_by(Bookmark.position, Bookmark.created_at)
         )
         bookmarks = bm_result.scalars().all()
         response["bookmarks"] = [
@@ -294,7 +294,7 @@ async def get_shared_note(
     # Secrets section — decrypt and include values
     if sections.get("secrets", False):
         sec_result = await db.execute(
-            select(Secret).where(Secret.note_id == note.id)
+            select(Secret).where(Secret.note_id == note.id).order_by(Secret.position, Secret.created_at)
         )
         secrets_list = sec_result.scalars().all()
         enc = get_encryption()

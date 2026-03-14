@@ -6,6 +6,16 @@ import { Task } from '@/lib/types';
 import { TrashIcon } from '@/components/common/Icons';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TaskPanelProps {
   tasks: Task[];
@@ -13,12 +23,18 @@ interface TaskPanelProps {
   onCreate: (title: string) => Promise<void>;
   onToggle: (id: number, isDone: boolean) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  onReorder: (items: { id: number; position: number }[]) => Promise<void>;
+  setTasks: (tasks: Task[]) => void;
 }
 
-export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete }: TaskPanelProps) {
+export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete, onReorder, setTasks }: TaskPanelProps) {
   const t = useTranslations('tasks');
   const [newTitle, setNewTitle] = useState('');
   const [adding, setAdding] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
 
   const handleAdd = async () => {
     const title = newTitle.trim();
@@ -34,6 +50,30 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    // Only allow reordering within todo tasks (done tasks are in a separate section)
+    const todo = tasks.filter((t) => !t.is_done);
+    const done = tasks.filter((t) => t.is_done);
+
+    const oldIndex = todo.findIndex((t) => t.id === active.id);
+    if (oldIndex === -1) return; // dragging a done task — skip
+    const newIndex = todo.findIndex((t) => t.id === over.id);
+    if (newIndex === -1) return;
+
+    const reorderedTodo = arrayMove(todo, oldIndex, newIndex);
+    const newTasks = [...reorderedTodo, ...done];
+    setTasks(newTasks);
+
+    try {
+      await onReorder(reorderedTodo.map((item, idx) => ({ id: item.id, position: idx })));
+    } catch {
+      setTasks(tasks);
+    }
   };
 
   if (loading) return <LoadingSpinner size="sm" />;
@@ -62,12 +102,16 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('noTasks')}</p>
       )}
 
-      {/* Todo tasks */}
-      {todo.map((task) => (
-        <TaskRow key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} />
-      ))}
+      {/* Todo tasks — sortable */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={todo.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+          {todo.map((task) => (
+            <TaskRow key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} />
+          ))}
+        </SortableContext>
+      </DndContext>
 
-      {/* Done tasks */}
+      {/* Done tasks — not sortable */}
       {done.length > 0 && (
         <div className="pt-1">
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-1.5">{t('done')} ({done.length})</p>
@@ -86,6 +130,7 @@ function TaskRow({ task, onToggle, onDelete }: {
   onDelete: (id: number) => Promise<void>;
 }) {
   const [toggling, setToggling] = useState(false);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   const handleToggle = async () => {
     setToggling(true);
@@ -94,7 +139,21 @@ function TaskRow({ task, onToggle, onDelete }: {
   };
 
   return (
-    <div className="flex items-center gap-2 group py-0.5">
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+      className="flex items-center gap-2 group py-0.5"
+    >
+      {!task.is_done && (
+        <span
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 shrink-0 select-none px-0.5"
+          title="Drag to reorder"
+        >
+          ⠿
+        </span>
+      )}
       <input
         type="checkbox"
         checked={task.is_done}

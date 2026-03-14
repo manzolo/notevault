@@ -24,6 +24,7 @@ class BookmarkResponse(BaseModel):
     url: str
     title: Optional[str] = None
     description: Optional[str] = None
+    position: int = 0
     tags: List[TagResponse] = []
     created_at: datetime
     updated_at: datetime

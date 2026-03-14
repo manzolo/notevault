@@ -4,16 +4,48 @@ import { useTranslations } from 'next-intl';
 import { Bookmark } from '@/lib/types';
 import BookmarkItem from './BookmarkItem';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 
 interface Props {
   bookmarks: Bookmark[];
   loading: boolean;
   onEdit: (bookmark: Bookmark) => void;
   onDelete: (id: number) => void;
+  onReorder: (items: { id: number; position: number }[]) => Promise<void>;
+  setBookmarks: (bookmarks: Bookmark[]) => void;
 }
 
-export default function BookmarkList({ bookmarks, loading, onEdit, onDelete }: Props) {
+export default function BookmarkList({ bookmarks, loading, onEdit, onDelete, onReorder, setBookmarks }: Props) {
   const t = useTranslations('bookmarks');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = bookmarks.findIndex((b) => b.id === active.id);
+    const newIndex = bookmarks.findIndex((b) => b.id === over.id);
+    const reordered = arrayMove(bookmarks, oldIndex, newIndex);
+    setBookmarks(reordered);
+
+    try {
+      await onReorder(reordered.map((item, idx) => ({ id: item.id, position: idx })));
+    } catch {
+      // revert on error
+      setBookmarks(bookmarks);
+    }
+  };
 
   if (loading) return <LoadingSpinner />;
 
@@ -22,10 +54,14 @@ export default function BookmarkList({ bookmarks, loading, onEdit, onDelete }: P
   }
 
   return (
-    <div>
-      {bookmarks.map((bm) => (
-        <BookmarkItem key={bm.id} bookmark={bm} onEdit={onEdit} onDelete={onDelete} />
-      ))}
-    </div>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={bookmarks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+        <div>
+          {bookmarks.map((bm) => (
+            <BookmarkItem key={bm.id} bookmark={bm} onEdit={onEdit} onDelete={onDelete} />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
   );
 }

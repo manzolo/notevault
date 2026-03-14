@@ -1,7 +1,8 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from pydantic import BaseModel
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -9,6 +10,11 @@ from app.database.connection import get_db
 from app.models.database import Bookmark, BookmarkTag, Note, Tag, User
 from app.schemas.bookmark import BookmarkCreate, BookmarkResponse, BookmarkUpdate
 from app.security.dependencies import get_current_user
+
+
+class ReorderItem(BaseModel):
+    id: int
+    position: int
 
 router = APIRouter(prefix="/api/notes", tags=["bookmarks"])
 
@@ -88,9 +94,27 @@ async def list_bookmarks(
         select(Bookmark)
         .options(selectinload(Bookmark.tags))
         .where(Bookmark.note_id == note_id)
-        .order_by(Bookmark.created_at.asc())
+        .order_by(Bookmark.position, Bookmark.created_at.asc())
     )
     return result.scalars().all()
+
+
+@router.patch("/{note_id}/bookmarks/reorder", status_code=status.HTTP_200_OK)
+async def reorder_bookmarks(
+    note_id: int,
+    items: List[ReorderItem],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_owned_note(note_id, current_user, db)
+    for item in items:
+        await db.execute(
+            update(Bookmark)
+            .where(Bookmark.id == item.id, Bookmark.note_id == note_id)
+            .values(position=item.position)
+        )
+    await db.commit()
+    return {"ok": True}
 
 
 @router.put("/{note_id}/bookmarks/{bookmark_id}", response_model=BookmarkResponse)

@@ -103,6 +103,7 @@ export interface Secret {
   url?: string;
   public_key?: string;
   note_id: number;
+  position: number;
   created_at: string;
   updated_at: string;
 }
@@ -128,6 +129,7 @@ export interface Attachment {
   size_bytes: number;
   description?: string;
   file_modified_at?: string;
+  position: number;
   tags: Tag[];
   created_at: string;
   updated_at: string;
@@ -139,6 +141,7 @@ export interface Bookmark {
   url: string;
   title?: string;
   description?: string;
+  position: number;
   tags: Tag[];
   created_at: string;
   updated_at: string;

@@ -5,6 +5,15 @@ import { useTranslations } from 'next-intl';
 import { Attachment } from '@/lib/types';
 import AttachmentItem from './AttachmentItem';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 
 type MimeCategory =
   | 'images'
@@ -81,13 +90,46 @@ interface Props {
   onDelete: (id: number) => void;
   onEdit: (attachment: Attachment) => void;
   emlAttachmentsMap?: Record<number, number>;
+  onReorder: (items: { id: number; position: number }[]) => Promise<void>;
+  setAttachments: (attachments: Attachment[]) => void;
 }
 
 export default function AttachmentGroupedList({
-  attachments, loading, onPreview, onDownload, onDelete, onEdit, emlAttachmentsMap,
+  attachments, loading, onPreview, onDownload, onDelete, onEdit, emlAttachmentsMap, onReorder, setAttachments,
 }: Props) {
   const t = useTranslations('attachments');
   const [expanded, setExpanded] = useState<Set<MimeCategory>>(new Set());
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent, category: MimeCategory, groups: Map<MimeCategory, Attachment[]>) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const groupItems = groups.get(category) ?? [];
+    const oldIndex = groupItems.findIndex((a) => a.id === active.id);
+    const newIndex = groupItems.findIndex((a) => a.id === over.id);
+    const reorderedGroup = arrayMove(groupItems, oldIndex, newIndex);
+
+    // Build new full attachment list preserving category order
+    const newGroups = new Map(groups);
+    newGroups.set(category, reorderedGroup);
+    const newAttachments: Attachment[] = [];
+    for (const cat of CATEGORY_ORDER) {
+      const items = newGroups.get(cat);
+      if (items) newAttachments.push(...items);
+    }
+
+    setAttachments(newAttachments);
+
+    try {
+      await onReorder(newAttachments.map((item, idx) => ({ id: item.id, position: idx })));
+    } catch {
+      setAttachments(attachments);
+    }
+  };
 
   if (loading) return <LoadingSpinner />;
 
@@ -124,60 +166,68 @@ export default function AttachmentGroupedList({
               </div>
             )}
 
-            {/* First COLLAPSE_THRESHOLD items always visible */}
-            {items.slice(0, COLLAPSE_THRESHOLD).map((att) => (
-              <AttachmentItem
-                key={att.id}
-                attachment={att}
-                onPreview={onPreview}
-                onDownload={onDownload}
-                onDelete={onDelete}
-                onEdit={onEdit}
-                emlAttachmentCount={emlAttachmentsMap?.[att.id] ?? 0}
-              />
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(e) => handleDragEnd(e, cat, groups)}
+            >
+              <SortableContext items={items.map((a) => a.id)} strategy={verticalListSortingStrategy}>
+                {/* First COLLAPSE_THRESHOLD items always visible */}
+                {items.slice(0, COLLAPSE_THRESHOLD).map((att) => (
+                  <AttachmentItem
+                    key={att.id}
+                    attachment={att}
+                    onPreview={onPreview}
+                    onDownload={onDownload}
+                    onDelete={onDelete}
+                    onEdit={onEdit}
+                    emlAttachmentCount={emlAttachmentsMap?.[att.id] ?? 0}
+                  />
+                ))}
 
-            {/* Extra items: hover-expand (CSS) or permanently expanded */}
-            {hasMore && (
-              <>
-                {isExpanded ? (
-                  items.slice(COLLAPSE_THRESHOLD).map((att) => (
-                    <AttachmentItem
-                      key={att.id}
-                      attachment={att}
-                      onPreview={onPreview}
-                      onDownload={onDownload}
-                      onDelete={onDelete}
-                      onEdit={onEdit}
-                      emlAttachmentCount={emlAttachmentsMap?.[att.id] ?? 0}
-                    />
-                  ))
-                ) : (
-                  <div className="max-h-0 overflow-hidden group-hover:max-h-[9999px] transition-[max-height] duration-500 ease-in-out">
-                    {items.slice(COLLAPSE_THRESHOLD).map((att) => (
-                      <AttachmentItem
-                        key={att.id}
-                        attachment={att}
-                        onPreview={onPreview}
-                        onDownload={onDownload}
-                        onDelete={onDelete}
-                        onEdit={onEdit}
-                        emlAttachmentCount={emlAttachmentsMap?.[att.id] ?? 0}
-                      />
-                    ))}
-                  </div>
-                )}
+                {/* Extra items: hover-expand (CSS) or permanently expanded */}
+                {hasMore && (
+                  <>
+                    {isExpanded ? (
+                      items.slice(COLLAPSE_THRESHOLD).map((att) => (
+                        <AttachmentItem
+                          key={att.id}
+                          attachment={att}
+                          onPreview={onPreview}
+                          onDownload={onDownload}
+                          onDelete={onDelete}
+                          onEdit={onEdit}
+                          emlAttachmentCount={emlAttachmentsMap?.[att.id] ?? 0}
+                        />
+                      ))
+                    ) : (
+                      <div className="max-h-0 overflow-hidden group-hover:max-h-[9999px] transition-[max-height] duration-500 ease-in-out">
+                        {items.slice(COLLAPSE_THRESHOLD).map((att) => (
+                          <AttachmentItem
+                            key={att.id}
+                            attachment={att}
+                            onPreview={onPreview}
+                            onDownload={onDownload}
+                            onDelete={onDelete}
+                            onEdit={onEdit}
+                            emlAttachmentCount={emlAttachmentsMap?.[att.id] ?? 0}
+                          />
+                        ))}
+                      </div>
+                    )}
 
-                {!isExpanded && (
-                  <button
-                    onClick={() => toggleExpand(cat)}
-                    className="group-hover:opacity-0 mt-1 text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-opacity duration-200"
-                  >
-                    + {t('xMore', { count: items.length - COLLAPSE_THRESHOLD })}
-                  </button>
+                    {!isExpanded && (
+                      <button
+                        onClick={() => toggleExpand(cat)}
+                        className="group-hover:opacity-0 mt-1 text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-opacity duration-200"
+                      >
+                        + {t('xMore', { count: items.length - COLLAPSE_THRESHOLD })}
+                      </button>
+                    )}
+                  </>
                 )}
-              </>
-            )}
+              </SortableContext>
+            </DndContext>
           </div>
         );
       })}

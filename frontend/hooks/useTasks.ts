@@ -35,7 +35,11 @@ export function useTasks(noteId: number) {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
   }, [noteId]);
 
-  return { tasks, loading, fetchTasks, createTask, updateTask, deleteTask };
+  const reorderTasks = useCallback(async (items: { id: number; position: number }[]): Promise<void> => {
+    await api.patch(`/api/notes/${noteId}/tasks/reorder`, items);
+  }, [noteId]);
+
+  return { tasks, setTasks, loading, fetchTasks, createTask, updateTask, deleteTask, reorderTasks };
 }
 
 export function useAllTasks() {

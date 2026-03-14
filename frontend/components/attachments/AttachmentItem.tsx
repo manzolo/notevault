@@ -7,6 +7,8 @@ import { ArrowDownTrayIcon, EyeIcon, PaperclipIcon, PencilIcon, TrashIcon } from
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 import { formatDate } from '@/lib/utils';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Props {
   attachment: Attachment;
@@ -131,6 +133,8 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
   const { confirm, dialog } = useConfirm();
   const canPreview = INLINE_MIMES.has(attachment.mime_type);
 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: attachment.id });
+
   const tooltipExtras = attachment.file_modified_at
     ? [{ label: tCommon('fileModifiedAt'), value: formatDate(attachment.file_modified_at) }]
     : undefined;
@@ -142,7 +146,20 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
   return (
     <>
       {dialog}
-      <div className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0 flex-wrap">
+      <div
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+        className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0 flex-wrap"
+      >
+        <span
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 shrink-0 select-none mt-2 px-0.5"
+          title="Drag to reorder"
+        >
+          ⠿
+        </span>
+
         <FileIcon mime={attachment.mime_type} />
 
         <div className="flex-1 min-w-0">

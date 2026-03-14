@@ -9,6 +9,8 @@ import { ClipboardCheckIcon, ClipboardIcon, EyeIcon, EyeOffIcon, TrashIcon } fro
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 import TotpLiveWidget from './TotpLiveWidget';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface SecretViewerProps {
   secret: Secret;
@@ -26,6 +28,7 @@ export default function SecretViewer({
   const t = useTranslations('secrets');
   const [copied, setCopied] = useState(false);
   const { confirm, dialog } = useConfirm();
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: secret.id });
 
   const markCopied = () => {
     setCopied(true);
@@ -50,8 +53,20 @@ export default function SecretViewer({
   return (
     <>
       {dialog}
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/50">
+      <div
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+        className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/50"
+      >
         <div className="flex items-center justify-between gap-2">
+          <span
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 shrink-0 select-none px-0.5"
+            title="Drag to reorder"
+          >
+            ⠿
+          </span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{secret.name}</span>

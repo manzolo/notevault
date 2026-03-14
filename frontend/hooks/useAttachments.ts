@@ -220,10 +220,19 @@ export function useAttachments(noteId: number) {
     [noteId],
   );
 
+  const reorderAttachments = useCallback(
+    async (items: { id: number; position: number }[]): Promise<void> => {
+      await api.patch(`/api/notes/${noteId}/attachments/reorder`, items);
+    },
+    [noteId],
+  );
+
   return {
     attachments,
+    setAttachments,
     loading,
     fetchAttachments,
+    reorderAttachments,
     uploadAttachment,
     deleteAttachment,
     getStreamUrl,

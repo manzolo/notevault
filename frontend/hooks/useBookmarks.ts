@@ -47,12 +47,21 @@ export function useBookmarks(noteId: number) {
     [noteId],
   );
 
+  const reorderBookmarks = useCallback(
+    async (items: { id: number; position: number }[]): Promise<void> => {
+      await api.patch(`/api/notes/${noteId}/bookmarks/reorder`, items);
+    },
+    [noteId],
+  );
+
   return {
     bookmarks,
+    setBookmarks,
     loading,
     fetchBookmarks,
     createBookmark,
     updateBookmark,
     deleteBookmark,
+    reorderBookmarks,
   };
 }

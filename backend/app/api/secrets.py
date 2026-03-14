@@ -1,7 +1,8 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from app.database.connection import get_db
 from app.models.database import Note, Secret, SecretAccessLog, User
 from app.models.enums import AuditAction
@@ -9,6 +10,11 @@ from app.schemas.secret import SecretCreate, SecretResponse, SecretRevealRespons
 from app.security.dependencies import get_current_user
 from app.security.encryption import get_encryption
 from app.security.rate_limit import limiter
+
+
+class ReorderItem(BaseModel):
+    id: int
+    position: int
 
 router = APIRouter(prefix="/api/notes", tags=["secrets"])
 
@@ -27,9 +33,32 @@ async def list_secrets(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
 
     result = await db.execute(
-        select(Secret).where(Secret.note_id == note_id)
+        select(Secret).where(Secret.note_id == note_id).order_by(Secret.position, Secret.created_at)
     )
     return result.scalars().all()
+
+
+@router.patch("/{note_id}/secrets/reorder", status_code=status.HTTP_200_OK)
+async def reorder_secrets(
+    note_id: int,
+    items: List[ReorderItem],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    note_result = await db.execute(
+        select(Note).where(Note.id == note_id, Note.user_id == current_user.id)
+    )
+    if not note_result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+    for item in items:
+        await db.execute(
+            update(Secret)
+            .where(Secret.id == item.id, Secret.note_id == note_id)
+            .values(position=item.position)
+        )
+    await db.commit()
+    return {"ok": True}
 
 
 @router.post("/{note_id}/secrets", response_model=SecretResponse, status_code=status.HTTP_201_CREATED)

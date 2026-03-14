@@ -65,10 +65,10 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const { tags: availableTagsFromHook, fetchTags, createTag } = useTags();
   const { categories, fetchCategories, flattenCategories } = useCategories();
   const { confirm, dialog: confirmDialog } = useConfirm();
-  const { secrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret } = useSecrets(noteId);
-  const { attachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, deleteAttachment, previewAttachment, parseZip, previewZipEntry, downloadZipEntry, parseZipEml, previewZipEmlPart, downloadZipEmlPart, parseEml, previewEmlPart, downloadEmlPart } = useAttachments(noteId);
-  const { bookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark } = useBookmarks(noteId);
-  const { tasks, loading: tasksLoading, fetchTasks, createTask, updateTask, deleteTask } = useTasks(noteId);
+  const { secrets, setSecrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret, reorderSecrets } = useSecrets(noteId);
+  const { attachments, setAttachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, deleteAttachment, previewAttachment, parseZip, previewZipEntry, downloadZipEntry, parseZipEml, previewZipEmlPart, downloadZipEmlPart, parseEml, previewEmlPart, downloadEmlPart, reorderAttachments } = useAttachments(noteId);
+  const { bookmarks, setBookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark, reorderBookmarks } = useBookmarks(noteId);
+  const { tasks, setTasks, loading: tasksLoading, fetchTasks, createTask, updateTask, deleteTask, reorderTasks } = useTasks(noteId);
 
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
@@ -796,6 +796,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             onHide={hideSecret}
             onDelete={deleteSecret}
             onCopyDirect={copySecret}
+            onReorder={reorderSecrets}
+            setSecrets={setSecrets}
           />
         </div>
       ) : (
@@ -825,6 +827,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             onDelete={deleteAttachment}
             onEdit={(att) => setEditingAttachment(att)}
             emlAttachmentsMap={emlAttachmentsMap}
+            onReorder={reorderAttachments}
+            setAttachments={setAttachments}
           />
         </div>
       ) : (
@@ -851,6 +855,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             loading={bookmarksLoading}
             onEdit={(bm) => setEditingBookmark(bm)}
             onDelete={deleteBookmark}
+            onReorder={reorderBookmarks}
+            setBookmarks={setBookmarks}
           />
         </div>
       ) : (
@@ -872,6 +878,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             onCreate={async (title) => { await createTask({ title }); }}
             onToggle={async (id, isDone) => { await updateTask(id, { is_done: isDone }); }}
             onDelete={deleteTask}
+            onReorder={reorderTasks}
+            setTasks={setTasks}
           />
         </div>
       ) : (

@@ -9,6 +9,8 @@ import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 import { useServerConfig } from '@/hooks/useServerConfig';
 import { getCached, setCached } from '@/lib/faviconCache';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Props {
   bookmark: Bookmark;
@@ -34,10 +36,24 @@ function getFaviconUrl(url: string): { domain: string; faviconUrl: string } | nu
   }
 }
 
+function DragHandle(props: React.HTMLAttributes<HTMLSpanElement>) {
+  return (
+    <span
+      {...props}
+      className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 shrink-0 select-none px-0.5"
+      title="Drag to reorder"
+    >
+      ⠿
+    </span>
+  );
+}
+
 export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
   const t = useTranslations('bookmarks');
   const { confirm, dialog } = useConfirm();
   const { favicon_fetch_enabled } = useServerConfig();
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bookmark.id });
 
   const favicon = getFaviconUrl(bookmark.url);
   const cached = favicon ? getCached(favicon.domain) : null;
@@ -45,7 +61,6 @@ export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
     cached !== null ? !cached.ok : false
   );
 
-  // If the cached entry is a failure, skip the <img> entirely
   const showFavicon = favicon_fetch_enabled && favicon !== null && !imgError;
   const skipImg = cached?.ok === false;
 
@@ -63,7 +78,13 @@ export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
   return (
     <>
       {dialog}
-      <div className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
+      <div
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+        className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
+      >
+        <DragHandle {...attributes} {...listeners} />
+
         {showFavicon && !skipImg ? (
           <img
             src={favicon.faviconUrl}
