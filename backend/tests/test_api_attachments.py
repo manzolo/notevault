@@ -133,13 +133,19 @@ async def test_upload_zip(client, auth_headers, note_id):
 
 
 async def test_upload_exceeds_size_limit(client, auth_headers, note_id):
-    """11 MB upload should be rejected with 413."""
-    big_data = b"X" * (11 * 1024 * 1024)
-    resp = await client.post(
-        f"/api/notes/{note_id}/attachments",
-        files={"file": ("big.bin", io.BytesIO(big_data), "application/octet-stream")},
-        headers=auth_headers,
-    )
+    """Upload exceeding max_upload_bytes should be rejected with 413."""
+    from unittest.mock import patch, MagicMock
+    from app.config import get_settings
+    real_settings = get_settings()
+    mock_cfg = MagicMock()
+    mock_cfg.max_upload_bytes = 1024  # 1 KB limit — fast and env-independent
+    mock_cfg.upload_dir = real_settings.upload_dir
+    with patch("app.api.attachments.settings", mock_cfg):
+        resp = await client.post(
+            f"/api/notes/{note_id}/attachments",
+            files={"file": ("big.bin", io.BytesIO(b"X" * 1025), "application/octet-stream")},
+            headers=auth_headers,
+        )
     assert resp.status_code == 413
 
 

@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import Button from '@/components/common/Button';
 import { Tag } from '@/lib/types';
+import { useServerConfig } from '@/hooks/useServerConfig';
 
 interface Props {
   onUpload: (file: File, tagIds: number[], description?: string) => Promise<void>;
@@ -14,6 +15,8 @@ interface Props {
 
 export default function AttachmentUploadForm({ onUpload, onComplete, availableTags = [], initialFiles }: Props) {
   const t = useTranslations('attachments');
+  const { max_upload_bytes } = useServerConfig();
+  const MAX_BYTES = max_upload_bytes;
   const [files, setFiles] = useState<File[]>(initialFiles ?? []);
   const [description, setDescription] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
@@ -21,8 +24,6 @@ export default function AttachmentUploadForm({ onUpload, onComplete, availableTa
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const MAX_BYTES = 10 * 1024 * 1024;
 
   const toggleTag = (tagId: number) => {
     setSelectedTagIds((prev) =>
@@ -103,7 +104,7 @@ export default function AttachmentUploadForm({ onUpload, onComplete, availableTa
                 {files.map((f, i) => <FileItem key={i} file={f} />)}
               </div>
             )}
-            <p className="text-xs text-gray-400 mt-1">{t('maxSize')}</p>
+            <p className="text-xs text-gray-400 mt-1">Max {Math.round(MAX_BYTES / 1024 / 1024)} MB</p>
           </>
         )}
       </div>

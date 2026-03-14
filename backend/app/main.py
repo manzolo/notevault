@@ -54,3 +54,9 @@ app.include_router(events.router)
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "notevault"}
+
+
+@app.get("/api/config")
+async def public_config():
+    """Public endpoint: exposes runtime-configurable limits to the frontend."""
+    return {"max_upload_bytes": settings.max_upload_bytes}
