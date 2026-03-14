@@ -34,6 +34,7 @@ import ShareModal from '@/components/notes/ShareModal';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 import api from '@/lib/api';
+import { clearCached } from '@/lib/faviconCache';
 
 const INLINE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
@@ -598,6 +599,10 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
   const handleUpdateBookmark = async (data: any) => {
     if (!editingBookmark) return;
+    // Clear favicon cache for old and new URL so BookmarkItem re-fetches on remount
+    for (const url of [editingBookmark.url, data.url]) {
+      try { clearCached(new URL(url.startsWith('http') ? url : `https://${url}`).origin); } catch { /* invalid url */ }
+    }
     await updateBookmark(editingBookmark.id, data);
     setEditingBookmark(null);
     toast.success('Bookmark updated!');

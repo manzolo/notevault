@@ -20,3 +20,7 @@ export function getCached(domain: string): CacheEntry | null {
 export function setCached(domain: string, ok: boolean): void {
   cache.set(domain, { ok, ts: Date.now() });
 }
+
+export function clearCached(domain: string): void {
+  cache.delete(domain);
+}

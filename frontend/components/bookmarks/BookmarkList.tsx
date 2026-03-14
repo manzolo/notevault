@@ -60,7 +60,7 @@ export default function BookmarkList({ bookmarks, loading, onEdit, onDelete, onR
       <SortableContext items={bookmarks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
         <div>
           {bookmarks.map((bm) => (
-            <BookmarkItem key={bm.id} bookmark={bm} onEdit={onEdit} onDelete={onDelete} />
+            <BookmarkItem key={`${bm.id}-${bm.updated_at}`} bookmark={bm} onEdit={onEdit} onDelete={onDelete} />
           ))}
         </div>
       </SortableContext>
