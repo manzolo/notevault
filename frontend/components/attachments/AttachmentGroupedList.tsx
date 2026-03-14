@@ -10,6 +10,7 @@ import {
   closestCenter,
   DragEndEvent,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -102,6 +103,7 @@ export default function AttachmentGroupedList({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
   const handleDragEnd = async (event: DragEndEvent, category: MimeCategory, groups: Map<MimeCategory, Attachment[]>) => {

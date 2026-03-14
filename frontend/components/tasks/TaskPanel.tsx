@@ -11,6 +11,7 @@ import {
   closestCenter,
   DragEndEvent,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -34,6 +35,7 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
   const handleAdd = async () => {

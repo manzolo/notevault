@@ -149,29 +149,51 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
       <div
         ref={setNodeRef}
         style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
-        className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0 flex-wrap"
+        className="flex gap-2 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
       >
         <span
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 shrink-0 select-none mt-2 px-0.5"
+          className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 shrink-0 select-none mt-1 px-0.5"
           title="Drag to reorder"
         >
           ⠿
         </span>
 
-        <FileIcon mime={attachment.mime_type} />
+        <div className="shrink-0 mt-0.5">
+          <FileIcon mime={attachment.mime_type} />
+        </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate flex items-center gap-1">
-            {attachment.filename}
-            {emlAttachmentCount > 0 && (
-              <span className="text-gray-400 dark:text-gray-500 shrink-0" title={t('emlHasAttachments')}>
-                <PaperclipIcon />
-              </span>
-            )}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{formatBytes(attachment.size_bytes)}</p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-all leading-snug">
+              {attachment.filename}
+              {emlAttachmentCount > 0 && (
+                <span className="inline-block ml-1 text-gray-400 dark:text-gray-500 align-middle" title={t('emlHasAttachments')}>
+                  <PaperclipIcon />
+                </span>
+              )}
+            </p>
+            <div className="flex gap-1 items-center shrink-0">
+              {canPreview && (
+                <Button size="sm" variant="secondary" title={t('preview')} onClick={() => onPreview(attachment)}>
+                  <EyeIcon />
+                  <span className="hidden sm:inline">{t('preview')}</span>
+                </Button>
+              )}
+              <Button size="sm" variant="secondary" title={t('download')} onClick={() => onDownload(attachment)}>
+                <ArrowDownTrayIcon />
+                <span className="hidden sm:inline">{t('download')}</span>
+              </Button>
+              <Button size="sm" variant="secondary" title={t('edit')} onClick={() => onEdit(attachment)}>
+                <PencilIcon />
+              </Button>
+              <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
+                <TrashIcon />
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{formatBytes(attachment.size_bytes)}</p>
           {attachment.description && (
             <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{attachment.description}</p>
           )}
@@ -183,25 +205,6 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
             ))}
             <DateInfoTooltip createdAt={attachment.created_at} updatedAt={attachment.updated_at} extras={tooltipExtras} />
           </div>
-        </div>
-
-        <div className="flex gap-1.5 items-center basis-full sm:basis-auto">
-          {canPreview && (
-            <Button size="sm" variant="secondary" onClick={() => onPreview(attachment)}>
-              <EyeIcon />
-              <span className="hidden sm:inline">{t('preview')}</span>
-            </Button>
-          )}
-          <Button size="sm" variant="secondary" onClick={() => onDownload(attachment)}>
-            <ArrowDownTrayIcon />
-            <span className="hidden sm:inline">{t('download')}</span>
-          </Button>
-          <Button size="sm" variant="secondary" title={t('edit')} onClick={() => onEdit(attachment)}>
-            <PencilIcon />
-          </Button>
-          <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
-            <TrashIcon />
-          </Button>
         </div>
       </div>
     </>

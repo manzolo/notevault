@@ -9,6 +9,7 @@ import {
   closestCenter,
   DragEndEvent,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -28,6 +29,7 @@ export default function BookmarkList({ bookmarks, loading, onEdit, onDelete, onR
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
   const handleDragEnd = async (event: DragEndEvent) => {

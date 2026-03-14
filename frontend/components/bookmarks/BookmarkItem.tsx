@@ -130,7 +130,7 @@ export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
         <div className="flex gap-1.5 shrink-0">
           <Button size="sm" variant="secondary" onClick={() => onEdit(bookmark)}>
             <PencilIcon />
-            {t('edit')}
+            <span className="hidden sm:inline">{t('edit')}</span>
           </Button>
           <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
             <TrashIcon />
