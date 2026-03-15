@@ -134,7 +134,9 @@
     "totpSeedPlaceholder": "es. JBSWY3DPEHPK3PXP",
     "totpCodeLabel": "Codice OTP corrente",
     "totpCopyCode": "Copia codice",
-    "totpInvalidSeed": "Seed Base32 non valido"
+    "totpInvalidSeed": "Seed Base32 non valido",
+    "keystorePassword": "Password del keystore",
+    "urlKeystorePlaceholder": "es. /percorso/keystore.jks o alias"
   },
   "attachments": {
     "attachments": "Allegati",

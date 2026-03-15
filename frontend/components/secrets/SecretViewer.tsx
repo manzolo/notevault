@@ -12,6 +12,41 @@ import TotpLiveWidget from './TotpLiveWidget';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+function KeystoreValueDisplay({ value }: { value: string }) {
+  // Parse KEY=value pairs (space or newline separated)
+  const tokens = value.trim().split(/[\s\n]+/);
+  const pairs = tokens.map(token => {
+    const eqIdx = token.indexOf('=');
+    if (eqIdx === -1) return null;
+    return [token.slice(0, eqIdx), token.slice(eqIdx + 1)] as [string, string];
+  });
+  const allParsed = pairs.length > 0 && pairs.every(p => p !== null);
+
+  if (allParsed) {
+    return (
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded px-3 py-2 font-mono text-xs max-h-40 overflow-y-auto">
+        <table className="w-full border-collapse">
+          <tbody>
+            {(pairs as [string, string][]).map(([k, v], i) => (
+              <tr key={i} className="border-b border-gray-100 dark:border-gray-800 last:border-0">
+                <td className="text-blue-600 dark:text-blue-400 pr-2 py-0.5 whitespace-nowrap align-top select-all">{k}</td>
+                <td className="text-gray-400 dark:text-gray-500 py-0.5 pr-2">=</td>
+                <td className="text-gray-900 dark:text-gray-100 py-0.5 break-all select-all">{v}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded px-3 py-2 font-mono text-sm break-words max-h-28 overflow-y-auto">
+      {value}
+    </div>
+  );
+}
+
 interface SecretViewerProps {
   secret: Secret;
   revealed?: SecretReveal;
@@ -120,8 +155,10 @@ export default function SecretViewer({
               <div className="mt-2">
                 {secret.secret_type === 'totp_seed' ? (
                   <TotpLiveWidget seed={revealed.value} labelInvalidSeed={t('totpInvalidSeed')} labelCopy={t('totpCopyCode')} />
+                ) : secret.secret_type === 'keystore' ? (
+                  <KeystoreValueDisplay value={revealed.value} />
                 ) : (
-                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded px-3 py-2 font-mono text-sm break-all max-h-28 overflow-y-auto">
+                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded px-3 py-2 font-mono text-sm break-words max-h-28 overflow-y-auto">
                     {revealed.value}
                   </div>
                 )}

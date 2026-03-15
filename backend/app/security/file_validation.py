@@ -45,6 +45,9 @@ ALLOWED_MIME_TYPES = {
     "application/gzip": ".gz",
     # Email
     "message/rfc822": ".eml",
+    # Java KeyStore / PKCS12
+    "application/x-java-keystore": ".jks",
+    "application/x-pkcs12": ".p12",
     # Executables / binaries
     "application/x-msdownload": ".exe",
     "application/octet-stream": ".bin",
@@ -116,6 +119,10 @@ EXTENSION_PRIORITY: dict[str, str] = {
     ".bash_profile": "text/plain",
     ".profile": "text/plain",
     ".zshrc": "text/plain",
+    # Java KeyStore / PKCS12 (binary, extension-priority)
+    ".jks": "application/x-java-keystore",
+    ".p12": "application/x-pkcs12",
+    ".pfx": "application/x-pkcs12",
     # Executables / binaries (extension-priority, no magic byte check)
     ".exe": "application/x-msdownload",
     ".dll": "application/x-msdownload",

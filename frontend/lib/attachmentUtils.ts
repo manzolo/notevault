@@ -44,6 +44,7 @@ export function getMimeCategory(mime: string): MimeCategory {
     mime === 'application/x-gzip'
   ) return 'archives';
   if (mime === 'message/rfc822') return 'emails';
+  if (mime === 'application/x-java-keystore' || mime === 'application/x-pkcs12') return 'executables';
   if (mime === 'application/x-msdownload' || mime === 'application/octet-stream') return 'executables';
   if (mime === 'text/plain') return 'scripts';
   if (mime === 'text/csv' || mime === 'application/json' || mime === 'application/xml' || mime === 'text/xml') return 'other';

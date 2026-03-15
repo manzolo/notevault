@@ -10,10 +10,10 @@ interface SecretFormProps {
   onSubmit: (data: SecretCreate) => Promise<void>;
 }
 
-const SECRET_TYPES: SecretType[] = ['password', 'api_key', 'token', 'ssh_key', 'certificate', 'totp_seed', 'other'];
+const SECRET_TYPES: SecretType[] = ['password', 'api_key', 'token', 'ssh_key', 'certificate', 'totp_seed', 'keystore', 'other'];
 
 const SHOW_USERNAME: SecretType[] = ['password', 'api_key', 'ssh_key'];
-const SHOW_URL: SecretType[] = ['password', 'api_key', 'token', 'ssh_key'];
+const SHOW_URL: SecretType[] = ['password', 'api_key', 'token', 'ssh_key', 'keystore'];
 
 function isValidBase32Seed(seed: string): boolean {
   const cleaned = seed.trim().toUpperCase().replace(/\s/g, '');
@@ -110,7 +110,9 @@ export default function SecretForm({ onSubmit }: SecretFormProps) {
     t('usernamePlaceholder');
 
   const urlPlaceholder =
-    secretType === 'ssh_key' ? t('urlSshPlaceholder') : t('urlPlaceholder');
+    secretType === 'ssh_key' ? t('urlSshPlaceholder') :
+    secretType === 'keystore' ? t('urlKeystorePlaceholder') :
+    t('urlPlaceholder');
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
@@ -163,7 +165,7 @@ export default function SecretForm({ onSubmit }: SecretFormProps) {
       )}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          {secretType === 'ssh_key' ? t('privateKey') : secretType === 'totp_seed' ? t('totpSeed') : t('secretValue')}
+          {secretType === 'ssh_key' ? t('privateKey') : secretType === 'totp_seed' ? t('totpSeed') : secretType === 'keystore' ? t('keystorePassword') : t('secretValue')}
         </label>
         <textarea
           value={value}

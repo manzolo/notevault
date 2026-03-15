@@ -93,7 +93,7 @@ export interface TaskUpdate {
   position?: number;
 }
 
-export type SecretType = 'password' | 'api_key' | 'token' | 'ssh_key' | 'certificate' | 'totp_seed' | 'other';
+export type SecretType = 'password' | 'api_key' | 'token' | 'ssh_key' | 'certificate' | 'totp_seed' | 'keystore' | 'other';
 
 export interface Secret {
   id: number;

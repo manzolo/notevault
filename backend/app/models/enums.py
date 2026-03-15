@@ -8,6 +8,7 @@ class SecretType(str, enum.Enum):
     SSH_KEY = "ssh_key"
     CERTIFICATE = "certificate"
     TOTP_SEED = "totp_seed"
+    KEYSTORE = "keystore"
     OTHER = "other"
 
 
