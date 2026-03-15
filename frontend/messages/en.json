@@ -203,7 +203,9 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete this bookmark?",
-    "saveFailed": "Failed to save bookmark"
+    "saveFailed": "Failed to save bookmark",
+    "sourceSecret": "Secret",
+    "sourceEvent": "Event"
   },
   "tasks": {
     "tasks": "Tasks",

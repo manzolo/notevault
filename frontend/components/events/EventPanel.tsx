@@ -12,6 +12,7 @@ import api from "@/lib/api";
 interface Props {
   noteId: number;
   onCountChange?: (count: number) => void;
+  onEventsChange?: (events: CalendarEvent[]) => void;
   onAdd?: React.MutableRefObject<(() => void) | null>;
 }
 
@@ -28,7 +29,7 @@ function formatDatetime(iso: string): string {
   });
 }
 
-export default function EventPanel({ noteId, onCountChange, onAdd }: Props) {
+export default function EventPanel({ noteId, onCountChange, onEventsChange, onAdd }: Props) {
   const t = useTranslations("events");
   const { events, loading, fetchEvents, createEvent, updateEvent, deleteEvent } = useEvents(noteId);
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -41,8 +42,11 @@ export default function EventPanel({ noteId, onCountChange, onAdd }: Props) {
   }, [fetchEvents]);
 
   useEffect(() => {
-    if (!loading) onCountChange?.(events.length);
-  }, [events.length, loading]);
+    if (!loading) {
+      onCountChange?.(events.length);
+      onEventsChange?.(events);
+    }
+  }, [events, loading]);
 
   useEffect(() => {
     if (onAdd) {

@@ -203,7 +203,9 @@
     "cancel": "Annulla",
     "delete": "Elimina",
     "deleteConfirm": "Sei sicuro di voler eliminare questo segnalibro?",
-    "saveFailed": "Impossibile salvare il segnalibro"
+    "saveFailed": "Impossibile salvare il segnalibro",
+    "sourceSecret": "Segreto",
+    "sourceEvent": "Evento"
   },
   "tasks": {
     "tasks": "Attività",

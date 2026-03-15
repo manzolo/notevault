@@ -244,3 +244,13 @@ export interface CalendarEventUpdate {
   end_datetime?: string;
   url?: string;
 }
+
+export type VirtualBookmarkSource = 'secret' | 'event';
+export interface VirtualBookmark {
+  virtualKey: string;
+  source: VirtualBookmarkSource;
+  sourceId: number;
+  sourceName: string;
+  url: string;
+  description?: string;
+}

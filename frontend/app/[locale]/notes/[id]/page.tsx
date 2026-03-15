@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
@@ -13,7 +13,8 @@ import { useSecrets } from '@/hooks/useSecrets';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useTasks } from '@/hooks/useTasks';
-import { Attachment, Bookmark, Note } from '@/lib/types';
+import { Attachment, Bookmark, CalendarEvent, Note } from '@/lib/types';
+import { buildVirtualBookmarks } from '@/lib/virtualBookmarks';
 import NoteEditor from '@/components/notes/NoteEditor';
 import SecretList from '@/components/secrets/SecretList';
 import SecretForm from '@/components/secrets/SecretForm';
@@ -126,6 +127,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
   // Collapsed section state
   const [eventsCount, setEventsCount] = useState<number | null>(null);
+  const [noteEvents, setNoteEvents] = useState<CalendarEvent[]>([]);
+  const virtualBookmarks = useMemo(() => buildVirtualBookmarks(secrets, noteEvents), [secrets, noteEvents]);
   const [forceTasksExpanded, setForceTasksExpanded] = useState(false);
   const eventPanelAddRef = useRef<(() => void) | null>(null); // MutableRefObject by default
 
@@ -883,7 +886,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       )}
 
       {/* Bookmarks Section */}
-      {bookmarksLoading || bookmarks.length > 0 ? (
+      {bookmarksLoading || bookmarks.length > 0 || virtualBookmarks.length > 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">{tBookmarks('bookmarks')}</h2>
@@ -899,6 +902,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             onDelete={deleteBookmark}
             onReorder={reorderBookmarks}
             setBookmarks={setBookmarks}
+            virtualBookmarks={virtualBookmarks}
           />
         </div>
       ) : (
@@ -948,7 +952,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         />
       )}
       <div className={eventsCount === 0 ? 'h-0 overflow-hidden' : 'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6'}>
-        <EventPanel noteId={noteId} onCountChange={setEventsCount} onAdd={eventPanelAddRef} />
+        <EventPanel noteId={noteId} onCountChange={setEventsCount} onEventsChange={setNoteEvents} onAdd={eventPanelAddRef} />
       </div>
 
       <Modal isOpen={showSecretModal} onClose={() => setShowSecretModal(false)} title={tSecrets('addSecret')}>

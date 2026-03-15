@@ -1,8 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Bookmark } from '@/lib/types';
+import { Bookmark, VirtualBookmark } from '@/lib/types';
 import BookmarkItem from './BookmarkItem';
+import VirtualBookmarkItem from './VirtualBookmarkItem';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import {
   DndContext,
@@ -22,9 +23,10 @@ interface Props {
   onDelete: (id: number) => void;
   onReorder: (items: { id: number; position: number }[]) => Promise<void>;
   setBookmarks: (bookmarks: Bookmark[]) => void;
+  virtualBookmarks?: VirtualBookmark[];
 }
 
-export default function BookmarkList({ bookmarks, loading, onEdit, onDelete, onReorder, setBookmarks }: Props) {
+export default function BookmarkList({ bookmarks, loading, onEdit, onDelete, onReorder, setBookmarks, virtualBookmarks }: Props) {
   const t = useTranslations('bookmarks');
 
   const sensors = useSensors(
@@ -51,19 +53,28 @@ export default function BookmarkList({ bookmarks, loading, onEdit, onDelete, onR
 
   if (loading) return <LoadingSpinner />;
 
-  if (bookmarks.length === 0) {
+  if (bookmarks.length === 0 && !virtualBookmarks?.length) {
     return <p className="text-sm text-gray-500 text-center py-4">{t('noBookmarks')}</p>;
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={bookmarks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+    <>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={bookmarks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+          <div>
+            {bookmarks.map((bm) => (
+              <BookmarkItem key={`${bm.id}-${bm.updated_at}`} bookmark={bm} onEdit={onEdit} onDelete={onDelete} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+      {virtualBookmarks && virtualBookmarks.length > 0 && (
         <div>
-          {bookmarks.map((bm) => (
-            <BookmarkItem key={`${bm.id}-${bm.updated_at}`} bookmark={bm} onEdit={onEdit} onDelete={onDelete} />
+          {virtualBookmarks.map((vbm) => (
+            <VirtualBookmarkItem key={vbm.virtualKey} vbm={vbm} />
           ))}
         </div>
-      </SortableContext>
-    </DndContext>
+      )}
+    </>
   );
 }

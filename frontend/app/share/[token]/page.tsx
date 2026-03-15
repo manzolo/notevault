@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '@/lib/api';
 import TotpLiveWidget from '@/components/secrets/TotpLiveWidget';
+import { LockClosedIcon, CalendarIcon } from '@/components/common/Icons';
 import { groupAttachments, CATEGORY_ORDER, MimeCategory } from '@/lib/attachmentUtils';
 
 const CATEGORY_LABELS: Record<MimeCategory, string> = {
@@ -168,6 +169,22 @@ export default function SharePage({ params }: { params: { token: string } }) {
     return 'flat';
   });
   const previewUrlRef = useRef<string | null>(null);
+
+  const sharedVirtualBookmarks = useMemo(() => {
+    if (!note) return [];
+    const result: { key: string; source: 'secret' | 'event'; name: string; url: string; desc?: string }[] = [];
+    if (note.share_sections.secrets) {
+      note.secrets?.filter((s) => s.url).forEach((s) =>
+        result.push({ key: `vs-${s.id}`, source: 'secret', name: s.name, url: s.url!, desc: s.username ?? undefined })
+      );
+    }
+    if (note.share_sections.events) {
+      note.events?.filter((e) => e.url).forEach((e) =>
+        result.push({ key: `ve-${e.id}`, source: 'event', name: e.title, url: e.url!, desc: e.description ?? undefined })
+      );
+    }
+    return result;
+  }, [note]);
 
   const handlePreview = async (att: SharedAttachment | SharedEventAttachment, url: string) => {
     try {
@@ -507,9 +524,7 @@ export default function SharePage({ params }: { params: { token: string } }) {
               )}
 
             {/* Bookmarks section */}
-            {note.share_sections.bookmarks &&
-              note.bookmarks &&
-              note.bookmarks.length > 0 && (
+            {(note.share_sections.bookmarks && note.bookmarks && note.bookmarks.length > 0) || sharedVirtualBookmarks.length > 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                   <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <svg
@@ -528,7 +543,7 @@ export default function SharePage({ params }: { params: { token: string } }) {
                     Bookmarks
                   </h2>
                   <ul className="space-y-2">
-                    {note.bookmarks.map((bm) => (
+                    {note.share_sections.bookmarks && note.bookmarks?.map((bm) => (
                       <li key={bm.id}>
                         <a
                           href={bm.url}
@@ -550,9 +565,33 @@ export default function SharePage({ params }: { params: { token: string } }) {
                         )}
                       </li>
                     ))}
+                    {sharedVirtualBookmarks.map((vbm) => (
+                      <li key={vbm.key} className="flex items-start gap-2 pt-1">
+                        <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded font-medium shrink-0 mt-0.5 ${vbm.source === 'secret' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}`}>
+                          {vbm.source === 'secret'
+                            ? <LockClosedIcon className="w-3 h-3" />
+                            : <CalendarIcon className="w-3 h-3" />}
+                          {vbm.source === 'secret' ? 'Secret' : 'Event'}
+                        </span>
+                        <div className="min-w-0">
+                          <a
+                            href={vbm.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium truncate block"
+                          >
+                            {vbm.name}
+                          </a>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{vbm.url}</p>
+                          {vbm.desc && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{vbm.desc}</p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
                   </ul>
                 </div>
-              )}
+              ) : null}
 
             {/* Secrets section */}
             {note.share_sections.secrets && note.secrets && note.secrets.length > 0 && (
