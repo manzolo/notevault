@@ -13,10 +13,22 @@ class MatchingAttachment(BaseModel):
         from_attributes = True
 
 
+class MatchingBookmark(BaseModel):
+    id: int
+    note_id: int
+    url: str
+    title: str | None = None
+    description: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class SearchNoteResponse(NoteResponse):
     match_in_attachment: bool = False
     match_in_bookmark: bool = False
     matching_attachments: List[MatchingAttachment] = []
+    matching_bookmarks: List[MatchingBookmark] = []
 
     class Config:
         from_attributes = True

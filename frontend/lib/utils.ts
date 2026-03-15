@@ -28,8 +28,8 @@ export function stripMarkdown(text: string): string {
     .replace(/__([^_]+)__/g, '$1')                  // __bold__
     .replace(/_([^_]+)_/g, '$1')                    // _italic_
     .replace(/~~([^~]+)~~/g, '$1')                  // ~~strike~~
-    .replace(/`([^`]+)`/g, '$1')                    // `code`
-    .replace(/```[\s\S]*?```/g, '')                 // code blocks
+    .replace(/```[\s\S]*?```/g, '')                 // fenced code blocks (must be before inline)
+    .replace(/`+([^`]*)`+/g, '$1')                  // inline code: `x`, ``x``, etc.
     .replace(/^[-*+]\s+/gm, '')                     // list items
     .replace(/^\d+\.\s+/gm, '')                     // ordered lists
     .replace(/^>\s+/gm, '')                         // blockquotes

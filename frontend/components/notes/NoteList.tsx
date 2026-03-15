@@ -3,7 +3,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Category, MatchingAttachment, Note } from '@/lib/types';
+import { Category, MatchingAttachment, MatchingBookmark, Note } from '@/lib/types';
 import NoteCard from './NoteCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -22,6 +22,7 @@ interface NoteListProps {
   filterActive?: boolean;
   matchMap?: Map<number, MatchInfo>;
   matchingAttachmentsMap?: Map<number, MatchingAttachment[]>;
+  matchingBookmarksMap?: Map<number, MatchingBookmark[]>;
   onPreviewAttachment?: (noteId: number, attachment: MatchingAttachment) => void;
 }
 
@@ -34,7 +35,7 @@ function findCategoryName(cats: Category[], id: number): string | undefined {
   return undefined;
 }
 
-export default function NoteList({ notes, loading, onDelete, onPin, onArchive, categories, filterActive, matchMap, matchingAttachmentsMap, onPreviewAttachment }: NoteListProps) {
+export default function NoteList({ notes, loading, onDelete, onPin, onArchive, categories, filterActive, matchMap, matchingAttachmentsMap, matchingBookmarksMap, onPreviewAttachment }: NoteListProps) {
   const t = useTranslations('notes');
 
   if (loading) return <LoadingSpinner className="py-12" />;
@@ -64,6 +65,7 @@ export default function NoteList({ notes, loading, onDelete, onPin, onArchive, c
             matchInAttachment={match?.attachment ?? false}
             matchInBookmark={match?.bookmark ?? false}
             matchingAttachments={matchingAttachmentsMap?.get(note.id)}
+            matchingBookmarks={matchingBookmarksMap?.get(note.id)}
             onPreviewAttachment={onPreviewAttachment}
           />
         );

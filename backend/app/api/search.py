@@ -6,7 +6,7 @@ from sqlalchemy import or_, exists, select, func
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
 from app.models.database import Attachment, Bookmark, Note, NoteTag, User
-from app.schemas.search import MatchingAttachment, SearchResponse, SearchNoteResponse
+from app.schemas.search import MatchingAttachment, MatchingBookmark, SearchResponse, SearchNoteResponse
 from app.security.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/search", tags=["search"])
@@ -103,12 +103,28 @@ async def search_notes(
                 MatchingAttachment(id=att_id, note_id=att_note_id, filename=att_filename, mime_type=att_mime)
             )
 
+    # Batch-fetch matching bookmarks for notes that have a match
+    matching_bm_map: dict = defaultdict(list)
+    bm_note_ids = [note.id for note, ma, mb in rows if mb]
+    if bm_note_ids:
+        bm_q = select(
+            Bookmark.id, Bookmark.note_id, Bookmark.url, Bookmark.title, Bookmark.description
+        ).where(
+            Bookmark.note_id.in_(bm_note_ids),
+            Bookmark.fts_vector.op("@@")(tsquery),
+        )
+        for bm_id, bm_note_id, bm_url, bm_title, bm_desc in (await db.execute(bm_q)).all():
+            matching_bm_map[bm_note_id].append(
+                MatchingBookmark(id=bm_id, note_id=bm_note_id, url=bm_url, title=bm_title, description=bm_desc)
+            )
+
     items = []
     for note, match_attachment, match_bookmark in rows:
         item = SearchNoteResponse.model_validate(note)
         item.match_in_attachment = bool(match_attachment)
         item.match_in_bookmark = bool(match_bookmark)
         item.matching_attachments = matching_att_map.get(note.id, [])
+        item.matching_bookmarks = matching_bm_map.get(note.id, [])
         items.append(item)
 
     return SearchResponse(items=items, total=total, query=q, page=page, per_page=per_page, pages=pages)

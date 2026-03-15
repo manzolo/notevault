@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { MatchingAttachment, Note } from '@/lib/types';
+import { MatchingAttachment, MatchingBookmark, Note } from '@/lib/types';
 import { formatRelative, stripMarkdown, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
 import { ArchiveIcon, EyeIcon, FolderIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
@@ -28,6 +28,7 @@ interface NoteCardProps {
   matchInAttachment?: boolean;
   matchInBookmark?: boolean;
   matchingAttachments?: MatchingAttachment[];
+  matchingBookmarks?: MatchingBookmark[];
   onPreviewAttachment?: (noteId: number, attachment: MatchingAttachment) => void;
 }
 
@@ -49,7 +50,7 @@ function GlobeIcon() {
   );
 }
 
-export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchingAttachments, onPreviewAttachment }: NoteCardProps) {
+export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchingAttachments, matchingBookmarks, onPreviewAttachment }: NoteCardProps) {
   const locale = useLocale();
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
@@ -148,11 +149,28 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                   </div>
                 )}
                 {matchInBookmark && (
-                  <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-start gap-1 text-xs text-gray-500 dark:text-gray-400">
                     <GlobeIcon />
-                    <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
-                      {tSearch('foundInBookmark')}
-                    </span>
+                    {matchingBookmarks && matchingBookmarks.length > 0 ? (
+                      <span className="flex flex-wrap gap-1">
+                        {matchingBookmarks.map((bm) => (
+                          <a
+                            key={bm.id}
+                            href={bm.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-gray-100 dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 hover:underline px-1.5 py-0.5 rounded truncate max-w-[200px]"
+                          >
+                            {bm.title || bm.url}
+                          </a>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
+                        {tSearch('foundInBookmark')}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

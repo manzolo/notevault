@@ -173,6 +173,10 @@ export default function DashboardPage() {
     ? new Map(searchResults.items.map((item) => [item.id, item.matching_attachments ?? []]))
     : undefined;
 
+  const matchingBookmarksMap = searchResults
+    ? new Map(searchResults.items.map((item) => [item.id, item.matching_bookmarks ?? []]))
+    : undefined;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -249,6 +253,7 @@ export default function DashboardPage() {
           filterActive={!searchResults}
           matchMap={matchMap}
           matchingAttachmentsMap={matchingAttachmentsMap}
+          matchingBookmarksMap={matchingBookmarksMap}
           onPreviewAttachment={handlePreviewAttachment}
         />
       </div>

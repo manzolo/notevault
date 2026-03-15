@@ -185,10 +185,19 @@ export interface MatchingAttachment {
   mime_type: string;
 }
 
+export interface MatchingBookmark {
+  id: number;
+  note_id: number;
+  url: string;
+  title?: string | null;
+  description?: string | null;
+}
+
 export interface SearchNote extends Note {
   match_in_attachment?: boolean;
   match_in_bookmark?: boolean;
   matching_attachments?: MatchingAttachment[];
+  matching_bookmarks?: MatchingBookmark[];
 }
 
 export interface SearchResponse {
