@@ -187,7 +187,12 @@
     "category_emails": "Emails",
     "category_other": "Other",
     "category_scripts": "Scripts & Configs",
-    "category_executables": "Executables & Binaries"
+    "category_executables": "Executables & Binaries",
+    "createTextFile": "Create Text File",
+    "textFileName": "File name",
+    "textFileContent": "Content",
+    "textFileContentPlaceholder": "Type or paste your text here...",
+    "textFileCreate": "Create File"
   },
   "bookmarks": {
     "bookmarks": "Bookmarks",

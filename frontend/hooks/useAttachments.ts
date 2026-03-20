@@ -58,7 +58,7 @@ export function useAttachments(noteId: number) {
     async (attachmentId: number): Promise<string> => {
       const response = await api.get(
         `/api/notes/${noteId}/attachments/${attachmentId}/stream`,
-        { responseType: 'blob' },
+        { responseType: 'blob', params: { _t: Date.now() } },
       );
       return URL.createObjectURL(response.data as Blob);
     },
@@ -227,6 +227,29 @@ export function useAttachments(noteId: number) {
     [noteId],
   );
 
+  const fetchTextContent = useCallback(
+    async (attachmentId: number): Promise<string> => {
+      const response = await api.get(
+        `/api/notes/${noteId}/attachments/${attachmentId}/stream`,
+        { responseType: 'blob', params: { _t: Date.now() } },
+      );
+      return (response.data as Blob).text();
+    },
+    [noteId],
+  );
+
+  const updateAttachmentContent = useCallback(
+    async (attachmentId: number, content: string): Promise<Attachment> => {
+      const response = await api.put<Attachment>(
+        `/api/notes/${noteId}/attachments/${attachmentId}/content`,
+        { content },
+      );
+      setAttachments((prev) => prev.map((a) => (a.id === attachmentId ? response.data : a)));
+      return response.data;
+    },
+    [noteId],
+  );
+
   return {
     attachments,
     setAttachments,
@@ -237,7 +260,9 @@ export function useAttachments(noteId: number) {
     deleteAttachment,
     getStreamUrl,
     previewAttachment,
+    fetchTextContent,
     updateAttachment,
+    updateAttachmentContent,
     parseZip,
     previewZipEntry,
     downloadZipEntry,

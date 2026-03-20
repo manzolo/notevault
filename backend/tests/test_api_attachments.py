@@ -434,3 +434,131 @@ async def test_search_finds_note_via_attachment_markdown_content(client, auth_he
     assert search_resp.status_code == 200
     ids = [item["id"] for item in search_resp.json()["items"]]
     assert nid in ids
+
+
+# ── Content update tests ───────────────────────────────────────────────────────
+
+async def _upload_text(client, auth_headers, note_id, filename="note.txt", content="initial content"):
+    """Helper: upload a plain-text file and return its attachment id."""
+    resp = await client.post(
+        f"/api/notes/{note_id}/attachments",
+        files={"file": (filename, io.BytesIO(content.encode()), "text/plain")},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
+async def test_update_text_content_returns_updated_size(client, auth_headers, note_id):
+    """PUT /content should return attachment with updated size_bytes."""
+    att_id = await _upload_text(client, auth_headers, note_id, content="hello")
+
+    new_content = "hello world updated"
+    resp = await client.put(
+        f"/api/notes/{note_id}/attachments/{att_id}/content",
+        json={"content": new_content},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["size_bytes"] == len(new_content.encode("utf-8"))
+
+
+async def test_update_text_content_stream_reflects_new_content(client, auth_headers, note_id):
+    """After PUT /content, streaming the attachment should return the new text."""
+    att_id = await _upload_text(client, auth_headers, note_id, content="original text")
+
+    new_content = "completely replaced content"
+    put_resp = await client.put(
+        f"/api/notes/{note_id}/attachments/{att_id}/content",
+        json={"content": new_content},
+        headers=auth_headers,
+    )
+    assert put_resp.status_code == 200
+
+    stream_resp = await client.get(
+        f"/api/notes/{note_id}/attachments/{att_id}/stream",
+        headers=auth_headers,
+    )
+    assert stream_resp.status_code == 200
+    assert stream_resp.content.decode("utf-8") == new_content
+
+
+async def test_update_text_content_updates_search_index(client, auth_headers):
+    """After PUT /content, the new text should be findable via search."""
+    note_resp = await client.post(
+        "/api/notes",
+        json={"title": "content-update search test", "content": ""},
+        headers=auth_headers,
+    )
+    nid = note_resp.json()["id"]
+    att_id = await _upload_text(client, auth_headers, nid, content="old boring text")
+
+    unique_word = "xyzzycontentupdate99"
+    await client.put(
+        f"/api/notes/{nid}/attachments/{att_id}/content",
+        json={"content": f"this file now contains {unique_word}"},
+        headers=auth_headers,
+    )
+
+    search_resp = await client.get(f"/api/search?q={unique_word}", headers=auth_headers)
+    assert search_resp.status_code == 200
+    ids = [item["id"] for item in search_resp.json()["items"]]
+    assert nid in ids
+
+
+async def test_update_text_content_empty_string(client, auth_headers, note_id):
+    """PUT /content with empty string should set size_bytes to 0."""
+    att_id = await _upload_text(client, auth_headers, note_id, content="something")
+
+    resp = await client.put(
+        f"/api/notes/{note_id}/attachments/{att_id}/content",
+        json={"content": ""},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["size_bytes"] == 0
+
+
+async def test_update_text_content_rejects_binary(client, auth_headers, note_id):
+    """PUT /content on a non-text attachment should return 415."""
+    upload = await client.post(
+        f"/api/notes/{note_id}/attachments",
+        files={"file": ("img.jpg", io.BytesIO(_JPEG_BYTES), "image/jpeg")},
+        headers=auth_headers,
+    )
+    att_id = upload.json()["id"]
+
+    resp = await client.put(
+        f"/api/notes/{note_id}/attachments/{att_id}/content",
+        json={"content": "not text"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 415
+
+
+async def test_update_text_content_not_found(client, auth_headers, note_id):
+    resp = await client.put(
+        f"/api/notes/{note_id}/attachments/999999/content",
+        json={"content": "irrelevant"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 404
+
+
+async def test_update_text_content_other_user_rejected(client, auth_headers, second_auth_headers):
+    """User B cannot update content of user A's attachment."""
+    note_resp = await client.post(
+        "/api/notes",
+        json={"title": "private note", "content": ""},
+        headers=auth_headers,
+    )
+    nid = note_resp.json()["id"]
+    att_id = await _upload_text(client, auth_headers, nid, content="secret text")
+
+    resp = await client.put(
+        f"/api/notes/{nid}/attachments/{att_id}/content",
+        json={"content": "hacked"},
+        headers=second_auth_headers,
+    )
+    assert resp.status_code == 404

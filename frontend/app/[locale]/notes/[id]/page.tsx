@@ -22,6 +22,7 @@ import AttachmentGroupedList from '@/components/attachments/AttachmentGroupedLis
 import AttachmentFlatList from '@/components/attachments/AttachmentFlatList';
 import AttachmentUploadForm from '@/components/attachments/AttachmentUploadForm';
 import AttachmentEditForm from '@/components/attachments/AttachmentEditForm';
+import TextFileCreateForm from '@/components/attachments/TextFileCreateForm';
 import BookmarkList from '@/components/bookmarks/BookmarkList';
 import BookmarkForm from '@/components/bookmarks/BookmarkForm';
 import TaskPanel from '@/components/tasks/TaskPanel';
@@ -30,7 +31,7 @@ import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CollapsedSection from '@/components/common/CollapsedSection';
-import { ArrowDownTrayIcon, CalendarIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
+import { ArrowDownTrayIcon, CalendarIcon, DocumentTextIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
 import ShareModal from '@/components/notes/ShareModal';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
@@ -69,7 +70,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const { categories, fetchCategories, flattenCategories } = useCategories();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const { secrets, setSecrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret, reorderSecrets } = useSecrets(noteId);
-  const { attachments, setAttachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, deleteAttachment, previewAttachment, parseZip, previewZipEntry, downloadZipEntry, parseZipEml, previewZipEmlPart, downloadZipEmlPart, parseEml, previewEmlPart, downloadEmlPart, reorderAttachments } = useAttachments(noteId);
+  const { attachments, setAttachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, updateAttachmentContent, fetchTextContent, deleteAttachment, previewAttachment, parseZip, previewZipEntry, downloadZipEntry, parseZipEml, previewZipEmlPart, downloadZipEmlPart, parseEml, previewEmlPart, downloadEmlPart, reorderAttachments } = useAttachments(noteId);
   const { bookmarks, setBookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark, reorderBookmarks } = useBookmarks(noteId);
   const { tasks, setTasks, loading: tasksLoading, fetchTasks, createTask, updateTask, deleteTask, reorderTasks } = useTasks(noteId);
 
@@ -82,6 +83,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [saving, setSaving] = useState(false);
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showTextFileModal, setShowTextFileModal] = useState(false);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [attachmentView, setAttachmentView] = useState<'flat' | 'grouped'>(() => {
     if (typeof window !== 'undefined') {
@@ -371,11 +373,18 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     toast.success(count > 1 ? `${count} files uploaded!` : 'File uploaded!');
   };
 
-  const handleEditAttachment = async (data: { filename?: string; description?: string; tag_ids: number[] }) => {
+  const handleEditAttachment = async (data: { filename?: string; description?: string; tag_ids: number[]; content?: string }) => {
     if (!editingAttachment) return;
-    await updateAttachment(editingAttachment.id, data);
-    setEditingAttachment(null);
-    toast.success('Attachment updated!');
+    try {
+      await updateAttachment(editingAttachment.id, { filename: data.filename, description: data.description, tag_ids: data.tag_ids });
+      if (data.content !== undefined) {
+        await updateAttachmentContent(editingAttachment.id, data.content);
+      }
+      setEditingAttachment(null);
+      toast.success('Attachment updated!');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail ?? 'Update failed');
+    }
   };
 
   const handleClosePreview = () => {
@@ -522,16 +531,23 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   };
 
   const handleDownload = async (attachment: Attachment) => {
+    const toastId = toast.loading(attachment.filename);
     try {
-      const url = await previewAttachment(attachment.id);
+      const response = await api.get(
+        `/api/notes/${noteId}/attachments/${attachment.id}/stream`,
+        { responseType: 'blob', params: { _t: Date.now() } },
+      );
+      const url = URL.createObjectURL(response.data as Blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = attachment.filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      toast.dismiss(toastId);
     } catch {
+      toast.dismiss(toastId);
       toast.error('Failed to download file');
     }
   };
@@ -848,6 +864,10 @@ export default function NotePage({ params }: { params: { id: string; locale: str
                 <PaperclipUploadIcon />
                 {tAttachments('upload')}
               </Button>
+              <Button size="sm" variant="secondary" onClick={() => setShowTextFileModal(true)}>
+                <DocumentTextIcon />
+                {tAttachments('createTextFile')}
+              </Button>
             </div>
           </div>
           {attachmentView === 'grouped' ? (
@@ -968,6 +988,14 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         />
       </Modal>
 
+      <Modal isOpen={showTextFileModal} onClose={() => setShowTextFileModal(false)} title={tAttachments('createTextFile')}>
+        <TextFileCreateForm
+          onUpload={handleUpload}
+          onComplete={() => { handleUploadComplete(1); setShowTextFileModal(false); }}
+          availableTags={availableTagsFromHook}
+        />
+      </Modal>
+
       <Modal isOpen={!!editingAttachment} onClose={() => setEditingAttachment(null)} title={tAttachments('editAttachment')}>
         {editingAttachment && (
           <AttachmentEditForm
@@ -975,6 +1003,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             availableTags={availableTagsFromHook}
             onSave={handleEditAttachment}
             onCancel={() => setEditingAttachment(null)}
+            fetchContent={() => fetchTextContent(editingAttachment.id)}
           />
         )}
       </Modal>

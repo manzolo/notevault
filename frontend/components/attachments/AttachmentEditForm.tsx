@@ -1,24 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Button from '@/components/common/Button';
 import { Attachment, Tag } from '@/lib/types';
 
+const TEXT_EDITABLE_MIMES = new Set([
+  'text/plain', 'text/markdown', 'text/csv', 'text/html', 'text/xml',
+  'application/json', 'application/xml',
+]);
+
 interface Props {
   attachment: Attachment;
   availableTags?: Tag[];
-  onSave: (data: { filename?: string; description?: string; tag_ids: number[] }) => Promise<void>;
+  onSave: (data: { filename?: string; description?: string; tag_ids: number[]; content?: string }) => Promise<void>;
   onCancel: () => void;
+  fetchContent?: () => Promise<string>;
 }
 
-export default function AttachmentEditForm({ attachment, availableTags = [], onSave, onCancel }: Props) {
+export default function AttachmentEditForm({ attachment, availableTags = [], onSave, onCancel, fetchContent }: Props) {
   const t = useTranslations('attachments');
   const tCommon = useTranslations('common');
   const [filename, setFilename] = useState(attachment.filename);
   const [description, setDescription] = useState(attachment.description ?? '');
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(attachment.tags.map((tag) => tag.id));
   const [saving, setSaving] = useState(false);
+  const isTextEditable = TEXT_EDITABLE_MIMES.has(attachment.mime_type) || attachment.mime_type.startsWith('text/');
+  const [content, setContent] = useState<string | null>(null);
+  const [contentLoading, setContentLoading] = useState(false);
+
+  useEffect(() => {
+    if (isTextEditable && fetchContent) {
+      setContentLoading(true);
+      fetchContent().then((text) => setContent(text)).catch(() => setContent('')).finally(() => setContentLoading(false));
+    }
+  }, []);
 
   const toggleTag = (tagId: number) => {
     setSelectedTagIds((prev) =>
@@ -29,12 +45,14 @@ export default function AttachmentEditForm({ attachment, availableTags = [], onS
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!filename.trim()) return;
+    if (contentLoading) return;
     setSaving(true);
     try {
       await onSave({
         filename: filename.trim() !== attachment.filename ? filename.trim() : undefined,
         description: description || undefined,
         tag_ids: selectedTagIds,
+        content: isTextEditable && fetchContent && content !== null ? content : undefined,
       });
     } finally {
       setSaving(false);
@@ -69,6 +87,24 @@ export default function AttachmentEditForm({ attachment, availableTags = [], onS
         />
       </div>
 
+      {isTextEditable && fetchContent && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('textFileContent')}
+          </label>
+          {contentLoading ? (
+            <p className="text-sm text-gray-400">{tCommon('loading')}</p>
+          ) : (
+            <textarea
+              value={content ?? ''}
+              onChange={(e) => setContent(e.target.value)}
+              rows={12}
+              className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-mono shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100"
+            />
+          )}
+        </div>
+      )}
+
       {availableTags.length > 0 && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('tags')}</label>
@@ -98,7 +134,7 @@ export default function AttachmentEditForm({ attachment, availableTags = [], onS
         <Button variant="secondary" type="button" onClick={onCancel} disabled={saving}>
           {tCommon('cancel')}
         </Button>
-        <Button variant="secondary" type="submit" loading={saving} disabled={saving}>
+        <Button variant="secondary" type="submit" loading={saving} disabled={saving || contentLoading}>
           {tCommon('save')}
         </Button>
       </div>

@@ -672,6 +672,50 @@ async def update_attachment(
     return result.scalar_one()
 
 
+class AttachmentContentUpdate(BaseModel):
+    content: str
+
+
+_TEXT_EDITABLE_MIMES = {"text/plain", "text/markdown", "text/csv", "text/html", "text/xml", "application/json", "application/xml"}
+
+
+@router.put("/{note_id}/attachments/{attachment_id}/content", response_model=AttachmentResponse)
+async def update_attachment_content(
+    note_id: int,
+    attachment_id: int,
+    body: AttachmentContentUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_owned_note(note_id, current_user, db)
+    attachment = await _get_attachment(attachment_id, note_id, db)
+
+    if attachment.mime_type not in _TEXT_EDITABLE_MIMES and not attachment.mime_type.startswith("text/"):
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Content editing is only supported for text files",
+        )
+
+    file_path = os.path.join(
+        settings.upload_dir, str(current_user.id), str(note_id), attachment.stored_filename
+    )
+    content_bytes = body.content.encode("utf-8")
+    async with aiofiles.open(file_path, "wb") as f:
+        await f.write(content_bytes)
+
+    attachment.size_bytes = len(content_bytes)
+    attachment.extracted_text = body.content[:1_000_000]
+
+    await db.flush()
+    result = await db.execute(
+        select(Attachment)
+        .options(selectinload(Attachment.tags))
+        .where(Attachment.id == attachment.id)
+        .execution_options(populate_existing=True)
+    )
+    return result.scalar_one()
+
+
 @router.delete("/{note_id}/attachments/{attachment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_attachment(
     note_id: int,
