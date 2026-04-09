@@ -179,7 +179,7 @@ help:
 	@echo ""
 	@echo "NoteVault – available make targets"
 	@echo "==================================="
-	@grep -E '^## ' $(MAKEFILE_LIST) | \
+	@grep -hE '^## [a-zA-Z]' $(MAKEFILE_LIST) | \
 		sed 's/^## //' | \
-		awk -F': ' '{ printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 }'
+		awk '{ n=index($$0,": "); printf "  \033[36m%-20s\033[0m %s\n", substr($$0,1,n-1), substr($$0,n+2) }'
 	@echo ""

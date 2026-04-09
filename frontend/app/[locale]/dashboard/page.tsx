@@ -11,10 +11,11 @@ import { useCategories } from '@/hooks/useCategories';
 import NoteList from '@/components/notes/NoteList';
 import AdvancedFiltersPanel from '@/components/notes/AdvancedFiltersPanel';
 import SearchBar from '@/components/search/SearchBar';
-import FolderSelector from '@/components/folders/FolderSelector';
+import FolderTree from '@/components/folders/FolderTree';
+import MiniCalendar from '@/components/calendar/MiniCalendar';
 import Pagination from '@/components/common/Pagination';
 import Button from '@/components/common/Button';
-import { PlusIcon } from '@/components/common/Icons';
+import { PlusIcon, FolderIcon, CalendarIcon, ChevronDownIcon } from '@/components/common/Icons';
 import api from '@/lib/api';
 import { MatchingAttachment, SearchResponse } from '@/lib/types';
 import { dateToLocalStart, dateToLocalEnd } from '@/lib/utils';
@@ -41,6 +42,14 @@ export default function DashboardPage() {
   const [searchPage, setSearchPage] = useState(1);
   const [attachPreview, setAttachPreview] = useState<{ noteId: number; attachment: MatchingAttachment } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Mobile sidebar accordion state
+  const [mobileFoldersOpen, setMobileFoldersOpen] = useState(false);
+  const [mobileCalendarOpen, setMobileCalendarOpen] = useState(false);
+
+  // Selected day for mini calendar (single-day date filter)
+  const selectedCalendarDay =
+    dateFrom && dateTo && dateFrom === dateTo ? dateFrom : null;
 
   const PER_PAGE = 20;
   const pages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -81,6 +90,14 @@ export default function DashboardPage() {
     setDateFrom(from);
     setDateTo(to);
     setPage(1);
+  };
+
+  const handleCalendarDayClick = (date: string | null) => {
+    if (!date) {
+      handleDateChange('', '');
+    } else {
+      handleDateChange(date, date);
+    }
   };
 
   const doSearch = async (query: string, pg: number) => {
@@ -177,92 +194,188 @@ export default function DashboardPage() {
     ? new Map(searchResults.items.map((item) => [item.id, item.matching_bookmarks ?? []]))
     : undefined;
 
+  const folderTreeProps = {
+    categories,
+    selectedCategoryId,
+    recursive,
+    onSelect: handleCategorySelect,
+    onRecursiveToggle: handleRecursiveToggle,
+    onCreateCategory: createCategory,
+    onUpdateCategory: updateCategory,
+    onDeleteCategory: deleteCategory,
+    onRefresh: fetchCategories,
+    isDragging,
+    onDropNote: async (noteId: number, categoryId: number | null) => {
+      await updateNote(noteId, { category_id: categoryId });
+      const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
+      const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
+      fetchCategories();
+    },
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{t('myNotes')}</h1>
-        <Link href={`/${locale}/notes/new`}>
-          <Button variant="secondary"><PlusIcon />{t('newNote')}</Button>
-        </Link>
-      </div>
-
-      <div className="mb-4">
-        <SearchBar onSearch={handleSearch} />
-        {searchResults && (
-          <div className="mt-2 flex items-center justify-between rounded-lg bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2">
-            <p className="text-sm text-indigo-700 dark:text-indigo-300">
-              {searchResults.total} results for &ldquo;{searchResults.query}&rdquo;
-            </p>
-            <button
-              onClick={() => { setSearchResults(null); setSearchQuery(''); setSearchPage(1); }}
-              className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-            >
-              Clear search
-            </button>
+    <div className="flex flex-col md:flex-row gap-4 md:gap-5 items-start">
+      {/* ── Desktop sidebar (md+) ── */}
+      <aside className="hidden md:flex flex-col gap-4 w-52 lg:w-60 shrink-0 sticky top-4 self-start">
+        {/* Folders panel */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
+          <div className="flex items-center gap-1.5 mb-2">
+            <FolderIcon className="w-3.5 h-3.5 text-yellow-500" />
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Folders
+            </span>
           </div>
-        )}
-      </div>
+          <FolderTree {...folderTreeProps} />
+        </div>
 
-      {!searchResults && (
-        <div className="mb-4 flex flex-col gap-2">
-          <FolderSelector
-            categories={categories}
-            selectedCategoryId={selectedCategoryId}
-            onSelect={handleCategorySelect}
-            onCreateCategory={createCategory}
-            onUpdateCategory={updateCategory}
-            onDeleteCategory={deleteCategory}
-            onRefresh={fetchCategories}
-            isDragging={isDragging}
-            onDropNote={async (noteId, categoryId) => {
-              await updateNote(noteId, { category_id: categoryId });
-              const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
-              const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
-              fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
-              fetchCategories();
-            }}
-          />
-          <AdvancedFiltersPanel
-            tags={tags}
-            selectedTagId={selectedTagId}
-            dateFrom={dateFrom}
-            dateTo={dateTo}
-            pinnedOnly={pinnedOnly}
-            archivedOnly={archivedOnly}
-            recursive={recursive}
-            onTagSelect={handleTagSelect}
-            onDateChange={handleDateChange}
-            onPinnedOnlyToggle={handlePinnedOnlyToggle}
-            onArchivedOnlyToggle={handleArchivedOnlyToggle}
-            onRecursiveToggle={handleRecursiveToggle}
+        {/* Calendar panel */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
+          <div className="flex items-center gap-1.5 mb-2">
+            <CalendarIcon className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Calendar
+            </span>
+          </div>
+          <MiniCalendar
+            selectedDate={selectedCalendarDay}
+            onDayClick={handleCalendarDayClick}
           />
         </div>
-      )}
+      </aside>
 
-      <div
-        onDragStart={() => setIsDragging(true)}
-        onDragEnd={() => setIsDragging(false)}
-      >
-        <NoteList
-          notes={displayNotes}
-          loading={displayLoading}
-          onDelete={handleDelete}
-          onPin={handlePin}
-          onArchive={handleArchive}
-          categories={categories}
-          filterActive={!searchResults}
-          matchMap={matchMap}
-          matchingAttachmentsMap={matchingAttachmentsMap}
-          matchingBookmarksMap={matchingBookmarksMap}
-          onPreviewAttachment={handlePreviewAttachment}
-        />
+      {/* ── Main content ── */}
+      <div className="flex-1 min-w-0">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            {t('myNotes')}
+          </h1>
+          <Link href={`/${locale}/notes/new`}>
+            <Button variant="secondary"><PlusIcon />{t('newNote')}</Button>
+          </Link>
+        </div>
+
+        {/* Search */}
+        <div className="mb-4">
+          <SearchBar onSearch={handleSearch} />
+          {searchResults && (
+            <div className="mt-2 flex items-center justify-between rounded-lg bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2">
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                {searchResults.total} results for &ldquo;{searchResults.query}&rdquo;
+              </p>
+              <button
+                onClick={() => { setSearchResults(null); setSearchQuery(''); setSearchPage(1); }}
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Clear search
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Mobile accordions (hidden on md+) ── */}
+        {!searchResults && (
+          <div className="md:hidden flex flex-col gap-2 mb-4">
+            {/* Folders accordion */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+              <button
+                className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+                onClick={() => setMobileFoldersOpen((v) => !v)}
+              >
+                <span className="flex items-center gap-1.5">
+                  <FolderIcon className="w-4 h-4 text-yellow-500" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Folders</span>
+                  {selectedCategoryId !== null && (
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
+                  )}
+                </span>
+                <ChevronDownIcon
+                  className={`w-4 h-4 text-gray-400 transition-transform ${mobileFoldersOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {mobileFoldersOpen && (
+                <div className="px-3 pb-3 border-t border-gray-100 dark:border-gray-700 pt-2">
+                  <FolderTree {...folderTreeProps} />
+                </div>
+              )}
+            </div>
+
+            {/* Calendar accordion */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+              <button
+                className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+                onClick={() => setMobileCalendarOpen((v) => !v)}
+              >
+                <span className="flex items-center gap-1.5">
+                  <CalendarIcon className="w-4 h-4 text-indigo-500" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Calendar</span>
+                  {selectedCalendarDay && (
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
+                  )}
+                </span>
+                <ChevronDownIcon
+                  className={`w-4 h-4 text-gray-400 transition-transform ${mobileCalendarOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {mobileCalendarOpen && (
+                <div className="px-3 pb-3 border-t border-gray-100 dark:border-gray-700 pt-2">
+                  <MiniCalendar
+                    selectedDate={selectedCalendarDay}
+                    onDayClick={handleCalendarDayClick}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Filters */}
+        {!searchResults && (
+          <div className="mb-4">
+            <AdvancedFiltersPanel
+              tags={tags}
+              selectedTagId={selectedTagId}
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+              pinnedOnly={pinnedOnly}
+              archivedOnly={archivedOnly}
+              recursive={recursive}
+              onTagSelect={handleTagSelect}
+              onDateChange={handleDateChange}
+              onPinnedOnlyToggle={handlePinnedOnlyToggle}
+              onArchivedOnlyToggle={handleArchivedOnlyToggle}
+              onRecursiveToggle={handleRecursiveToggle}
+            />
+          </div>
+        )}
+
+        {/* Note list */}
+        <div
+          onDragStart={() => setIsDragging(true)}
+          onDragEnd={() => setIsDragging(false)}
+        >
+          <NoteList
+            notes={displayNotes}
+            loading={displayLoading}
+            onDelete={handleDelete}
+            onPin={handlePin}
+            onArchive={handleArchive}
+            categories={categories}
+            filterActive={!searchResults}
+            matchMap={matchMap}
+            matchingAttachmentsMap={matchingAttachmentsMap}
+            matchingBookmarksMap={matchingBookmarksMap}
+            onPreviewAttachment={handlePreviewAttachment}
+          />
+        </div>
+
+        {searchResults ? (
+          <Pagination page={searchPage} pages={searchResults.pages} onPageChange={handleSearchPageChange} />
+        ) : (
+          <Pagination page={page} pages={pages} onPageChange={setPage} />
+        )}
       </div>
-
-      {searchResults ? (
-        <Pagination page={searchPage} pages={searchResults.pages} onPageChange={handleSearchPageChange} />
-      ) : (
-        <Pagination page={page} pages={pages} onPageChange={setPage} />
-      )}
 
       {attachPreview && (
         <AttachmentPreviewModal
