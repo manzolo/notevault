@@ -902,6 +902,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           label={tAttachments('attachments')}
           onAdd={() => setShowUploadModal(true)}
           addLabel={`+ ${tAttachments('upload')}`}
+          onAdd2={() => setShowTextFileModal(true)}
+          addLabel2={`+ ${tAttachments('createTextFile')}`}
         />
       )}
 
