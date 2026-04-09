@@ -30,6 +30,8 @@ function buildGrid(year: number, month: number): (number | null)[][] {
 
 export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarProps) {
   const t = useTranslations('calendar');
+  const tEvents = useTranslations('events');
+  const tTasks = useTranslations('tasks');
 
   const today = new Date();
   const [current, setCurrent] = useState(
@@ -192,13 +194,13 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
           {events.length > 0 && (
             <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 inline-block" />
-              Events
+              {tEvents('events')}
             </span>
           )}
           {tasks.length > 0 && (
             <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500 inline-block" />
-              Tasks
+              {tTasks('tasks')}
             </span>
           )}
         </div>

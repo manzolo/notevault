@@ -23,6 +23,8 @@ import AttachmentPreviewModal from '@/components/attachments/AttachmentPreviewMo
 
 export default function DashboardPage() {
   const t = useTranslations('notes');
+  const tFolders = useTranslations('folders');
+  const tCalendar = useTranslations('calendar');
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -223,7 +225,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-1.5 mb-2">
             <FolderIcon className="w-3.5 h-3.5 text-yellow-500" />
             <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Folders
+              {tFolders('folders')}
             </span>
           </div>
           <FolderTree {...folderTreeProps} />
@@ -234,7 +236,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-1.5 mb-2">
             <CalendarIcon className="w-3.5 h-3.5 text-indigo-500" />
             <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Calendar
+              {tCalendar('title')}
             </span>
           </div>
           <MiniCalendar
@@ -285,7 +287,7 @@ export default function DashboardPage() {
               >
                 <span className="flex items-center gap-1.5">
                   <FolderIcon className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Folders</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{tFolders('folders')}</span>
                   {selectedCategoryId !== null && (
                     <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
                   )}
@@ -309,7 +311,7 @@ export default function DashboardPage() {
               >
                 <span className="flex items-center gap-1.5">
                   <CalendarIcon className="w-4 h-4 text-indigo-500" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Calendar</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{tCalendar('title')}</span>
                   {selectedCalendarDay && (
                     <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
                   )}

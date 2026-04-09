@@ -174,16 +174,16 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
                 </span>
               )}
             </p>
-            <div className="flex gap-1 items-center shrink-0">
-              {canPreview && (
+            <div className="flex gap-0.5 items-center shrink-0">
+              {canPreview ? (
                 <Button size="sm" variant="secondary" title={t('preview')} onClick={() => onPreview(attachment)}>
                   <EyeIcon />
-                  <span className="hidden sm:inline">{t('preview')}</span>
                 </Button>
+              ) : (
+                <span className="w-7" />
               )}
               <Button size="sm" variant="secondary" title={t('download')} onClick={() => onDownload(attachment)}>
                 <ArrowDownTrayIcon />
-                <span className="hidden sm:inline">{t('download')}</span>
               </Button>
               <Button size="sm" variant="secondary" title={t('edit')} onClick={() => onEdit(attachment)}>
                 <PencilIcon />

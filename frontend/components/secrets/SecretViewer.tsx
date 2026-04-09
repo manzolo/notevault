@@ -171,29 +171,27 @@ export default function SecretViewer({
             )}
           </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-0.5 flex-shrink-0">
             {!revealed ? (
               <>
-                {onCopyDirect && (
-                  <Button size="sm" variant="secondary" onClick={handleCopyDirect}>
+                {onCopyDirect ? (
+                  <Button size="sm" variant="secondary" title={copied ? t('copied') : t('copy')} onClick={handleCopyDirect}>
                     {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
-                    <span className="hidden sm:inline">{copied ? t('copied') : t('copy')}</span>
                   </Button>
+                ) : (
+                  <span className="w-7" />
                 )}
-                <Button size="sm" variant="secondary" onClick={onReveal}>
+                <Button size="sm" variant="secondary" title={t('reveal')} onClick={onReveal}>
                   <EyeIcon />
-                  <span className="hidden sm:inline">{t('reveal')}</span>
                 </Button>
               </>
             ) : (
               <>
-                <Button size="sm" variant="secondary" onClick={() => handleCopy(revealed.value)}>
+                <Button size="sm" variant="secondary" title={copied ? t('copied') : t('copy')} onClick={() => handleCopy(revealed.value)}>
                   {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
-                  <span className="hidden sm:inline">{copied ? t('copied') : t('copy')}</span>
                 </Button>
-                <Button size="sm" variant="secondary" onClick={onHide}>
+                <Button size="sm" variant="secondary" title={t('hide')} onClick={onHide}>
                   <EyeOffIcon />
-                  <span className="hidden sm:inline">{t('hide')}</span>
                 </Button>
               </>
             )}

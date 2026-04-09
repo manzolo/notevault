@@ -845,7 +845,18 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <h2 className="text-lg font-semibold">{tAttachments('attachments')}</h2>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              {/* Upload actions */}
+              <Button size="sm" variant="secondary" title={tAttachments('upload')} onClick={() => setShowUploadModal(true)}>
+                <PaperclipUploadIcon />
+                <span className="hidden sm:inline">{tAttachments('upload')}</span>
+              </Button>
+              <Button size="sm" variant="secondary" title={tAttachments('createTextFile')} onClick={() => setShowTextFileModal(true)}>
+                <DocumentTextIcon />
+                <span className="hidden sm:inline">{tAttachments('createTextFile')}</span>
+              </Button>
+              {/* View toggle */}
+              <div className="w-px h-5 bg-gray-200 dark:bg-gray-600 mx-0.5" />
               <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 text-xs">
                 <button
                   onClick={() => { setAttachmentView('flat'); localStorage.setItem('attachmentView', 'flat'); }}
@@ -860,14 +871,6 @@ export default function NotePage({ params }: { params: { id: string; locale: str
                   {tAttachments('viewGrouped')}
                 </button>
               </div>
-              <Button size="sm" variant="secondary" onClick={() => setShowUploadModal(true)}>
-                <PaperclipUploadIcon />
-                {tAttachments('upload')}
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setShowTextFileModal(true)}>
-                <DocumentTextIcon />
-                {tAttachments('createTextFile')}
-              </Button>
             </div>
           </div>
           {attachmentView === 'grouped' ? (
