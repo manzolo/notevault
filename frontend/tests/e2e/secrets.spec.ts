@@ -55,7 +55,7 @@ test.describe('Secrets visibility', () => {
 
   test('revealed secret value is visible in light mode', async ({ page }) => {
     await goToNote(page);
-    await page.click('button:has-text("Rivela"), button:has-text("Reveal")');
+    await page.click('button[title="Rivela"], button[title="Reveal"]');
 
     const valueEl = page.locator('text=SuperVisible123!').first();
     await expect(valueEl).toBeVisible({ timeout: 8_000 });
@@ -100,7 +100,7 @@ test.describe('Secrets visibility', () => {
     await page.click('[aria-label="Toggle theme"]');
     await expect(page.locator('html')).toHaveClass(/dark/);
 
-    await page.click('button:has-text("Rivela"), button:has-text("Reveal")');
+    await page.click('button[title="Rivela"], button[title="Reveal"]');
 
     const valueEl = page.locator('text=SuperVisible123!').first();
     await expect(valueEl).toBeVisible({ timeout: 8_000 });
