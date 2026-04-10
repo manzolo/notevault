@@ -39,6 +39,8 @@ export default function DashboardPage() {
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [archivedOnly, setArchivedOnly] = useState(false);
   const [recursive, setRecursive] = useState(false);
+  // When true, skip the category filter entirely (show notes from all folders)
+  const [bypassCategoryFilter, setBypassCategoryFilter] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
@@ -73,9 +75,11 @@ export default function DashboardPage() {
     if (user) {
       const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
       const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive).then(() => {});
+      // bypassCategoryFilter: pass undefined so useNotes skips unfiled filter (shows all folders)
+      const catId = bypassCategoryFilter ? undefined : selectedCategoryId;
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive).then(() => {});
     }
-  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly, archivedOnly, recursive]);
+  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly, archivedOnly, recursive, bypassCategoryFilter]);
 
   const handleTagSelect = (tagId: number | null) => {
     setSelectedTagId(tagId);
@@ -84,6 +88,7 @@ export default function DashboardPage() {
 
   const handleCategorySelect = (categoryId: number | null) => {
     setSelectedCategoryId(categoryId);
+    setBypassCategoryFilter(false);
     if (categoryId === null) setRecursive(false);
     setPage(1);
   };
@@ -96,9 +101,11 @@ export default function DashboardPage() {
 
   const handleCalendarDayClick = (date: string | null) => {
     if (!date) {
+      setBypassCategoryFilter(false);
       handleDateChange('', '');
     } else {
-      // Clear folder filter so the date search spans all folders
+      // Bypass folder filter so the date search spans all folders
+      setBypassCategoryFilter(true);
       setSelectedCategoryId(null);
       setRecursive(false);
       handleDateChange(date, date);
