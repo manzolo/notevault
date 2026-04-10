@@ -98,6 +98,9 @@ export default function DashboardPage() {
     if (!date) {
       handleDateChange('', '');
     } else {
+      // Clear folder filter so the date search spans all folders
+      setSelectedCategoryId(null);
+      setRecursive(false);
       handleDateChange(date, date);
     }
   };
