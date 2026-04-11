@@ -87,16 +87,16 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 min-w-0">
               {note.is_pinned && (
-                <span className="text-indigo-600 text-xs font-medium">📌 {t('pinned')}</span>
+                <span className="text-indigo-600 text-xs font-medium shrink-0">📌 {t('pinned')}</span>
               )}
               {note.is_archived && (
-                <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded font-medium">🗄 {t('archived')}</span>
+                <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded font-medium shrink-0">🗄 {t('archived')}</span>
               )}
               <Link
                 href={`/${locale}/notes/${note.id}`}
-                className="text-gray-900 dark:text-gray-100 font-semibold hover:text-indigo-600 dark:hover:text-indigo-400 truncate block"
+                className="text-gray-900 dark:text-gray-100 font-semibold hover:text-indigo-600 dark:hover:text-indigo-400 truncate min-w-0"
               >
                 {note.title}
               </Link>
