@@ -91,7 +91,7 @@ export default function SecretViewer({
       <div
         ref={setNodeRef}
         style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
-        className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/50"
+        className="border border-gray-200 dark:border-gray-700 border-l-2 border-l-indigo-400/60 dark:border-l-indigo-500/50 rounded-lg p-3 bg-gray-50/80 dark:bg-gray-700/30 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
       >
         <div className="flex items-center justify-between gap-2">
           <span
@@ -163,7 +163,10 @@ export default function SecretViewer({
                   </div>
                 )}
                 {countdownSeconds !== undefined && (
-                  <p className="text-xs text-amber-600 mt-1">
+                  <p className="text-xs text-amber-500 dark:text-amber-400 mt-1.5 flex items-center gap-1">
+                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                     {t('autoHide', { seconds: countdownSeconds })}
                   </p>
                 )}
@@ -175,22 +178,22 @@ export default function SecretViewer({
             {!revealed ? (
               <>
                 {onCopyDirect ? (
-                  <Button size="sm" variant="secondary" title={copied ? t('copied') : t('copy')} onClick={handleCopyDirect}>
+                  <Button size="sm" variant="ghost" title={copied ? t('copied') : t('copy')} onClick={handleCopyDirect} className={copied ? 'text-green-500 dark:text-green-400' : ''}>
                     {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
                   </Button>
                 ) : (
                   <span className="w-7" />
                 )}
-                <Button size="sm" variant="secondary" title={t('reveal')} onClick={onReveal}>
+                <Button size="sm" variant="ghost" title={t('reveal')} onClick={onReveal}>
                   <EyeIcon />
                 </Button>
               </>
             ) : (
               <>
-                <Button size="sm" variant="secondary" title={copied ? t('copied') : t('copy')} onClick={() => handleCopy(revealed.value)}>
+                <Button size="sm" variant="ghost" title={copied ? t('copied') : t('copy')} onClick={() => handleCopy(revealed.value)} className={copied ? 'text-green-500 dark:text-green-400' : ''}>
                   {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
                 </Button>
-                <Button size="sm" variant="secondary" title={t('hide')} onClick={onHide}>
+                <Button size="sm" variant="ghost" title={t('hide')} onClick={onHide} className="text-indigo-500 dark:text-indigo-400">
                   <EyeOffIcon />
                 </Button>
               </>

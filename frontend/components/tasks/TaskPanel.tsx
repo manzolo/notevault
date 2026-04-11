@@ -84,24 +84,9 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
   const done = tasks.filter((t) => t.is_done);
 
   return (
-    <div className="space-y-3">
-      {/* Add task input */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={t('addPlaceholder')}
-          className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <Button variant="secondary" size="sm" onClick={handleAdd} loading={adding} disabled={!newTitle.trim()}>
-          {t('add')}
-        </Button>
-      </div>
-
+    <div className="space-y-2">
       {tasks.length === 0 && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t('noTasks')}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 py-1">{t('noTasks')}</p>
       )}
 
       {/* Todo tasks — sortable */}
@@ -115,13 +100,30 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
 
       {/* Done tasks — not sortable */}
       {done.length > 0 && (
-        <div className="pt-1">
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-1.5">{t('done')} ({done.length})</p>
+        <div className="pt-1 border-t border-gray-100 dark:border-gray-700 mt-1">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-1.5 pt-2">{t('done')} ({done.length})</p>
           {done.map((task) => (
             <TaskRow key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} />
           ))}
         </div>
       )}
+
+      {/* Add task input — inline at bottom */}
+      <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <input
+          type="text"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={t('addPlaceholder')}
+          className="flex-1 rounded-md border border-transparent bg-transparent dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:border-gray-300 dark:focus:border-gray-600 focus:bg-white dark:focus:bg-gray-800 placeholder-gray-300 dark:placeholder-gray-600 transition-colors"
+        />
+        {newTitle.trim() && (
+          <Button variant="ghost" size="sm" onClick={handleAdd} loading={adding}>
+            {t('add')}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

@@ -704,22 +704,22 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">{note.title}</h1>
           <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
         </div>
-        <div className="flex gap-2 shrink-0">
-          <Button variant="secondary" size="sm" onClick={() => setShowShareModal(true)}>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button variant="ghost" size="sm" onClick={() => setShowShareModal(true)} title="Share">
             <ShareIcon />
           </Button>
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5" />
           <Button variant="secondary" size="sm" onClick={() => setEditing(!editing)}>
             {editing ? <XMarkIcon /> : <PencilIcon />}
-            {editing ? 'Cancel' : 'Edit'}
+            {editing ? tCommon('cancel') : 'Edit'}
           </Button>
-          <Button variant="danger" size="sm" onClick={handleDelete}>
+          <Button variant="ghost-danger" size="sm" onClick={handleDelete} title={t('delete')}>
             <TrashIcon />
-            {t('delete')}
           </Button>
         </div>
       </div>
@@ -845,28 +845,28 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <h2 className="text-lg font-semibold">{tAttachments('attachments')}</h2>
-            <div className="flex items-center gap-1.5">
-              {/* Upload actions */}
-              <Button size="sm" variant="secondary" title={tAttachments('upload')} onClick={() => setShowUploadModal(true)}>
-                <PaperclipUploadIcon />
-                <span className="hidden sm:inline">{tAttachments('upload')}</span>
-              </Button>
-              <Button size="sm" variant="secondary" title={tAttachments('createTextFile')} onClick={() => setShowTextFileModal(true)}>
-                <DocumentTextIcon />
-                <span className="hidden sm:inline">{tAttachments('createTextFile')}</span>
-              </Button>
+            <div className="flex items-center gap-2">
+              {/* Upload actions — icon-only with tooltips */}
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="ghost" title={tAttachments('upload')} onClick={() => setShowUploadModal(true)}>
+                  <PaperclipUploadIcon />
+                </Button>
+                <Button size="sm" variant="ghost" title={tAttachments('createTextFile')} onClick={() => setShowTextFileModal(true)}>
+                  <DocumentTextIcon />
+                </Button>
+              </div>
               {/* View toggle */}
-              <div className="w-px h-5 bg-gray-200 dark:bg-gray-600 mx-0.5" />
+              <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
               <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 text-xs">
                 <button
                   onClick={() => { setAttachmentView('flat'); localStorage.setItem('attachmentView', 'flat'); }}
-                  className={`px-2.5 py-1 transition-colors ${attachmentView === 'flat' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                  className={`px-2.5 py-1.5 transition-colors ${attachmentView === 'flat' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
                 >
                   {tAttachments('viewFlat')}
                 </button>
                 <button
                   onClick={() => { setAttachmentView('grouped'); localStorage.setItem('attachmentView', 'grouped'); }}
-                  className={`px-2.5 py-1 transition-colors border-l border-gray-200 dark:border-gray-600 ${attachmentView === 'grouped' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                  className={`px-2.5 py-1.5 transition-colors border-l border-gray-200 dark:border-gray-600 ${attachmentView === 'grouped' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
                 >
                   {tAttachments('viewGrouped')}
                 </button>
@@ -942,7 +942,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       {/* Tasks Section */}
       {tasksLoading || tasks.length > 0 || forceTasksExpanded ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold mb-4">{tTasks('tasks')}</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">{tTasks('tasks')}</h2>
+          </div>
           <TaskPanel
             tasks={tasks}
             loading={tasksLoading}

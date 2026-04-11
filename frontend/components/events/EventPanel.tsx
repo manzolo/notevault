@@ -97,7 +97,7 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
   };
 
   const renderEvent = (ev: CalendarEvent) => (
-    <div key={ev.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
+    <div key={ev.id} className="border border-gray-200 dark:border-gray-700 border-l-2 border-l-violet-400/60 dark:border-l-violet-500/50 rounded-lg p-3 space-y-2 bg-gray-50/50 dark:bg-gray-700/20 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className="font-medium text-gray-900 dark:text-white truncate">{ev.title}</p>
@@ -176,10 +176,10 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
   );
 
   return (
-    <div className="mt-6">
+    <div>
       {confirmDialog}
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200">{t("events")}</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t("events")}</h2>
         <Button variant="secondary" size="sm" onClick={() => { setEditingEvent(undefined); setShowModal(true); }}>
           + {t("addEvent")}
         </Button>
