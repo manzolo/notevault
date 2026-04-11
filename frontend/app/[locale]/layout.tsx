@@ -18,9 +18,9 @@ export default async function LocaleLayout({
     <NextIntlClientProvider locale={locale} messages={messages}>
       <AuthProvider>
         <ThemeProvider>
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
             <Navbar />
-            <main className="container mx-auto px-4 py-8 max-w-5xl">
+            <main className="container mx-auto px-4 py-8 max-w-5xl overflow-x-hidden">
               {children}
             </main>
           </div>

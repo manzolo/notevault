@@ -3,10 +3,19 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from './ThemeProvider';
 import LanguageSwitcher from './LanguageSwitcher';
-import Button from './Button';
+import {
+  HomeIcon,
+  PlusIcon,
+  CheckSquareIcon,
+  CalendarIcon,
+  CogIcon,
+  UserIcon,
+  LogoutIcon,
+} from './Icons';
 
 function SunIcon() {
   return (
@@ -46,176 +55,196 @@ function XIcon() {
 export default function Navbar() {
   const t = useTranslations('nav');
   const locale = useLocale();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
 
+  const isActive = (segment: string) => pathname.includes(`/${segment}`);
+
+  const navLinkClass = (segment: string) =>
+    `flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-md transition-colors font-medium whitespace-nowrap ${
+      isActive(segment)
+        ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30'
+        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700/60'
+    }`;
+
+  const mobileNavLinkClass = (segment: string) =>
+    `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+      isActive(segment)
+        ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30'
+        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60'
+    }`;
+
   return (
     <>
-      <nav className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 shadow-sm">
-      <div className="container mx-auto px-4 max-w-5xl">
-        <div className="flex items-center justify-between h-14">
-          <Link
-            href={`/${locale}/dashboard`}
-            className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent hover:from-indigo-700 hover:to-violet-700"
-            onClick={closeMenu}
-          >
-            {t('brand')}
-          </Link>
+      <nav className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-700/80 shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="flex items-center justify-between h-14 gap-4">
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-4">
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Toggle theme"
+            {/* Logo */}
+            <Link
+              href={`/${locale}/dashboard`}
+              className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent shrink-0"
+              onClick={closeMenu}
             >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
+              {t('brand')}
+            </Link>
 
-            <LanguageSwitcher />
+            {/* Desktop nav */}
+            <div className="hidden md:flex items-center gap-1 flex-1 justify-end">
+
+              {/* Controls: theme + language */}
+              <div className="flex items-center gap-1 mr-2">
+                <button
+                  onClick={toggleTheme}
+                  className="p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  aria-label="Toggle theme"
+                >
+                  {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                </button>
+                <LanguageSwitcher />
+              </div>
+
+              {/* Separator */}
+              <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
+
+              {/* Nav links */}
+              {user && (
+                <>
+                  <Link href={`/${locale}/dashboard`} className={navLinkClass('dashboard')}>
+                    <HomeIcon className="w-3.5 h-3.5" />
+                    {t('dashboard')}
+                  </Link>
+                  <Link href={`/${locale}/notes/new`} className={navLinkClass('notes/new')}>
+                    <PlusIcon className="w-3.5 h-3.5" />
+                    {t('newNote')}
+                  </Link>
+                  <Link href={`/${locale}/tasks`} className={navLinkClass('tasks')}>
+                    <CheckSquareIcon className="w-3.5 h-3.5" />
+                    {t('tasks')}
+                  </Link>
+                  <Link href={`/${locale}/calendar`} className={navLinkClass('calendar')}>
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                    {t('calendar')}
+                  </Link>
+                  <Link href={`/${locale}/settings`} className={navLinkClass('settings')}>
+                    <CogIcon className="w-3.5 h-3.5" />
+                    {t('settings')}
+                  </Link>
+
+                  {/* Separator */}
+                  <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
+
+                  {/* User + logout */}
+                  <div className="flex items-center gap-1">
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/60 px-2.5 py-1.5 rounded-md font-medium whitespace-nowrap">
+                      <UserIcon className="w-3.5 h-3.5" />
+                      {user.username}
+                    </span>
+                    <button
+                      onClick={logout}
+                      className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium"
+                      title={t('logout')}
+                    >
+                      <LogoutIcon className="w-3.5 h-3.5" />
+                      {t('logout')}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {!user && (
+                <>
+                  <Link href={`/${locale}/login`} className={navLinkClass('login')}>Login</Link>
+                  <Link href={`/${locale}/register`} className="text-sm px-2.5 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors">
+                    Register
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Mobile hamburger */}
+            <button
+              className="md:hidden p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onClick={() => setMenuOpen(v => !v)}
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <XIcon /> : <HamburgerIcon />}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="md:hidden fixed top-14 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-lg z-[60] overflow-y-auto max-h-[calc(100vh-3.5rem)]">
+          <div className="px-3 py-3 flex flex-col gap-1">
+
+            {/* Controls row */}
+            <div className="flex items-center gap-2 px-3 py-2 mb-1">
+              <button
+                onClick={toggleTheme}
+                className="p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+              </button>
+              <LanguageSwitcher />
+            </div>
+
+            <div className="h-px bg-gray-100 dark:bg-gray-800 mx-1 mb-1" />
 
             {user ? (
               <>
-                <Link
-                  href={`/${locale}/dashboard`}
-                  className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                >
+                <Link href={`/${locale}/dashboard`} className={mobileNavLinkClass('dashboard')} onClick={closeMenu}>
+                  <HomeIcon className="w-4 h-4 shrink-0" />
                   {t('dashboard')}
                 </Link>
-                <Link
-                  href={`/${locale}/notes/new`}
-                  className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                >
+                <Link href={`/${locale}/notes/new`} className={mobileNavLinkClass('notes/new')} onClick={closeMenu}>
+                  <PlusIcon className="w-4 h-4 shrink-0" />
                   {t('newNote')}
                 </Link>
-                <Link
-                  href={`/${locale}/tasks`}
-                  className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                >
+                <Link href={`/${locale}/tasks`} className={mobileNavLinkClass('tasks')} onClick={closeMenu}>
+                  <CheckSquareIcon className="w-4 h-4 shrink-0" />
                   {t('tasks')}
                 </Link>
-                <Link
-                  href={`/${locale}/calendar`}
-                  className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                >
+                <Link href={`/${locale}/calendar`} className={mobileNavLinkClass('calendar')} onClick={closeMenu}>
+                  <CalendarIcon className="w-4 h-4 shrink-0" />
                   {t('calendar')}
                 </Link>
-                <Link
-                  href={`/${locale}/settings`}
-                  className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                >
+                <Link href={`/${locale}/settings`} className={mobileNavLinkClass('settings')} onClick={closeMenu}>
+                  <CogIcon className="w-4 h-4 shrink-0" />
                   {t('settings')}
                 </Link>
-                <span className="text-sm text-gray-400">{user.username}</span>
-                <Button variant="ghost" size="sm" onClick={logout}>
-                  {t('logout')}
-                </Button>
+
+                <div className="h-px bg-gray-100 dark:bg-gray-800 mx-1 my-1" />
+
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <UserIcon className="w-4 h-4" />
+                    {user.username}
+                  </span>
+                  <button
+                    onClick={() => { logout(); closeMenu(); }}
+                    className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 hover:text-red-700 font-medium"
+                  >
+                    <LogoutIcon className="w-4 h-4" />
+                    {t('logout')}
+                  </button>
+                </div>
               </>
             ) : (
               <>
-                <Link href={`/${locale}/login`} className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
-                  Login
-                </Link>
-                <Link href={`/${locale}/register`} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                  Register
-                </Link>
+                <Link href={`/${locale}/login`} className={mobileNavLinkClass('login')} onClick={closeMenu}>Login</Link>
+                <Link href={`/${locale}/register`} className="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400" onClick={closeMenu}>Register</Link>
               </>
             )}
           </div>
-
-          {/* Mobile hamburger */}
-          <button
-            className="md:hidden p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            onClick={() => setMenuOpen(v => !v)}
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? <XIcon /> : <HamburgerIcon />}
-          </button>
         </div>
-      </div>
-      </nav>
-
-    {/* Mobile dropdown — sibling of <nav>, outside its backdrop-blur stacking context */}
-    {menuOpen && (
-      <div className="md:hidden fixed top-14 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-md px-4 py-3 flex flex-col gap-3 z-[60]">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={toggleTheme}
-            className="p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-          </button>
-          <LanguageSwitcher />
-        </div>
-
-        {user ? (
-          <>
-            <Link
-              href={`/${locale}/dashboard`}
-              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
-              onClick={closeMenu}
-            >
-              {t('dashboard')}
-            </Link>
-            <Link
-              href={`/${locale}/notes/new`}
-              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
-              onClick={closeMenu}
-            >
-              {t('newNote')}
-            </Link>
-            <Link
-              href={`/${locale}/tasks`}
-              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
-              onClick={closeMenu}
-            >
-              {t('tasks')}
-            </Link>
-            <Link
-              href={`/${locale}/calendar`}
-              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
-              onClick={closeMenu}
-            >
-              {t('calendar')}
-            </Link>
-            <Link
-              href={`/${locale}/settings`}
-              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
-              onClick={closeMenu}
-            >
-              {t('settings')}
-            </Link>
-            <div className="flex items-center justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
-              <span className="text-sm text-gray-400">{user.username}</span>
-              <Button variant="ghost" size="sm" onClick={() => { logout(); closeMenu(); }}>
-                {t('logout')}
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <Link
-              href={`/${locale}/login`}
-              className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white py-1"
-              onClick={closeMenu}
-            >
-              Login
-            </Link>
-            <Link
-              href={`/${locale}/register`}
-              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium py-1"
-              onClick={closeMenu}
-            >
-              Register
-            </Link>
-          </>
-        )}
-      </div>
-    )}
+      )}
     </>
   );
 }
