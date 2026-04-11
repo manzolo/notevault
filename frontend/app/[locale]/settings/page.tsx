@@ -333,16 +333,6 @@ export default function SettingsPage() {
           </>
         )}
 
-        {/* ── App version ── */}
-        <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            NoteVault{' '}
-            <span className="font-mono bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-[11px]">
-              v{APP_VERSION}
-            </span>
-          </p>
-        </div>
-
         {/* ── TOTP enabled ── */}
         {user.totp_enabled && (
           <>
@@ -377,6 +367,16 @@ export default function SettingsPage() {
             )}
           </>
         )}
+      </div>
+
+      {/* ── App version ── */}
+      <div className="mt-6 text-center">
+        <p className="text-xs text-gray-400 dark:text-gray-500">
+          NoteVault{' '}
+          <span className="font-mono bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-[11px]">
+            v{APP_VERSION}
+          </span>
+        </p>
       </div>
     </div>
   );
