@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html suppressHydrationWarning>
-      <body>
+    <html suppressHydrationWarning className="overflow-x-hidden">
+      <body className="overflow-x-hidden">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {children}
       </body>
