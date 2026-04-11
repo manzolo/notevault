@@ -75,13 +75,20 @@ def _expand_recurring(ev: Event, note_title: Optional[str], window_start: dateti
     if ev.end_datetime:
         duration = ev.end_datetime - ev.start_datetime
 
-    occurrences = list(rule.between(window_start, window_end, inc=True))
+    # Search from (window_start - duration) so multi-day occurrences that
+    # started before the window but span into it are not missed.
+    search_start = window_start - duration if duration else window_start
+    occurrences = list(rule.between(search_start, window_end, inc=True))
     result = []
     for occ in occurrences:
+        occ_end = occ + duration if duration is not None else None
+        # Skip occurrences whose end falls before the window starts
+        if (occ_end if occ_end is not None else occ) < window_start:
+            continue
         base = EventWithNoteResponse.model_validate(ev)
         base.note_title = note_title
         base.start_datetime = occ
-        base.end_datetime = occ + duration if duration is not None else None
+        base.end_datetime = occ_end
         result.append(base)
     return result
 
@@ -193,15 +200,17 @@ async def list_all_events(
         window_start = datetime(year, m, 1, tzinfo=timezone.utc)
         window_end = datetime(year, m, last_day, 23, 59, 59, tzinfo=timezone.utc)
 
-        # Fetch non-recurring events within the window
+        # Fetch non-recurring events that overlap the window
+        # (start <= window_end AND coalesce(end, start) >= window_start)
+        from sqlalchemy import func as sqlfunc
         non_recurring_q = (
             select(Event)
             .options(selectinload(Event.attachments), selectinload(Event.note))
             .where(
                 Event.user_id == current_user.id,
                 Event.recurrence_rule.is_(None),
-                Event.start_datetime >= window_start,
                 Event.start_datetime <= window_end,
+                sqlfunc.coalesce(Event.end_datetime, Event.start_datetime) >= window_start,
             )
             .order_by(Event.start_datetime)
         )

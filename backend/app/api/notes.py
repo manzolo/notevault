@@ -103,14 +103,24 @@ async def list_notes(
         _rec_win_start = datetime(_win_start.year, _win_start.month, _win_start.day, 0, 0, 0, tzinfo=_tz.utc)
         _rec_win_end = datetime(_win_end.year, _win_end.month, _win_end.day, 23, 59, 59, tzinfo=_tz.utc)
         rec_result = await db.execute(
-            select(Event.id, Event.note_id, Event.start_datetime, Event.recurrence_rule)
+            select(Event.id, Event.note_id, Event.start_datetime, Event.end_datetime, Event.recurrence_rule)
             .where(Event.user_id == current_user.id, Event.recurrence_rule.isnot(None))
         )
         recurring_note_ids: list[int] = []
-        for rec_id, rec_note_id, rec_start, rec_rule in rec_result:
+        for rec_id, rec_note_id, rec_start, rec_end, rec_rule in rec_result:
             try:
                 rule = _rrulestr(rec_rule, dtstart=rec_start)
-                if list(rule.between(_rec_win_start, _rec_win_end, inc=True)):
+                duration = (rec_end - rec_start) if rec_end else None
+                # Search from window_start - duration to catch multi-day occurrences
+                # that started before the window but span into it
+                search_start = _rec_win_start - duration if duration else _rec_win_start
+                matched = False
+                for occ in rule.between(search_start, _rec_win_end, inc=True):
+                    occ_end = occ + duration if duration else occ
+                    if occ_end >= _rec_win_start:
+                        matched = True
+                        break
+                if matched:
                     recurring_note_ids.append(rec_note_id)
             except Exception:
                 pass
