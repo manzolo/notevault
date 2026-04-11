@@ -58,8 +58,8 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
     return d.getFullYear() === year && d.getMonth() === month;
   });
 
-  const eventsOnDay = (day: number): boolean => {
-    return events.some((e: CalendarEventWithNote) => {
+  const eventsOnDay = (day: number): CalendarEventWithNote[] => {
+    return events.filter((e: CalendarEventWithNote) => {
       const start = new Date(e.start_datetime);
       const end = e.end_datetime ? new Date(e.end_datetime) : start;
       if (e.recurrence_rule) {
@@ -76,12 +76,26 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
     });
   };
 
-  const tasksOnDay = (day: number): boolean => {
-    return tasks.some((task: TaskWithNote) => {
+  const tasksOnDay = (day: number): TaskWithNote[] => {
+    return tasks.filter((task: TaskWithNote) => {
       if (!task.due_date) return false;
       const d = new Date(task.due_date);
       return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
     });
+  };
+
+  const dayTooltip = (dayEvents: CalendarEventWithNote[], dayTasks: TaskWithNote[]): string => {
+    const titles: string[] = [];
+    const seen = new Set<string>();
+    for (const e of dayEvents) {
+      const label = e.note_title || e.title;
+      if (!seen.has(label)) { seen.add(label); titles.push(label); }
+    }
+    for (const task of dayTasks) {
+      const label = task.note_title || task.title;
+      if (!seen.has(label)) { seen.add(label); titles.push(label); }
+    }
+    return titles.join('\n');
   };
 
   const isToday = (day: number) =>
@@ -220,15 +234,19 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
                 if (!day) {
                   return <div key={`${wi}-${di}`} />;
                 }
-                const hasEvent = eventsOnDay(day);
-                const hasTask = tasksOnDay(day);
+                const dayEvents = eventsOnDay(day);
+                const dayTasks = tasksOnDay(day);
+                const hasEvent = dayEvents.length > 0;
+                const hasTask = dayTasks.length > 0;
                 const today_ = isToday(day);
                 const selected = isSelected(day);
+                const tooltip = (hasEvent || hasTask) ? dayTooltip(dayEvents, dayTasks) : undefined;
 
                 return (
                   <button
                     key={`${wi}-${di}`}
                     onClick={() => handleDayClick(day)}
+                    title={tooltip}
                     className={`flex flex-col items-center py-0.5 rounded transition-colors ${
                       selected
                         ? 'bg-indigo-600 text-white'
