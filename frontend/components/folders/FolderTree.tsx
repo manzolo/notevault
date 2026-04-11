@@ -37,6 +37,26 @@ function findAncestors(cats: Category[], targetId: number, path: number[] = []):
   return null;
 }
 
+// Returns the set of IDs of a folder and all its descendants (used to prevent circular drag-drop)
+function getSelfAndDescendantIds(cats: Category[], rootId: number): Set<number> {
+  const result = new Set<number>();
+  function collect(list: Category[]) {
+    for (const c of list) {
+      result.add(c.id);
+      collect(c.children ?? []);
+    }
+  }
+  function find(list: Category[]): boolean {
+    for (const c of list) {
+      if (c.id === rootId) { collect([c]); return true; }
+      if (find(c.children ?? [])) return true;
+    }
+    return false;
+  }
+  find(cats);
+  return result;
+}
+
 interface TreeNodeProps {
   category: Category;
   depth: number;
@@ -64,6 +84,10 @@ interface TreeNodeProps {
   onDragOver: (e: React.DragEvent, target: number | 'root') => void;
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent, categoryId: number | null) => void;
+  draggingFolderId: number | null;
+  invalidFolderDropIds: Set<number>;
+  onFolderDragStart: (e: React.DragEvent, id: number) => void;
+  onFolderDragEnd: () => void;
 }
 
 function TreeNode({
@@ -93,23 +117,34 @@ function TreeNode({
   onDragOver,
   onDragLeave,
   onDrop,
+  draggingFolderId,
+  invalidFolderDropIds,
+  onFolderDragStart,
+  onFolderDragEnd,
 }: TreeNodeProps) {
   const hasChildren = (category.children?.length ?? 0) > 0 || creatingParentId === category.id;
   const isExpanded = expandedIds.has(category.id);
   const isSelected = selectedId === category.id;
   const isDropTarget = dropTarget === category.id;
+  const isFolderBeingDragged = draggingFolderId === category.id;
+  const isInvalidDrop = draggingFolderId !== null && invalidFolderDropIds.has(category.id);
 
   return (
     <div>
       <div
         className={`flex items-center group rounded-md transition-colors ${
-          isSelected
+          isFolderBeingDragged
+            ? 'opacity-40'
+            : isSelected
             ? 'bg-indigo-50 dark:bg-indigo-900/30'
-            : isDropTarget
+            : isDropTarget && !isInvalidDrop
             ? 'bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-300 dark:ring-indigo-700'
             : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
         }`}
         style={{ paddingLeft: `${4 + depth * 14}px` }}
+        draggable={renamingId !== category.id}
+        onDragStart={(e) => onFolderDragStart(e, category.id)}
+        onDragEnd={onFolderDragEnd}
         onDragOver={(e) => onDragOver(e, category.id)}
         onDragLeave={onDragLeave}
         onDrop={(e) => onDrop(e, category.id)}
@@ -186,7 +221,7 @@ function TreeNode({
               <div className="hidden group-hover:flex items-center gap-0 shrink-0 pr-0.5">
                 <button
                   className="p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors"
-                  onClick={(e) => { e.stopPropagation(); onStartCreate(category.id); onToggleExpand(category.id); }}
+                  onClick={(e) => { e.stopPropagation(); onStartCreate(category.id); if (!isExpanded) onToggleExpand(category.id); }}
                   title="Add subfolder"
                 >
                   <PlusIcon className="w-3 h-3" />
@@ -243,6 +278,10 @@ function TreeNode({
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
               onDrop={onDrop}
+              draggingFolderId={draggingFolderId}
+              invalidFolderDropIds={invalidFolderDropIds}
+              onFolderDragStart={onFolderDragStart}
+              onFolderDragEnd={onFolderDragEnd}
             />
           ))}
 
@@ -297,6 +336,8 @@ export default function FolderTree({
 
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [dropTarget, setDropTarget] = useState<number | 'root' | null>(null);
+  const [draggingFolderId, setDraggingFolderId] = useState<number | null>(null);
+  const [invalidFolderDropIds, setInvalidFolderDropIds] = useState<Set<number>>(new Set());
 
   // Rename state
   const [renamingId, setRenamingId] = useState<number | null>(null);
@@ -406,7 +447,31 @@ export default function FolderTree({
     }
   };
 
+  const handleFolderDragStart = (e: React.DragEvent, id: number) => {
+    e.dataTransfer.setData('folder-id', id.toString());
+    e.dataTransfer.effectAllowed = 'move';
+    const invalid = getSelfAndDescendantIds(categories, id);
+    setDraggingFolderId(id);
+    setInvalidFolderDropIds(invalid);
+  };
+
+  const handleFolderDragEnd = () => {
+    setDraggingFolderId(null);
+    setInvalidFolderDropIds(new Set());
+    setDropTarget(null);
+  };
+
   const handleDragOver = (e: React.DragEvent, target: number | 'root') => {
+    // Accept folder drags always; accept note drags only when onDropNote provided
+    const isDraggingFolder = draggingFolderId !== null;
+    const targetId = target === 'root' ? null : target;
+    if (isDraggingFolder) {
+      if (targetId !== null && invalidFolderDropIds.has(targetId)) return; // can't drop into self/descendant
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setDropTarget(target);
+      return;
+    }
     if (!onDropNote) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -416,9 +481,25 @@ export default function FolderTree({
   const handleDragLeave = () => setDropTarget(null);
 
   const handleDrop = async (e: React.DragEvent, categoryId: number | null) => {
-    if (!onDropNote) return;
     e.preventDefault();
     setDropTarget(null);
+
+    // Handle folder-into-folder drop
+    const folderIdStr = e.dataTransfer.getData('folder-id');
+    if (folderIdStr) {
+      const folderId = parseInt(folderIdStr, 10);
+      if (!isNaN(folderId) && folderId !== categoryId && !invalidFolderDropIds.has(categoryId ?? -1)) {
+        try {
+          await onUpdateCategory(folderId, { parent_id: categoryId });
+          onRefresh();
+        } catch { /* ignore */ }
+      }
+      handleFolderDragEnd();
+      return;
+    }
+
+    // Handle note-into-folder drop
+    if (!onDropNote) return;
     const noteId = parseInt(e.dataTransfer.getData('text/plain'), 10);
     if (!isNaN(noteId)) await onDropNote(noteId, categoryId);
   };
@@ -448,6 +529,10 @@ export default function FolderTree({
     onDragOver: handleDragOver,
     onDragLeave: handleDragLeave,
     onDrop: handleDrop,
+    draggingFolderId,
+    invalidFolderDropIds,
+    onFolderDragStart: handleFolderDragStart,
+    onFolderDragEnd: handleFolderDragEnd,
   };
 
   return (

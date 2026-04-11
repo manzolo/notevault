@@ -229,7 +229,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col md:flex-row gap-4 md:gap-5 items-start">
       {/* ── Desktop sidebar (md+) ── */}
-      <aside className="hidden md:flex flex-col gap-4 w-52 lg:w-60 shrink-0 sticky top-4 self-start">
+      <aside className="hidden md:flex flex-col gap-4 w-52 lg:w-60 shrink-0 sticky top-4 self-start relative z-10">
         {/* Folders panel */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
           <div className="flex items-center gap-1.5 mb-2">
