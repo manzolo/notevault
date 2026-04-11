@@ -24,7 +24,7 @@ Esegui il processo completo di release per NoteVault. L'argomento opzionale è `
    - Ricava il numero senza `v` per i comandi make (es. `0.8.14`)
 
 2. **Build produzione**
-   - `make build-prod`
+   - `make build-prod APP_VERSION=X.Y.Z`
 
 3. **Tag git e Docker**
    - `make tag APP_VERSION=X.Y.Z`
