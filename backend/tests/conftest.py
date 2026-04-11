@@ -21,8 +21,8 @@ CREATE OR REPLACE FUNCTION notes_fts_trigger_func()
 RETURNS trigger AS $$
 BEGIN
     NEW.fts_vector :=
-        setweight(to_tsvector('english', coalesce(NEW.title, '')), 'A') ||
-        setweight(to_tsvector('english', coalesce(NEW.content, '')), 'B');
+        setweight(to_tsvector('simple', coalesce(NEW.title, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(NEW.content, '')), 'B');
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql
@@ -39,9 +39,9 @@ CREATE OR REPLACE FUNCTION attachments_fts_trigger_func()
 RETURNS trigger AS $$
 BEGIN
     NEW.fts_vector :=
-        setweight(to_tsvector('english', coalesce(NEW.filename, '')), 'A') ||
-        setweight(to_tsvector('english', coalesce(NEW.extracted_text, '')), 'B') ||
-        setweight(to_tsvector('english', coalesce(NEW.description, '')), 'C');
+        setweight(to_tsvector('simple', coalesce(NEW.filename, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(NEW.extracted_text, '')), 'B') ||
+        setweight(to_tsvector('simple', coalesce(NEW.description, '')), 'C');
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql
@@ -58,9 +58,9 @@ CREATE OR REPLACE FUNCTION bookmarks_fts_trigger_func()
 RETURNS trigger AS $$
 BEGIN
     NEW.fts_vector :=
-        setweight(to_tsvector('english', coalesce(NEW.title, '')), 'A') ||
-        setweight(to_tsvector('english', coalesce(NEW.url, '')), 'B') ||
-        setweight(to_tsvector('english', coalesce(NEW.description, '')), 'C');
+        setweight(to_tsvector('simple', coalesce(NEW.title, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(NEW.url, '')), 'B') ||
+        setweight(to_tsvector('simple', coalesce(NEW.description, '')), 'C');
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql

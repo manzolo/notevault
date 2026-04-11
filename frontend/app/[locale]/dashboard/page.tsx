@@ -121,6 +121,12 @@ export default function DashboardPage() {
   };
 
   const handleSearch = async (query: string) => {
+    if (!query) {
+      setSearchResults(null);
+      setSearchQuery('');
+      setSearchPage(1);
+      return;
+    }
     setSearchQuery(query);
     setSearchPage(1);
     await doSearch(query, 1);

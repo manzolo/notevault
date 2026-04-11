@@ -1,3 +1,4 @@
+import re
 from collections import defaultdict
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
@@ -11,6 +12,17 @@ from app.security.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/search", tags=["search"])
 
+_LANG = "simple"
+
+
+def _build_tsquery(q: str):
+    """Build a prefix-aware tsquery: each token becomes token:* so partial words match."""
+    tokens = re.findall(r'\w+', q)
+    if not tokens:
+        return func.plainto_tsquery(_LANG, q)
+    prefix_expr = ' & '.join(f'{t}:*' for t in tokens)
+    return func.to_tsquery(_LANG, prefix_expr)
+
 
 @router.get("", response_model=SearchResponse)
 async def search_notes(
@@ -21,7 +33,7 @@ async def search_notes(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    tsquery = func.plainto_tsquery("english", q)
+    tsquery = _build_tsquery(q)
 
     # Correlated subquery: True if the note has matching attachments
     attachment_match = (
