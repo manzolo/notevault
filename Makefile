@@ -45,7 +45,7 @@ build:
 ##             NEXT_PUBLIC_API_URL defaults to empty (same-origin proxy).
 ##             For cross-origin: NEXT_PUBLIC_API_URL=https://custom.domain make build-prod
 build-prod:
-	docker compose build
+	docker compose build --build-arg NEXT_PUBLIC_APP_VERSION=$(APP_VERSION)
 
 # ---------------------------------------------------------------------------
 # Database migrations
