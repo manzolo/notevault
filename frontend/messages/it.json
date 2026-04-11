@@ -346,6 +346,7 @@
     "prev": "Mese precedente",
     "next": "Mese successivo",
     "today": "Oggi",
+    "pickMonth": "Clicca per scegliere mese/anno",
     "more": "altri",
     "noItems": "Nessun evento o task questo mese."
   },

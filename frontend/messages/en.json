@@ -346,6 +346,7 @@
     "prev": "Previous month",
     "next": "Next month",
     "today": "Today",
+    "pickMonth": "Click to pick month/year",
     "more": "more",
     "noItems": "No events or tasks this month."
   },

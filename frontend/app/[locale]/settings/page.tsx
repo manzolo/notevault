@@ -101,7 +101,19 @@ export default function SettingsPage() {
 
   const handleCopyFeedUrl = async () => {
     if (!feedUrl) return;
-    await navigator.clipboard.writeText(feedUrl);
+    try {
+      await navigator.clipboard.writeText(feedUrl);
+    } catch {
+      // Fallback for HTTP / non-secure contexts where clipboard API is unavailable
+      const ta = document.createElement('textarea');
+      ta.value = feedUrl;
+      ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
     setFeedCopied(true);
     setTimeout(() => setFeedCopied(false), 2000);
   };
