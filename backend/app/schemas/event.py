@@ -22,6 +22,7 @@ class EventCreate(BaseModel):
     start_datetime: datetime
     end_datetime: Optional[datetime] = None
     url: Optional[str] = None
+    recurrence_rule: Optional[str] = None
 
 
 class EventUpdate(BaseModel):
@@ -30,6 +31,7 @@ class EventUpdate(BaseModel):
     start_datetime: Optional[datetime] = None
     end_datetime: Optional[datetime] = None
     url: Optional[str] = None
+    recurrence_rule: Optional[str] = None
 
 
 class EventResponse(BaseModel):
@@ -41,6 +43,7 @@ class EventResponse(BaseModel):
     start_datetime: datetime
     end_datetime: Optional[datetime] = None
     url: Optional[str] = None
+    recurrence_rule: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     attachments: List[EventAttachmentResponse] = []

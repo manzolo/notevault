@@ -229,6 +229,7 @@ export interface CalendarEvent {
   start_datetime: string;
   end_datetime?: string;
   url?: string;
+  recurrence_rule?: string;
   created_at: string;
   updated_at: string;
   attachments: EventAttachment[];
@@ -244,6 +245,7 @@ export interface CalendarEventCreate {
   start_datetime: string;
   end_datetime?: string;
   url?: string;
+  recurrence_rule?: string;
 }
 
 export interface CalendarEventUpdate {
@@ -252,6 +254,7 @@ export interface CalendarEventUpdate {
   start_datetime?: string;
   end_datetime?: string;
   url?: string;
+  recurrence_rule?: string;
 }
 
 export type VirtualBookmarkSource = 'secret' | 'event';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { setupTotp, enableTotp, disableTotp, changePassword } from '@/lib/auth';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
+import api from '@/lib/api';
 
 type SetupState = 'idle' | 'pending' | 'done';
 
@@ -26,6 +27,15 @@ export default function SettingsPage() {
   const [showDisable, setShowDisable] = useState(false);
   const [disablePassword, setDisablePassword] = useState('');
   const [disableLoading, setDisableLoading] = useState(false);
+
+  // Calendar export state
+  const [exportLoading, setExportLoading] = useState(false);
+
+  // Calendar feed URL state
+  const [feedToken, setFeedToken] = useState<string | null>(null);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [feedRegenerating, setFeedRegenerating] = useState(false);
+  const [feedCopied, setFeedCopied] = useState(false);
 
   // Change password state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -73,6 +83,59 @@ export default function SettingsPage() {
       toast.error(t('invalidPassword'));
     } finally {
       setDisableLoading(false);
+    }
+  };
+
+  const feedUrl = feedToken
+    ? `${process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : '')}/api/events/feed/${feedToken}/calendar.ics`
+    : null;
+
+  useEffect(() => {
+    if (!user) return;
+    setFeedLoading(true);
+    api.get<{ token: string }>('/api/events/feed-token')
+      .then((r) => setFeedToken(r.data.token))
+      .catch(() => toast.error(t('feedError')))
+      .finally(() => setFeedLoading(false));
+  }, [user]);
+
+  const handleCopyFeedUrl = async () => {
+    if (!feedUrl) return;
+    await navigator.clipboard.writeText(feedUrl);
+    setFeedCopied(true);
+    setTimeout(() => setFeedCopied(false), 2000);
+  };
+
+  const handleRegenerateFeed = async () => {
+    if (!confirm(t('feedRegenerateConfirm'))) return;
+    setFeedRegenerating(true);
+    try {
+      const r = await api.post<{ token: string }>('/api/events/feed-token/regenerate');
+      setFeedToken(r.data.token);
+    } catch {
+      toast.error(t('feedError'));
+    } finally {
+      setFeedRegenerating(false);
+    }
+  };
+
+  const handleExportCalendar = async () => {
+    setExportLoading(true);
+    try {
+      const response = await api.get('/api/events/export/calendar.ics', { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'text/calendar' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'notevault-calendar.ics';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(t('exportFailed'));
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -142,6 +205,53 @@ export default function SettingsPage() {
             {t('changePassword')}
           </Button>
         </form>
+      </div>
+
+      {/* ── Calendar Export section ── */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">{t('exportTitle')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('exportDesc')}</p>
+          </div>
+          <Button variant="secondary" onClick={handleExportCalendar} loading={exportLoading}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            {t('exportButton')}
+          </Button>
+        </div>
+      </div>
+
+      {/* ── Calendar Subscription URL section ── */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold">{t('feedTitle')}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('feedDesc')}</p>
+        </div>
+        {feedLoading ? (
+          <p className="text-sm text-gray-400">{t('feedLoading')}</p>
+        ) : feedUrl ? (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={feedUrl}
+                className="flex-1 text-xs font-mono bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-700 dark:text-gray-200 select-all min-w-0"
+                onFocus={(e) => e.target.select()}
+              />
+              <Button variant="secondary" onClick={handleCopyFeedUrl}>
+                {feedCopied ? t('feedCopied') : t('feedCopy')}
+              </Button>
+            </div>
+            <div>
+              <Button variant="ghost" onClick={handleRegenerateFeed} loading={feedRegenerating}>
+                {t('feedRegenerate')}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* ── TOTP section ── */}

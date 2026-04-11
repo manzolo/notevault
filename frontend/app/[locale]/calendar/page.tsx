@@ -73,14 +73,16 @@ export default function CalendarPage() {
     events.filter((e) => {
       const start = new Date(e.start_datetime);
       const end = e.end_datetime ? new Date(e.end_datetime) : start;
-      
-      // Create a Date object for the current day being checked at 00:00:00
+      if (e.recurrence_rule) {
+        // Recurring events: compare by UTC date (RRULE generates on UTC calendar date)
+        const curUTC = Date.UTC(year, month, day);
+        const startDayUTC = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+        const endDayUTC = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate(), 23, 59, 59, 999);
+        return curUTC >= startDayUTC && curUTC <= endDayUTC;
+      }
       const current = new Date(year, month, day, 0, 0, 0);
-      
-      // Create Date objects for the start and end of the event's days
       const eventStartDay = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0);
       const eventEndDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59);
-
       return current >= eventStartDay && current <= eventEndDay;
     });
 

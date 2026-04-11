@@ -100,7 +100,14 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
     <div key={ev.id} className="border border-gray-200 dark:border-gray-700 border-l-2 border-l-violet-400/60 dark:border-l-violet-500/50 rounded-lg p-3 space-y-2 bg-gray-50/50 dark:bg-gray-700/20 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 dark:text-white truncate">{ev.title}</p>
+          <p className="font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+              {ev.title}
+              {ev.recurrence_rule && (
+                <span title={ev.recurrence_rule} className="inline-flex items-center gap-0.5 text-xs font-normal text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-full shrink-0">
+                  ↻ {t("recurring")}
+                </span>
+              )}
+            </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {formatDatetime(ev.start_datetime)}
             {ev.end_datetime && ` → ${formatDatetime(ev.end_datetime)}`}

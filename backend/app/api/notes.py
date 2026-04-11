@@ -72,11 +72,14 @@ async def list_notes(
         base_filter = base_filter & (Note.is_archived == False)
 
     if created_after is not None or created_before is not None:
+        from datetime import timezone as _tz
+        from dateutil.rrule import rrulestr as _rrulestr
+
         note_date_conds = []
-        # Overlap check: event overlaps [created_after, created_before] when:
+        # Overlap check for NON-recurring events:
         #   COALESCE(end_datetime, start_datetime) >= created_after  (event ends after range start)
         #   AND start_datetime <= created_before                      (event starts before range end)
-        event_match_conds = [Event.note_id == Note.id]
+        event_match_conds = [Event.note_id == Note.id, Event.recurrence_rule.is_(None)]
         if created_after is not None:
             note_date_conds.append(Note.created_at >= created_after)
             event_match_conds.append(
@@ -85,14 +88,44 @@ async def list_notes(
         if created_before is not None:
             note_date_conds.append(Note.created_at <= created_before)
             event_match_conds.append(Event.start_datetime <= created_before)
-        # Note has an event overlapping the range
+
+        # Expand recurring events to find note IDs with occurrences in the range
+        _win_start = created_after or datetime(1970, 1, 1, tzinfo=_tz.utc)
+        _win_end = created_before or datetime(2999, 12, 31, 23, 59, 59, tzinfo=_tz.utc)
+        # Ensure timezone-aware
+        if _win_start.tzinfo is None:
+            _win_start = _win_start.replace(tzinfo=_tz.utc)
+        if _win_end.tzinfo is None:
+            _win_end = _win_end.replace(tzinfo=_tz.utc)
+        # For recurring events: expand window to full UTC days so that
+        # occurrences near UTC midnight (e.g. 22:00 UTC) are not missed
+        # when the local filter window ends before them (e.g. 21:59 UTC = 23:59 local).
+        _rec_win_start = datetime(_win_start.year, _win_start.month, _win_start.day, 0, 0, 0, tzinfo=_tz.utc)
+        _rec_win_end = datetime(_win_end.year, _win_end.month, _win_end.day, 23, 59, 59, tzinfo=_tz.utc)
+        rec_result = await db.execute(
+            select(Event.id, Event.note_id, Event.start_datetime, Event.recurrence_rule)
+            .where(Event.user_id == current_user.id, Event.recurrence_rule.isnot(None))
+        )
+        recurring_note_ids: list[int] = []
+        for rec_id, rec_note_id, rec_start, rec_rule in rec_result:
+            try:
+                rule = _rrulestr(rec_rule, dtstart=rec_start)
+                if list(rule.between(_rec_win_start, _rec_win_end, inc=True)):
+                    recurring_note_ids.append(rec_note_id)
+            except Exception:
+                pass
+
+        # Note has a non-recurring event overlapping the range
         event_in_range = select(Event.id).where(*event_match_conds).exists()
         # Note has no events at all (fall back to creation date)
         note_has_no_events = ~select(Event.id).where(Event.note_id == Note.id).exists()
-        base_filter = base_filter & or_(
+        date_filter_parts: list = [
             event_in_range,
             and_(note_has_no_events, *note_date_conds),
-        )
+        ]
+        if recurring_note_ids:
+            date_filter_parts.append(Note.id.in_(recurring_note_ids))
+        base_filter = base_filter & or_(*date_filter_parts)
     if updated_after is not None:
         base_filter = base_filter & (Note.updated_at >= updated_after)
     if updated_before is not None:

@@ -1,12 +1,13 @@
 import os
+import secrets
 import uuid
 import aiofiles
 from calendar import monthrange
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -53,6 +54,38 @@ async def _get_event_owned(event_id: int, user: User, db: AsyncSession) -> Event
     return event
 
 
+def _expand_recurring(ev: Event, note_title: Optional[str], window_start: datetime, window_end: datetime) -> List[EventWithNoteResponse]:
+    """Expand a recurring event into individual occurrences within the window."""
+    try:
+        from dateutil.rrule import rrulestr
+    except ImportError:
+        base = EventWithNoteResponse.model_validate(ev)
+        base.note_title = note_title
+        return [base]
+
+    try:
+        rule = rrulestr(ev.recurrence_rule, dtstart=ev.start_datetime)
+    except Exception:
+        base = EventWithNoteResponse.model_validate(ev)
+        base.note_title = note_title
+        return [base]
+
+    # Compute duration for shifting end_datetime
+    duration: Optional[timedelta] = None
+    if ev.end_datetime:
+        duration = ev.end_datetime - ev.start_datetime
+
+    occurrences = list(rule.between(window_start, window_end, inc=True))
+    result = []
+    for occ in occurrences:
+        base = EventWithNoteResponse.model_validate(ev)
+        base.note_title = note_title
+        base.start_datetime = occ
+        base.end_datetime = occ + duration if duration is not None else None
+        result.append(base)
+    return result
+
+
 # ── Per-note CRUD ──────────────────────────────────────────────────────────────
 
 @router.get("/api/notes/{note_id}/events", response_model=List[EventResponse])
@@ -87,6 +120,7 @@ async def create_event(
         start_datetime=payload.start_datetime,
         end_datetime=payload.end_datetime,
         url=payload.url,
+        recurrence_rule=payload.recurrence_rule,
     )
     db.add(event)
     await db.flush()
@@ -150,21 +184,62 @@ async def list_all_events(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    query = (
-        select(Event)
-        .options(selectinload(Event.attachments), selectinload(Event.note))
-        .where(Event.user_id == current_user.id)
-        .order_by(Event.start_datetime)
-    )
     if month:
         try:
             year, m = int(month.split("-")[0]), int(month.split("-")[1])
         except Exception:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="month must be YYYY-MM")
         last_day = monthrange(year, m)[1]
-        start = datetime(year, m, 1, tzinfo=timezone.utc)
-        end = datetime(year, m, last_day, 23, 59, 59, tzinfo=timezone.utc)
-        query = query.where(Event.start_datetime >= start, Event.start_datetime <= end)
+        window_start = datetime(year, m, 1, tzinfo=timezone.utc)
+        window_end = datetime(year, m, last_day, 23, 59, 59, tzinfo=timezone.utc)
+
+        # Fetch non-recurring events within the window
+        non_recurring_q = (
+            select(Event)
+            .options(selectinload(Event.attachments), selectinload(Event.note))
+            .where(
+                Event.user_id == current_user.id,
+                Event.recurrence_rule.is_(None),
+                Event.start_datetime >= window_start,
+                Event.start_datetime <= window_end,
+            )
+            .order_by(Event.start_datetime)
+        )
+        # Fetch all recurring events (need to check occurrences in window)
+        recurring_q = (
+            select(Event)
+            .options(selectinload(Event.attachments), selectinload(Event.note))
+            .where(
+                Event.user_id == current_user.id,
+                Event.recurrence_rule.isnot(None),
+            )
+        )
+
+        non_recurring_result = await db.execute(non_recurring_q)
+        recurring_result = await db.execute(recurring_q)
+        non_recurring_events = non_recurring_result.scalars().all()
+        recurring_events = recurring_result.scalars().all()
+
+        out = []
+        for ev in non_recurring_events:
+            d = EventWithNoteResponse.model_validate(ev)
+            d.note_title = ev.note.title if ev.note else None
+            out.append(d)
+
+        for ev in recurring_events:
+            note_title = ev.note.title if ev.note else None
+            out.extend(_expand_recurring(ev, note_title, window_start, window_end))
+
+        out.sort(key=lambda e: e.start_datetime)
+        return out
+
+    # No month filter — return all events as-is
+    query = (
+        select(Event)
+        .options(selectinload(Event.attachments), selectinload(Event.note))
+        .where(Event.user_id == current_user.id)
+        .order_by(Event.start_datetime)
+    )
     result = await db.execute(query)
     events = result.scalars().all()
     out = []
@@ -173,6 +248,114 @@ async def list_all_events(
         d.note_title = ev.note.title if ev.note else None
         out.append(d)
     return out
+
+
+# ── iCalendar export ───────────────────────────────────────────────────────────
+
+@router.get("/api/events/export/calendar.ics")
+async def export_calendar(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await _build_ical_response(current_user, db)
+
+
+# ── Calendar feed token management ────────────────────────────────────────────
+
+@router.get("/api/events/feed-token")
+async def get_feed_token(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the user's calendar feed token, generating one if it doesn't exist."""
+    if not current_user.calendar_token:
+        current_user.calendar_token = secrets.token_urlsafe(32)
+        await db.flush()
+    return {"token": current_user.calendar_token}
+
+
+@router.post("/api/events/feed-token/regenerate")
+async def regenerate_feed_token(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Invalidate the old token and generate a new one."""
+    current_user.calendar_token = secrets.token_urlsafe(32)
+    await db.flush()
+    return {"token": current_user.calendar_token}
+
+
+@router.get("/api/events/feed/{token}/calendar.ics")
+async def public_calendar_feed(
+    token: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Public calendar feed endpoint — authenticated via token, no JWT required."""
+    result = await db.execute(select(User).where(User.calendar_token == token))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Feed not found")
+    return await _build_ical_response(user, db)
+
+
+async def _build_ical_response(user: User, db: AsyncSession) -> Response:
+    """Build the iCalendar response for a given user."""
+    from icalendar import Calendar, Event as IEvent
+    from icalendar.prop import vRecur
+
+    now = datetime.now(timezone.utc)
+
+    non_recurring_q = (
+        select(Event)
+        .where(
+            Event.user_id == user.id,
+            Event.recurrence_rule.is_(None),
+            Event.start_datetime >= now,
+        )
+        .order_by(Event.start_datetime)
+    )
+    recurring_q = (
+        select(Event)
+        .where(Event.user_id == user.id, Event.recurrence_rule.isnot(None))
+    )
+
+    non_recurring_result = await db.execute(non_recurring_q)
+    recurring_result = await db.execute(recurring_q)
+    events_to_export = list(non_recurring_result.scalars().all()) + list(recurring_result.scalars().all())
+
+    cal = Calendar()
+    cal.add("prodid", "-//NoteVault//notevault//EN")
+    cal.add("version", "2.0")
+    cal.add("calscale", "GREGORIAN")
+    cal.add("method", "PUBLISH")
+    cal.add("x-wr-calname", f"NoteVault - {user.username}")
+
+    for ev in events_to_export:
+        iev = IEvent()
+        iev.add("uid", f"notevault-event-{ev.id}@notevault")
+        iev.add("summary", ev.title)
+        iev.add("dtstart", ev.start_datetime)
+        if ev.end_datetime:
+            iev.add("dtend", ev.end_datetime)
+        if ev.description:
+            iev.add("description", ev.description)
+        if ev.url:
+            iev.add("url", ev.url)
+        iev.add("dtstamp", now)
+        iev.add("created", ev.created_at)
+        iev.add("last-modified", ev.updated_at)
+        if ev.recurrence_rule:
+            try:
+                iev.add("rrule", vRecur.from_ical(ev.recurrence_rule))
+            except Exception:
+                pass
+        cal.add_component(iev)
+
+    return Response(
+        content=cal.to_ical(),
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="notevault-calendar.ics"'},
+    )
 
 
 # ── Event Attachments ──────────────────────────────────────────────────────────

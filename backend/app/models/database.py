@@ -20,6 +20,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     totp_secret = Column(BYTEA, nullable=True)  # encrypted nonce||ciphertext
     totp_enabled = Column(Boolean, default=False, nullable=False)
+    calendar_token = Column(String(64), nullable=True, unique=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -239,6 +240,7 @@ class Event(Base):
     start_datetime = Column(DateTime(timezone=True), nullable=False)
     end_datetime = Column(DateTime(timezone=True), nullable=True)
     url = Column(String(2048), nullable=True)
+    recurrence_rule = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

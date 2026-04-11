@@ -58,6 +58,13 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
     return events.some((e: CalendarEventWithNote) => {
       const start = new Date(e.start_datetime);
       const end = e.end_datetime ? new Date(e.end_datetime) : start;
+      if (e.recurrence_rule) {
+        // Recurring events: compare by UTC date (RRULE generates on UTC calendar date)
+        const curUTC = Date.UTC(year, month, day);
+        const startDayUTC = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+        const endDayUTC = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate(), 23, 59, 59, 999);
+        return curUTC >= startDayUTC && curUTC <= endDayUTC;
+      }
       const cur = new Date(year, month, day, 0, 0, 0);
       const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
       const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59);
@@ -116,9 +123,20 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 capitalize">
-          {monthLabel}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 capitalize">
+            {monthLabel}
+          </span>
+          {(year !== today.getFullYear() || month !== today.getMonth()) && (
+            <button
+              onClick={() => setCurrent(new Date(today.getFullYear(), today.getMonth(), 1))}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors font-medium"
+              aria-label={t('today')}
+            >
+              {t('today')}
+            </button>
+          )}
+        </div>
         <button
           onClick={() => setCurrent(new Date(year, month + 1, 1))}
           className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"

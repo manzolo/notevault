@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     email: str
     is_active: bool
     totp_enabled: bool
+    calendar_token: Optional[str] = None
     created_at: datetime
 
     class Config:
