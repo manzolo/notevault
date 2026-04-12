@@ -1,12 +1,12 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from app.database.connection import get_db
 from app.models.database import Note, Secret, SecretAccessLog, User
 from app.models.enums import AuditAction
-from app.schemas.secret import SecretCreate, SecretResponse, SecretRevealResponse
+from app.schemas.secret import SecretArchiveUpdate, SecretCreate, SecretResponse, SecretRevealResponse
 from app.security.dependencies import get_current_user
 from app.security.encryption import get_encryption
 from app.security.rate_limit import limiter
@@ -22,6 +22,8 @@ router = APIRouter(prefix="/api/notes", tags=["secrets"])
 @router.get("/{note_id}/secrets", response_model=List[SecretResponse])
 async def list_secrets(
     note_id: int,
+    include_archived: bool = Query(False),
+    archived_only: bool = Query(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -32,9 +34,12 @@ async def list_secrets(
     if not note_result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
 
-    result = await db.execute(
-        select(Secret).where(Secret.note_id == note_id).order_by(Secret.position, Secret.created_at)
-    )
+    q = select(Secret).where(Secret.note_id == note_id)
+    if archived_only:
+        q = q.where(Secret.is_archived == True)  # noqa: E712
+    elif not include_archived:
+        q = q.where(Secret.is_archived == False)  # noqa: E712
+    result = await db.execute(q.order_by(Secret.position, Secret.created_at))
     return result.scalars().all()
 
 
@@ -169,6 +174,34 @@ async def reveal_secret(
         value=decrypted_value,
         note_id=secret.note_id,
     )
+
+
+@router.patch("/{note_id}/secrets/{secret_id}/archive", response_model=SecretResponse)
+async def archive_secret(
+    note_id: int,
+    secret_id: int,
+    body: SecretArchiveUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    note_result = await db.execute(
+        select(Note).where(Note.id == note_id, Note.user_id == current_user.id)
+    )
+    if not note_result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+    result = await db.execute(
+        select(Secret).where(Secret.id == secret_id, Secret.note_id == note_id)
+    )
+    secret = result.scalar_one_or_none()
+    if not secret:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Secret not found")
+
+    secret.is_archived = body.is_archived
+    secret.archive_note = body.archive_note if body.is_archived else None
+    await db.flush()
+    await db.refresh(secret)
+    return secret
 
 
 @router.delete("/{note_id}/secrets/{secret_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -31,7 +31,7 @@ import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CollapsedSection from '@/components/common/CollapsedSection';
-import { ArrowDownTrayIcon, CalendarIcon, DocumentTextIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
+import { ArchiveIcon, ArrowDownTrayIcon, CalendarIcon, DocumentTextIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, RestoreIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
 import ShareModal from '@/components/notes/ShareModal';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
@@ -69,10 +69,10 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const { tags: availableTagsFromHook, fetchTags, createTag } = useTags();
   const { categories, fetchCategories, flattenCategories } = useCategories();
   const { confirm, dialog: confirmDialog } = useConfirm();
-  const { secrets, setSecrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret, reorderSecrets } = useSecrets(noteId);
-  const { attachments, setAttachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, updateAttachmentContent, fetchTextContent, deleteAttachment, previewAttachment, parseZip, previewZipEntry, downloadZipEntry, parseZipEml, previewZipEmlPart, downloadZipEmlPart, parseEml, previewEmlPart, downloadEmlPart, reorderAttachments } = useAttachments(noteId);
-  const { bookmarks, setBookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark, reorderBookmarks } = useBookmarks(noteId);
-  const { tasks, setTasks, loading: tasksLoading, fetchTasks, createTask, updateTask, deleteTask, reorderTasks } = useTasks(noteId);
+  const { secrets, setSecrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret, reorderSecrets, archiveSecret, restoreSecret, fetchArchivedSecrets } = useSecrets(noteId);
+  const { attachments, setAttachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, updateAttachmentContent, fetchTextContent, deleteAttachment, previewAttachment, parseZip, previewZipEntry, downloadZipEntry, parseZipEml, previewZipEmlPart, downloadZipEmlPart, parseEml, previewEmlPart, downloadEmlPart, reorderAttachments, archiveAttachment, restoreAttachment, fetchArchivedAttachments } = useAttachments(noteId);
+  const { bookmarks, setBookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark, reorderBookmarks, archiveBookmark, restoreBookmark, fetchArchivedBookmarks } = useBookmarks(noteId);
+  const { tasks, setTasks, loading: tasksLoading, fetchTasks, createTask, updateTask, deleteTask, reorderTasks, archiveTask, restoreTask, fetchArchivedTasks } = useTasks(noteId);
 
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,6 +94,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [previewState, setPreviewState] = useState<{ attachment: Attachment; url: string } | null>(null);
   const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
+  const [archivedAttachments, setArchivedAttachments] = useState<Attachment[]>([]);
+  const [showArchivedAttachments, setShowArchivedAttachments] = useState(false);
+  const [archivedAttachmentsLoading, setArchivedAttachmentsLoading] = useState(false);
 
   // Text file preview state
   const [textContent, setTextContent] = useState<string | null>(null);
@@ -826,6 +829,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             onReveal={revealSecret}
             onHide={hideSecret}
             onDelete={deleteSecret}
+            onArchive={archiveSecret}
+            onRestore={restoreSecret}
+            fetchArchivedSecrets={fetchArchivedSecrets}
             onCopyDirect={copySecret}
             onReorder={reorderSecrets}
             setSecrets={setSecrets}
@@ -881,6 +887,11 @@ export default function NotePage({ params }: { params: { id: string; locale: str
               onDownload={handleDownload}
               onDelete={deleteAttachment}
               onEdit={(att) => setEditingAttachment(att)}
+              onArchive={async (id, note) => {
+                const att = attachments.find((a) => a.id === id);
+                await archiveAttachment(id, note);
+                if (showArchivedAttachments && att) setArchivedAttachments((prev) => [...prev, { ...att, is_archived: true, archive_note: note || null }]);
+              }}
               emlAttachmentsMap={emlAttachmentsMap}
               onReorder={reorderAttachments}
               setAttachments={setAttachments}
@@ -893,11 +904,82 @@ export default function NotePage({ params }: { params: { id: string; locale: str
               onDownload={handleDownload}
               onDelete={deleteAttachment}
               onEdit={(att) => setEditingAttachment(att)}
+              onArchive={async (id, note) => {
+                const att = attachments.find((a) => a.id === id);
+                await archiveAttachment(id, note);
+                if (showArchivedAttachments && att) setArchivedAttachments((prev) => [...prev, { ...att, is_archived: true, archive_note: note || null }]);
+              }}
               emlAttachmentsMap={emlAttachmentsMap}
               onReorder={reorderAttachments}
               setAttachments={setAttachments}
             />
           )}
+
+          {/* Archived attachments section */}
+          <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
+            <button
+              type="button"
+              onClick={async () => {
+                if (!showArchivedAttachments && archivedAttachments.length === 0) {
+                  setArchivedAttachmentsLoading(true);
+                  try {
+                    const items = await fetchArchivedAttachments();
+                    setArchivedAttachments(items);
+                  } finally {
+                    setArchivedAttachmentsLoading(false);
+                  }
+                }
+                setShowArchivedAttachments((v) => !v);
+              }}
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <ArchiveIcon className="h-3.5 w-3.5" />
+              <span>{tCommon('archivedCount', { count: archivedAttachments.length || '…' })}</span>
+              <span className="ml-0.5">{showArchivedAttachments ? '▲' : '▼'}</span>
+            </button>
+            {showArchivedAttachments && (
+              <div className="mt-2 space-y-1">
+                {archivedAttachmentsLoading && <p className="text-xs text-gray-400">Loading...</p>}
+                {!archivedAttachmentsLoading && archivedAttachments.length === 0 && (
+                  <p className="text-xs text-gray-400 py-1">{tAttachments('noAttachments')}</p>
+                )}
+                {archivedAttachments.map((att) => (
+                  <div key={att.id} className="flex items-center gap-2 px-2 py-1.5 rounded bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-200 dark:border-gray-700 opacity-70 group">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{att.filename}</p>
+                      {att.archive_note && <p className="text-xs text-gray-400 italic truncate">{att.archive_note}</p>}
+                    </div>
+                    <button
+                      type="button"
+                      title={tCommon('restore')}
+                      onClick={async () => {
+                        const ok = await confirm(tCommon('restoreConfirm'), { confirmLabel: tCommon('restore'), confirmVariant: 'secondary' });
+                        if (!ok) return;
+                        await restoreAttachment(att.id);
+                        setArchivedAttachments((prev) => prev.filter((a) => a.id !== att.id));
+                      }}
+                      className="text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                    >
+                      <RestoreIcon className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      title={tCommon('deleteForever')}
+                      onClick={async () => {
+                        const ok = await confirm(tCommon('deleteConfirm'));
+                        if (!ok) return;
+                        await deleteAttachment(att.id);
+                        setArchivedAttachments((prev) => prev.filter((a) => a.id !== att.id));
+                      }}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <TrashIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <CollapsedSection
@@ -925,6 +1007,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             loading={bookmarksLoading}
             onEdit={(bm) => setEditingBookmark(bm)}
             onDelete={deleteBookmark}
+            onArchive={archiveBookmark}
+            onRestore={restoreBookmark}
+            fetchArchivedBookmarks={fetchArchivedBookmarks}
             onReorder={reorderBookmarks}
             setBookmarks={setBookmarks}
             virtualBookmarks={virtualBookmarks}
@@ -948,9 +1033,13 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           <TaskPanel
             tasks={tasks}
             loading={tasksLoading}
-            onCreate={async (title) => { await createTask({ title }); }}
+            onCreate={async (title, dueDate) => { await createTask({ title, due_date: dueDate || null }); }}
             onToggle={async (id, isDone) => { await updateTask(id, { is_done: isDone }); }}
+            onUpdate={async (id, data) => { await updateTask(id, data); }}
             onDelete={deleteTask}
+            onArchive={archiveTask}
+            onRestore={restoreTask}
+            fetchArchivedTasks={fetchArchivedTasks}
             onReorder={reorderTasks}
             setTasks={setTasks}
           />

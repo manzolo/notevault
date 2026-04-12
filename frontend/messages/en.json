@@ -236,7 +236,10 @@
     "all": "All",
     "filterStatus": "Filter",
     "noTasksFiltered": "No tasks found.",
-    "noteLink": "In note"
+    "noteLink": "In note",
+    "dueDate": "Due date",
+    "setDueDate": "Set due date",
+    "editDueDate": "Edit due date"
   },
   "search": {
     "placeholder": "Search notes...",
@@ -361,6 +364,15 @@
     "save": "Save",
     "createdAt": "Created",
     "updatedAt": "Modified",
-    "fileModifiedAt": "File modified"
+    "fileModifiedAt": "File modified",
+    "optionalPlaceholder": "Optional...",
+    "archive": "Archive",
+    "restore": "Restore",
+    "archiveReason": "Reason (optional)",
+    "deleteForever": "Delete permanently",
+    "archivedCount": "Archived ({count})",
+    "archiveConfirm": "Archive this item?",
+    "restoreConfirm": "Restore this item?",
+    "deleteConfirm": "Delete this item permanently?"
   }
 }

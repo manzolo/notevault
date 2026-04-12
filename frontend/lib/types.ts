@@ -71,6 +71,8 @@ export interface Task {
   is_done: boolean;
   due_date?: string | null;
   position: number;
+  is_archived: boolean;
+  archive_note?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -91,6 +93,8 @@ export interface TaskUpdate {
   is_done?: boolean;
   due_date?: string | null;
   position?: number;
+  is_archived?: boolean;
+  archive_note?: string | null;
 }
 
 export type SecretType = 'password' | 'api_key' | 'token' | 'ssh_key' | 'certificate' | 'totp_seed' | 'keystore' | 'other';
@@ -104,6 +108,8 @@ export interface Secret {
   public_key?: string;
   note_id: number;
   position: number;
+  is_archived: boolean;
+  archive_note?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -130,6 +136,8 @@ export interface Attachment {
   description?: string;
   file_modified_at?: string;
   position: number;
+  is_archived: boolean;
+  archive_note?: string | null;
   tags: Tag[];
   created_at: string;
   updated_at: string;
@@ -142,6 +150,8 @@ export interface Bookmark {
   title?: string;
   description?: string;
   position: number;
+  is_archived: boolean;
+  archive_note?: string | null;
   tags: Tag[];
   created_at: string;
   updated_at: string;
@@ -159,6 +169,8 @@ export interface BookmarkUpdate {
   title?: string;
   description?: string;
   tag_ids?: number[];
+  is_archived?: boolean;
+  archive_note?: string | null;
 }
 
 export interface TokenResponse {
@@ -230,6 +242,8 @@ export interface CalendarEvent {
   end_datetime?: string;
   url?: string;
   recurrence_rule?: string;
+  is_archived: boolean;
+  archive_note?: string | null;
   created_at: string;
   updated_at: string;
   attachments: EventAttachment[];
@@ -255,6 +269,8 @@ export interface CalendarEventUpdate {
   end_datetime?: string;
   url?: string;
   recurrence_rule?: string;
+  is_archived?: boolean;
+  archive_note?: string | null;
 }
 
 export type VirtualBookmarkSource = 'secret' | 'event';

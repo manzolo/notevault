@@ -250,6 +250,34 @@ export function useAttachments(noteId: number) {
     [noteId],
   );
 
+  const archiveAttachment = useCallback(
+    async (attachmentId: number, archiveNote?: string): Promise<void> => {
+      await api.patch(`/api/notes/${noteId}/attachments/${attachmentId}`, {
+        is_archived: true,
+        archive_note: archiveNote || null,
+      });
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    },
+    [noteId],
+  );
+
+  const restoreAttachment = useCallback(
+    async (attachmentId: number): Promise<Attachment> => {
+      const response = await api.patch<Attachment>(`/api/notes/${noteId}/attachments/${attachmentId}`, {
+        is_archived: false,
+        archive_note: null,
+      });
+      setAttachments((prev) => [...prev, response.data].sort((a, b) => a.position - b.position));
+      return response.data;
+    },
+    [noteId],
+  );
+
+  const fetchArchivedAttachments = useCallback(async (): Promise<Attachment[]> => {
+    const res = await api.get<Attachment[]>(`/api/notes/${noteId}/attachments`, { params: { archived_only: true } });
+    return res.data;
+  }, [noteId]);
+
   return {
     attachments,
     setAttachments,
@@ -272,5 +300,8 @@ export function useAttachments(noteId: number) {
     parseEml,
     previewEmlPart,
     downloadEmlPart,
+    archiveAttachment,
+    restoreAttachment,
+    fetchArchivedAttachments,
   };
 }

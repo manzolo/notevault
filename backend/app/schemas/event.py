@@ -32,6 +32,8 @@ class EventUpdate(BaseModel):
     end_datetime: Optional[datetime] = None
     url: Optional[str] = None
     recurrence_rule: Optional[str] = None
+    is_archived: Optional[bool] = None
+    archive_note: Optional[str] = None
 
 
 class EventResponse(BaseModel):
@@ -44,6 +46,8 @@ class EventResponse(BaseModel):
     end_datetime: Optional[datetime] = None
     url: Optional[str] = None
     recurrence_rule: Optional[str] = None
+    is_archived: bool = False
+    archive_note: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     attachments: List[EventAttachmentResponse] = []

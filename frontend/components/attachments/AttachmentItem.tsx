@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Attachment } from '@/lib/types';
 import Button from '@/components/common/Button';
-import { ArrowDownTrayIcon, EyeIcon, PaperclipIcon, PencilIcon, TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, ArrowDownTrayIcon, EyeIcon, PaperclipIcon, PencilIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 import { formatDate } from '@/lib/utils';
@@ -16,6 +16,7 @@ interface Props {
   onDownload: (attachment: Attachment) => void;
   onDelete: (id: number) => void;
   onEdit: (attachment: Attachment) => void;
+  onArchive?: (id: number, note?: string) => void;
   emlAttachmentCount?: number;
 }
 
@@ -127,10 +128,10 @@ function FileIcon({ mime }: { mime: string }) {
   );
 }
 
-export default function AttachmentItem({ attachment, onPreview, onDownload, onDelete, onEdit, emlAttachmentCount = 0 }: Props) {
+export default function AttachmentItem({ attachment, onPreview, onDownload, onDelete, onEdit, onArchive, emlAttachmentCount = 0 }: Props) {
   const t = useTranslations('attachments');
   const tCommon = useTranslations('common');
-  const { confirm, dialog } = useConfirm();
+  const { confirm, confirmInput, dialog } = useConfirm();
   const canPreview = INLINE_MIMES.has(attachment.mime_type);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: attachment.id });
@@ -141,6 +142,16 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
 
   const handleDelete = async () => {
     if (await confirm(t('deleteConfirm'))) onDelete(attachment.id);
+  };
+
+  const handleArchive = async () => {
+    if (!onArchive) return;
+    const { confirmed, value } = await confirmInput(tCommon('archiveConfirm'), {
+      confirmLabel: tCommon('archive'),
+      confirmVariant: 'secondary',
+      inputLabel: tCommon('archiveReason'),
+    });
+    if (confirmed) onArchive(attachment.id, value || undefined);
   };
 
   return (
@@ -188,6 +199,11 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
               <Button size="sm" variant="secondary" title={t('edit')} onClick={() => onEdit(attachment)}>
                 <PencilIcon />
               </Button>
+              {onArchive && (
+                <Button size="sm" variant="ghost" title={tCommon('archive')} onClick={handleArchive}>
+                  <ArchiveIcon />
+                </Button>
+              )}
               <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
                 <TrashIcon />
               </Button>

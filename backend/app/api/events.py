@@ -98,16 +98,22 @@ def _expand_recurring(ev: Event, note_title: Optional[str], window_start: dateti
 @router.get("/api/notes/{note_id}/events", response_model=List[EventResponse])
 async def list_events(
     note_id: int,
+    include_archived: bool = Query(False),
+    archived_only: bool = Query(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_note_owned(note_id, current_user, db)
-    result = await db.execute(
+    q = (
         select(Event)
         .options(selectinload(Event.attachments))
         .where(Event.note_id == note_id, Event.user_id == current_user.id)
-        .order_by(Event.start_datetime)
     )
+    if archived_only:
+        q = q.where(Event.is_archived == True)  # noqa: E712
+    elif not include_archived:
+        q = q.where(Event.is_archived == False)  # noqa: E712
+    result = await db.execute(q.order_by(Event.start_datetime))
     return result.scalars().all()
 
 
@@ -209,6 +215,7 @@ async def list_all_events(
             .where(
                 Event.user_id == current_user.id,
                 Event.recurrence_rule.is_(None),
+                Event.is_archived == False,  # noqa: E712
                 Event.start_datetime <= window_end,
                 sqlfunc.coalesce(Event.end_datetime, Event.start_datetime) >= window_start,
             )
@@ -221,6 +228,7 @@ async def list_all_events(
             .where(
                 Event.user_id == current_user.id,
                 Event.recurrence_rule.isnot(None),
+                Event.is_archived == False,  # noqa: E712
             )
         )
 
@@ -242,11 +250,14 @@ async def list_all_events(
         out.sort(key=lambda e: e.start_datetime)
         return out
 
-    # No month filter — return all events as-is
+    # No month filter — return all non-archived events
     query = (
         select(Event)
         .options(selectinload(Event.attachments), selectinload(Event.note))
-        .where(Event.user_id == current_user.id)
+        .where(
+            Event.user_id == current_user.id,
+            Event.is_archived == False,  # noqa: E712
+        )
         .order_by(Event.start_datetime)
     )
     result = await db.execute(query)
@@ -319,13 +330,18 @@ async def _build_ical_response(user: User, db: AsyncSession) -> Response:
         .where(
             Event.user_id == user.id,
             Event.recurrence_rule.is_(None),
+            Event.is_archived == False,  # noqa: E712
             Event.start_datetime >= now,
         )
         .order_by(Event.start_datetime)
     )
     recurring_q = (
         select(Event)
-        .where(Event.user_id == user.id, Event.recurrence_rule.isnot(None))
+        .where(
+            Event.user_id == user.id,
+            Event.recurrence_rule.isnot(None),
+            Event.is_archived == False,  # noqa: E712
+        )
     )
 
     non_recurring_result = await db.execute(non_recurring_q)

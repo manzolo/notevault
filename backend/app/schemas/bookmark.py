@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 from app.schemas.tag import TagResponse
 
 
@@ -16,6 +16,8 @@ class BookmarkUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     tag_ids: Optional[List[int]] = None
+    is_archived: Optional[bool] = None
+    archive_note: Optional[str] = None
 
 
 class BookmarkResponse(BaseModel):
@@ -25,6 +27,8 @@ class BookmarkResponse(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     position: int = 0
+    is_archived: bool = False
+    archive_note: Optional[str] = None
     tags: List[TagResponse] = []
     created_at: datetime
     updated_at: datetime

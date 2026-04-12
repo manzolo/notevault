@@ -54,6 +54,34 @@ export function useBookmarks(noteId: number) {
     [noteId],
   );
 
+  const archiveBookmark = useCallback(
+    async (bookmarkId: number, archiveNote?: string): Promise<void> => {
+      await api.put(`/api/notes/${noteId}/bookmarks/${bookmarkId}`, {
+        is_archived: true,
+        archive_note: archiveNote || null,
+      });
+      setBookmarks((prev) => prev.filter((b) => b.id !== bookmarkId));
+    },
+    [noteId],
+  );
+
+  const restoreBookmark = useCallback(
+    async (bookmarkId: number): Promise<Bookmark> => {
+      const response = await api.put<Bookmark>(`/api/notes/${noteId}/bookmarks/${bookmarkId}`, {
+        is_archived: false,
+        archive_note: null,
+      });
+      setBookmarks((prev) => [...prev, response.data].sort((a, b) => a.position - b.position));
+      return response.data;
+    },
+    [noteId],
+  );
+
+  const fetchArchivedBookmarks = useCallback(async (): Promise<Bookmark[]> => {
+    const res = await api.get<Bookmark[]>(`/api/notes/${noteId}/bookmarks`, { params: { archived_only: true } });
+    return res.data;
+  }, [noteId]);
+
   return {
     bookmarks,
     setBookmarks,
@@ -63,5 +91,8 @@ export function useBookmarks(noteId: number) {
     updateBookmark,
     deleteBookmark,
     reorderBookmarks,
+    archiveBookmark,
+    restoreBookmark,
+    fetchArchivedBookmarks,
   };
 }

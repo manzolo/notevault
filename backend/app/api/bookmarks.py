@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -86,16 +86,22 @@ async def create_bookmark(
 @router.get("/{note_id}/bookmarks", response_model=List[BookmarkResponse])
 async def list_bookmarks(
     note_id: int,
+    include_archived: bool = Query(False),
+    archived_only: bool = Query(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_owned_note(note_id, current_user, db)
-    result = await db.execute(
+    q = (
         select(Bookmark)
         .options(selectinload(Bookmark.tags))
         .where(Bookmark.note_id == note_id)
-        .order_by(Bookmark.position, Bookmark.created_at.asc())
     )
+    if archived_only:
+        q = q.where(Bookmark.is_archived == True)  # noqa: E712
+    elif not include_archived:
+        q = q.where(Bookmark.is_archived == False)  # noqa: E712
+    result = await db.execute(q.order_by(Bookmark.position, Bookmark.created_at.asc()))
     return result.scalars().all()
 
 
@@ -134,6 +140,9 @@ async def update_bookmark(
         bookmark.title = body.title
     if body.description is not None:
         bookmark.description = body.description
+    if body.is_archived is not None:
+        bookmark.is_archived = body.is_archived
+        bookmark.archive_note = body.archive_note if body.is_archived else None
 
     if body.tag_ids is not None:
         # Delete existing tags

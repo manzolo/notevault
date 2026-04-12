@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, and_
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Note, Tag, NoteTag, Attachment, Event, Category
+from app.models.database import Note, Tag, NoteTag, Attachment, Event, Category, Task
 from app.schemas.note import NoteCreate, NoteUpdate, NoteResponse, NoteListResponse
 from app.security.dependencies import get_current_user
 from app.models.database import User
@@ -127,11 +127,22 @@ async def list_notes(
 
         # Note has a non-recurring event overlapping the range
         event_in_range = select(Event.id).where(*event_match_conds).exists()
-        # Note has no events at all (fall back to creation date)
+        # Note has a task with due_date in the range
+        task_match_conds = [Task.note_id == Note.id, Task.is_archived == False]
+        if created_after is not None:
+            task_match_conds.append(Task.due_date >= created_after)
+        if created_before is not None:
+            task_match_conds.append(Task.due_date <= created_before)
+        task_in_range = select(Task.id).where(*task_match_conds).exists()
+        # Note has no events and no tasks with due_date in range (fall back to creation date)
         note_has_no_events = ~select(Event.id).where(Event.note_id == Note.id).exists()
+        note_has_no_due_tasks = ~select(Task.id).where(
+            Task.note_id == Note.id, Task.due_date.isnot(None), Task.is_archived == False
+        ).exists()
         date_filter_parts: list = [
             event_in_range,
-            and_(note_has_no_events, *note_date_conds),
+            task_in_range,
+            and_(note_has_no_events, note_has_no_due_tasks, *note_date_conds),
         ]
         if recurring_note_ids:
             date_filter_parts.append(Note.id.in_(recurring_note_ids))

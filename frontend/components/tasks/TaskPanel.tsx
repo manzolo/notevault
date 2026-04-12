@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, KeyboardEvent } from 'react';
+import { useState, KeyboardEvent, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Task } from '@/lib/types';
-import { TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, CalendarIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useConfirm } from '@/hooks/useConfirm';
 import {
   DndContext,
   closestCenter,
@@ -21,17 +22,29 @@ import { CSS } from '@dnd-kit/utilities';
 interface TaskPanelProps {
   tasks: Task[];
   loading: boolean;
-  onCreate: (title: string) => Promise<void>;
+  onCreate: (title: string, dueDate?: string) => Promise<void>;
   onToggle: (id: number, isDone: boolean) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  onUpdate: (id: number, data: Partial<Task>) => Promise<void>;
+  onArchive: (id: number, note?: string) => Promise<void>;
+  onRestore: (id: number) => Promise<Task>;
+  fetchArchivedTasks: () => Promise<Task[]>;
   onReorder: (items: { id: number; position: number }[]) => Promise<void>;
   setTasks: (tasks: Task[]) => void;
 }
 
-export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete, onReorder, setTasks }: TaskPanelProps) {
+export default function TaskPanel({
+  tasks, loading, onCreate, onToggle, onDelete, onUpdate, onArchive, onRestore, fetchArchivedTasks, onReorder, setTasks,
+}: TaskPanelProps) {
   const t = useTranslations('tasks');
+  const tc = useTranslations('common');
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [newTitle, setNewTitle] = useState('');
+  const [newDueDate, setNewDueDate] = useState('');
   const [adding, setAdding] = useState(false);
+  const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedLoading, setArchivedLoading] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -43,8 +56,9 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
     if (!title) return;
     setAdding(true);
     try {
-      await onCreate(title);
+      await onCreate(title, newDueDate || undefined);
       setNewTitle('');
+      setNewDueDate('');
     } finally {
       setAdding(false);
     }
@@ -58,12 +72,11 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    // Only allow reordering within todo tasks (done tasks are in a separate section)
     const todo = tasks.filter((t) => !t.is_done);
     const done = tasks.filter((t) => t.is_done);
 
     const oldIndex = todo.findIndex((t) => t.id === active.id);
-    if (oldIndex === -1) return; // dragging a done task — skip
+    if (oldIndex === -1) return;
     const newIndex = todo.findIndex((t) => t.id === over.id);
     if (newIndex === -1) return;
 
@@ -78,12 +91,41 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
     }
   };
 
+  const handleToggleArchived = async () => {
+    if (!showArchived && archivedTasks.length === 0) {
+      setArchivedLoading(true);
+      try {
+        const items = await fetchArchivedTasks();
+        setArchivedTasks(items);
+      } finally {
+        setArchivedLoading(false);
+      }
+    }
+    setShowArchived((v) => !v);
+  };
+
+  const handleRestoreArchived = async (id: number) => {
+    const ok = await confirm(tc('restoreConfirm'), { confirmLabel: tc('restore'), confirmVariant: 'secondary' });
+    if (!ok) return;
+    await onRestore(id);
+    setArchivedTasks((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleDeleteArchived = async (id: number) => {
+    const ok = await confirm(tc('deleteConfirm'));
+    if (!ok) return;
+    await onDelete(id);
+    setArchivedTasks((prev) => prev.filter((t) => t.id !== id));
+  };
+
   if (loading) return <LoadingSpinner size="sm" />;
 
   const todo = tasks.filter((t) => !t.is_done);
   const done = tasks.filter((t) => t.is_done);
 
   return (
+    <>
+    {confirmDialog}
     <div className="space-y-2">
       {tasks.length === 0 && (
         <p className="text-sm text-gray-400 dark:text-gray-500 py-1">{t('noTasks')}</p>
@@ -93,7 +135,11 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={todo.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {todo.map((task) => (
-            <TaskRow key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} />
+            <TaskRow key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} onUpdate={onUpdate}
+              onArchive={async (note) => {
+                await onArchive(task.id, note);
+                if (showArchived) setArchivedTasks((prev) => [...prev, { ...task, is_archived: true, archive_note: note || null }]);
+              }} />
           ))}
         </SortableContext>
       </DndContext>
@@ -103,20 +149,31 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
         <div className="pt-1 border-t border-gray-100 dark:border-gray-700 mt-1">
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-1.5 pt-2">{t('done')} ({done.length})</p>
           {done.map((task) => (
-            <TaskRow key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} />
+            <TaskRow key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} onUpdate={onUpdate}
+              onArchive={async (note) => {
+                await onArchive(task.id, note);
+                if (showArchived) setArchivedTasks((prev) => [...prev, { ...task, is_archived: true, archive_note: note || null }]);
+              }} />
           ))}
         </div>
       )}
 
-      {/* Add task input — inline at bottom */}
-      <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+      {/* Add task input */}
+      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
         <input
           type="text"
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={t('addPlaceholder')}
-          className="flex-1 rounded-md border border-transparent bg-transparent dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:border-gray-300 dark:focus:border-gray-600 focus:bg-white dark:focus:bg-gray-800 placeholder-gray-300 dark:placeholder-gray-600 transition-colors"
+          className="flex-1 min-w-0 rounded-md border border-transparent bg-transparent dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:border-gray-300 dark:focus:border-gray-600 focus:bg-white dark:focus:bg-gray-800 placeholder-gray-300 dark:placeholder-gray-600 transition-colors"
+        />
+        <input
+          type="date"
+          value={newDueDate}
+          onChange={(e) => setNewDueDate(e.target.value)}
+          title={t('dueDate')}
+          className="rounded-md border border-transparent bg-transparent dark:text-gray-400 px-1.5 py-1 text-xs focus:outline-none focus:border-gray-300 dark:focus:border-gray-600 focus:bg-white dark:focus:bg-gray-800 text-gray-400 transition-colors cursor-pointer w-[130px]"
         />
         {newTitle.trim() && (
           <Button variant="ghost" size="sm" onClick={handleAdd} loading={adding}>
@@ -124,16 +181,74 @@ export default function TaskPanel({ tasks, loading, onCreate, onToggle, onDelete
           </Button>
         )}
       </div>
+
+      {/* Archived section */}
+      <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
+        <button
+          type="button"
+          onClick={handleToggleArchived}
+          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        >
+          <ArchiveIcon className="h-3.5 w-3.5" />
+          <span>{tc('archivedCount', { count: archivedTasks.length || '…' })}</span>
+          <span className="ml-0.5">{showArchived ? '▲' : '▼'}</span>
+        </button>
+
+        {showArchived && (
+          <div className="mt-2 space-y-1">
+            {archivedLoading && <LoadingSpinner size="sm" />}
+            {!archivedLoading && archivedTasks.length === 0 && (
+              <p className="text-xs text-gray-400 py-1">{t('noTasks')}</p>
+            )}
+            {archivedTasks.map((task) => (
+              <div key={task.id} className="flex items-center gap-2 px-2 py-1 rounded bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-200 dark:border-gray-700 opacity-70 group">
+                <span className={`flex-1 text-sm ${task.is_done ? 'line-through text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                  {task.title}
+                </span>
+                {task.archive_note && (
+                  <span className="text-xs text-gray-400 italic truncate max-w-[120px]" title={task.archive_note}>
+                    {task.archive_note}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  title={tc('restore')}
+                  onClick={() => handleRestoreArchived(task.id)}
+                  className="text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <RestoreIcon className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  title={tc('deleteForever')}
+                  onClick={() => handleDeleteArchived(task.id)}
+                  className="text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
+    </>
   );
 }
 
-function TaskRow({ task, onToggle, onDelete }: {
+function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
   task: Task;
   onToggle: (id: number, isDone: boolean) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  onUpdate: (id: number, data: Partial<Task>) => Promise<void>;
+  onArchive?: (note?: string) => void;
 }) {
+  const t = useTranslations('tasks');
+  const tc = useTranslations('common');
+  const { confirmInput, dialog: archiveDialog } = useConfirm();
   const [toggling, setToggling] = useState(false);
+  const [editingDate, setEditingDate] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   const handleToggle = async () => {
@@ -142,7 +257,50 @@ function TaskRow({ task, onToggle, onDelete }: {
     finally { setToggling(false); }
   };
 
+  const handleDateClick = () => {
+    setEditingDate(true);
+  };
+
+  useEffect(() => {
+    if (editingDate && dateInputRef.current) {
+      dateInputRef.current.focus();
+      dateInputRef.current.showPicker?.();
+    }
+  }, [editingDate]);
+
+  const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    await onUpdate(task.id, { due_date: val || null });
+    setEditingDate(false);
+  };
+
+  const handleDateBlur = () => {
+    setEditingDate(false);
+  };
+
+  const isPastDue = task.due_date && !task.is_done && new Date(task.due_date) < new Date(new Date().toDateString());
+
+  const dueDateFormatted = task.due_date
+    ? new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    : null;
+
+  const dueDateValue = task.due_date
+    ? new Date(task.due_date).toISOString().substring(0, 10)
+    : '';
+
+  const handleArchive = async () => {
+    if (!onArchive) return;
+    const { confirmed, value } = await confirmInput(tc('archiveConfirm'), {
+      confirmLabel: tc('archive'),
+      confirmVariant: 'secondary',
+      inputLabel: tc('archiveReason'),
+    });
+    if (confirmed) onArchive(value || undefined);
+  };
+
   return (
+    <>
+    {archiveDialog}
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
@@ -168,10 +326,50 @@ function TaskRow({ task, onToggle, onDelete }: {
       <span className={`flex-1 text-sm ${task.is_done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
         {task.title}
       </span>
-      {task.due_date && (
-        <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
-          {new Date(task.due_date).toLocaleDateString()}
-        </span>
+
+      {/* Due date area */}
+      {editingDate ? (
+        <input
+          ref={dateInputRef}
+          type="date"
+          defaultValue={dueDateValue}
+          onChange={handleDateChange}
+          onBlur={handleDateBlur}
+          className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs px-1 py-0.5 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-indigo-400 w-[120px]"
+        />
+      ) : task.due_date ? (
+        <button
+          type="button"
+          onClick={handleDateClick}
+          title={t('editDueDate')}
+          className={`text-xs whitespace-nowrap transition-colors ${
+            isPastDue
+              ? 'text-red-500 dark:text-red-400 font-medium'
+              : 'text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400'
+          }`}
+        >
+          {dueDateFormatted}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleDateClick}
+          title={t('setDueDate')}
+          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-indigo-400 dark:text-gray-600 dark:hover:text-indigo-400 transition-opacity"
+        >
+          <CalendarIcon className="h-3.5 w-3.5" />
+        </button>
+      )}
+
+      {onArchive && (
+        <button
+          type="button"
+          onClick={handleArchive}
+          title={tc('archive')}
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-amber-500 transition-opacity"
+        >
+          <ArchiveIcon className="h-3.5 w-3.5" />
+        </button>
       )}
       <button
         type="button"
@@ -181,5 +379,6 @@ function TaskRow({ task, onToggle, onDelete }: {
         <TrashIcon className="h-3.5 w-3.5" />
       </button>
     </div>
+    </>
   );
 }

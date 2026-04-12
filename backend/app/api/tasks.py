@@ -39,15 +39,18 @@ async def _get_task_owned(task_id: int, note_id: int, user: User, db: AsyncSessi
 @router.get("/api/notes/{note_id}/tasks", response_model=list[TaskResponse])
 async def list_tasks(
     note_id: int,
+    include_archived: bool = Query(False),
+    archived_only: bool = Query(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_note_owned(note_id, current_user, db)
-    result = await db.execute(
-        select(Task)
-        .where(Task.note_id == note_id, Task.user_id == current_user.id)
-        .order_by(Task.position, Task.created_at)
-    )
+    q = select(Task).where(Task.note_id == note_id, Task.user_id == current_user.id)
+    if archived_only:
+        q = q.where(Task.is_archived == True)  # noqa: E712
+    elif not include_archived:
+        q = q.where(Task.is_archived == False)  # noqa: E712
+    result = await db.execute(q.order_by(Task.position, Task.created_at))
     return result.scalars().all()
 
 
@@ -108,6 +111,9 @@ async def update_task(
         task.due_date = data.due_date
     if data.position is not None:
         task.position = data.position
+    if data.is_archived is not None:
+        task.is_archived = data.is_archived
+        task.archive_note = data.archive_note if data.is_archived else None
     await db.flush()
     await db.refresh(task)
     return task
@@ -127,6 +133,8 @@ async def delete_task(
 @router.get("/api/tasks", response_model=list[TaskWithNoteResponse])
 async def list_all_tasks(
     status_filter: Optional[str] = Query(None, alias="status"),
+    include_archived: bool = Query(False),
+    archived_only: bool = Query(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -138,6 +146,10 @@ async def list_all_tasks(
         q = q.where(Task.is_done == False)  # noqa: E712
     elif status_filter == "done":
         q = q.where(Task.is_done == True)  # noqa: E712
+    if archived_only:
+        q = q.where(Task.is_archived == True)  # noqa: E712
+    elif not include_archived:
+        q = q.where(Task.is_archived == False)  # noqa: E712
     q = q.order_by(Task.is_done, Task.due_date.nulls_last(), Task.created_at)
     result = await db.execute(q)
     rows = result.all()

@@ -37,7 +37,28 @@ export function useEvents(noteId: number) {
     await fetchEvents();
   }, [noteId, fetchEvents]);
 
-  return { events, loading, fetchEvents, createEvent, updateEvent, deleteEvent };
+  const archiveEvent = useCallback(async (eventId: number, archiveNote?: string): Promise<void> => {
+    await api.put(`/api/notes/${noteId}/events/${eventId}`, {
+      is_archived: true,
+      archive_note: archiveNote || null,
+    });
+    await fetchEvents();
+  }, [noteId, fetchEvents]);
+
+  const restoreEvent = useCallback(async (eventId: number): Promise<void> => {
+    await api.put(`/api/notes/${noteId}/events/${eventId}`, {
+      is_archived: false,
+      archive_note: null,
+    });
+    await fetchEvents();
+  }, [noteId, fetchEvents]);
+
+  const fetchArchivedEvents = useCallback(async (): Promise<CalendarEvent[]> => {
+    const res = await api.get<CalendarEvent[]>(`/api/notes/${noteId}/events`, { params: { archived_only: true } });
+    return res.data;
+  }, [noteId]);
+
+  return { events, loading, fetchEvents, createEvent, updateEvent, deleteEvent, archiveEvent, restoreEvent, fetchArchivedEvents };
 }
 
 export function useAllEvents(month?: string) {

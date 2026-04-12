@@ -86,6 +86,28 @@ export function useSecrets(noteId: number) {
     await api.patch(`/api/notes/${noteId}/secrets/reorder`, items);
   }, [noteId]);
 
+  const archiveSecret = useCallback(async (secretId: number, archiveNote?: string): Promise<void> => {
+    const res = await api.patch<Secret>(`/api/notes/${noteId}/secrets/${secretId}/archive`, {
+      is_archived: true,
+      archive_note: archiveNote || null,
+    });
+    setSecrets((prev) => prev.filter((s) => s.id !== secretId));
+    return;
+  }, [noteId]);
+
+  const restoreSecret = useCallback(async (secretId: number): Promise<void> => {
+    const res = await api.patch<Secret>(`/api/notes/${noteId}/secrets/${secretId}/archive`, {
+      is_archived: false,
+      archive_note: null,
+    });
+    setSecrets((prev) => [...prev, res.data].sort((a, b) => a.position - b.position));
+  }, [noteId]);
+
+  const fetchArchivedSecrets = useCallback(async (): Promise<Secret[]> => {
+    const res = await api.get<Secret[]>(`/api/notes/${noteId}/secrets`, { params: { archived_only: true } });
+    return res.data;
+  }, [noteId]);
+
   return {
     secrets,
     setSecrets,
@@ -99,5 +121,8 @@ export function useSecrets(noteId: number) {
     deleteSecret,
     copySecret,
     reorderSecrets,
+    archiveSecret,
+    restoreSecret,
+    fetchArchivedSecrets,
   };
 }

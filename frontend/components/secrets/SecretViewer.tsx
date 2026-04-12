@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Secret, SecretReveal } from '@/lib/types';
 import { copyToClipboard } from '@/lib/utils';
 import Button from '@/components/common/Button';
-import { ClipboardCheckIcon, ClipboardIcon, EyeIcon, EyeOffIcon, TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, ClipboardCheckIcon, ClipboardIcon, EyeIcon, EyeOffIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 import TotpLiveWidget from './TotpLiveWidget';
@@ -75,16 +75,18 @@ interface SecretViewerProps {
   onReveal: () => void;
   onHide: () => void;
   onDelete: () => void;
+  onArchive?: (note?: string) => void;
   onCopyDirect?: () => Promise<void>;
 }
 
 export default function SecretViewer({
-  secret, revealed, countdownSeconds, onReveal, onHide, onDelete, onCopyDirect,
+  secret, revealed, countdownSeconds, onReveal, onHide, onDelete, onArchive, onCopyDirect,
 }: SecretViewerProps) {
   const t = useTranslations('secrets');
+  const tc = useTranslations('common');
   const [copied, setCopied] = useState(false);
   const [copiedPub, setCopiedPub] = useState(false);
-  const { confirm, dialog } = useConfirm();
+  const { confirm, confirmInput, dialog } = useConfirm();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: secret.id });
 
   const markCopied = () => { setCopied(true); setTimeout(() => setCopied(false), 2000); };
@@ -94,6 +96,15 @@ export default function SecretViewer({
   const handleCopyDirect = async () => { if (!onCopyDirect) return; await onCopyDirect(); markCopied(); };
   const handleCopyPub = async () => { if (!secret.public_key) return; await copyToClipboard(secret.public_key); markCopiedPub(); };
   const handleDelete = async () => { if (await confirm(t('deleteConfirm'))) onDelete(); };
+  const handleArchive = async () => {
+    if (!onArchive) return;
+    const { confirmed, value } = await confirmInput(tc('archiveConfirm'), {
+      confirmLabel: tc('archive'),
+      confirmVariant: 'secondary',
+      inputLabel: tc('archiveReason'),
+    });
+    if (confirmed) onArchive(value || undefined);
+  };
 
   return (
     <>
@@ -227,6 +238,11 @@ export default function SecretViewer({
                   <EyeOffIcon />
                 </Button>
               </>
+            )}
+            {onArchive && (
+              <Button size="sm" variant="ghost" title={tc('archive')} onClick={handleArchive}>
+                <ArchiveIcon />
+              </Button>
             )}
             <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
               <TrashIcon />

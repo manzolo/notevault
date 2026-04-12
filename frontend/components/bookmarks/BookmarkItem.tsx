@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Bookmark } from '@/lib/types';
 import Button from '@/components/common/Button';
-import { PencilIcon, TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, PencilIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 import { useServerConfig } from '@/hooks/useServerConfig';
@@ -16,6 +16,7 @@ interface Props {
   bookmark: Bookmark;
   onEdit: (bookmark: Bookmark) => void;
   onDelete: (id: number) => void;
+  onArchive?: (id: number, note?: string) => void;
 }
 
 function GlobeIcon() {
@@ -48,9 +49,10 @@ function DragHandle(props: React.HTMLAttributes<HTMLSpanElement>) {
   );
 }
 
-export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
+export default function BookmarkItem({ bookmark, onEdit, onDelete, onArchive }: Props) {
   const t = useTranslations('bookmarks');
-  const { confirm, dialog } = useConfirm();
+  const tc = useTranslations('common');
+  const { confirm, confirmInput, dialog } = useConfirm();
   const { favicon_fetch_enabled } = useServerConfig();
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bookmark.id });
@@ -73,6 +75,16 @@ export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
 
   const handleDelete = async () => {
     if (await confirm(t('deleteConfirm'))) onDelete(bookmark.id);
+  };
+
+  const handleArchive = async () => {
+    if (!onArchive) return;
+    const { confirmed, value } = await confirmInput(tc('archiveConfirm'), {
+      confirmLabel: tc('archive'),
+      confirmVariant: 'secondary',
+      inputLabel: tc('archiveReason'),
+    });
+    if (confirmed) onArchive(bookmark.id, value || undefined);
   };
 
   return (
@@ -131,6 +143,11 @@ export default function BookmarkItem({ bookmark, onEdit, onDelete }: Props) {
           <Button size="sm" variant="ghost" title={t('edit')} onClick={() => onEdit(bookmark)}>
             <PencilIcon />
           </Button>
+          {onArchive && (
+            <Button size="sm" variant="ghost" title={tc('archive')} onClick={handleArchive}>
+              <ArchiveIcon />
+            </Button>
+          )}
           <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
             <TrashIcon />
           </Button>

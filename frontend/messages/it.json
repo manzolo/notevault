@@ -236,7 +236,10 @@
     "all": "Tutte",
     "filterStatus": "Filtra",
     "noTasksFiltered": "Nessuna attività trovata.",
-    "noteLink": "Nella nota"
+    "noteLink": "Nella nota",
+    "dueDate": "Scadenza",
+    "setDueDate": "Imposta scadenza",
+    "editDueDate": "Modifica scadenza"
   },
   "search": {
     "placeholder": "Cerca note...",
@@ -361,6 +364,15 @@
     "save": "Salva",
     "createdAt": "Creato",
     "updatedAt": "Modificato",
-    "fileModifiedAt": "File modificato"
+    "fileModifiedAt": "File modificato",
+    "optionalPlaceholder": "Opzionale...",
+    "archive": "Archivia",
+    "restore": "Ripristina",
+    "archiveReason": "Motivo (opzionale)",
+    "deleteForever": "Elimina definitivamente",
+    "archivedCount": "Archiviati ({count})",
+    "archiveConfirm": "Archiviare questo elemento?",
+    "restoreConfirm": "Ripristinare questo elemento?",
+    "deleteConfirm": "Eliminare definitivamente questo elemento?"
   }
 }

@@ -16,6 +16,11 @@ class SecretCreate(BaseModel):
         return f"SecretCreate(name={self.name!r}, secret_type={self.secret_type!r}, value={{REDACTED}})"
 
 
+class SecretArchiveUpdate(BaseModel):
+    is_archived: bool
+    archive_note: Optional[str] = None
+
+
 class SecretResponse(BaseModel):
     id: int
     name: str
@@ -25,6 +30,8 @@ class SecretResponse(BaseModel):
     public_key: Optional[str] = None
     note_id: int
     position: int = 0
+    is_archived: bool = False
+    archive_note: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

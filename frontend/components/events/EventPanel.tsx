@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { CalendarEvent, CalendarEventCreate } from "@/lib/types";
 import { useEvents } from "@/hooks/useEvents";
 import { useConfirm } from "@/hooks/useConfirm";
+import { ArchiveIcon, RestoreIcon, TrashIcon } from "@/components/common/Icons";
 import EventFormModal from "./EventFormModal";
 import Button from "@/components/common/Button";
 import api from "@/lib/api";
@@ -31,8 +32,12 @@ function formatDatetime(iso: string): string {
 
 export default function EventPanel({ noteId, onCountChange, onEventsChange, onAdd }: Props) {
   const t = useTranslations("events");
-  const { events, loading, fetchEvents, createEvent, updateEvent, deleteEvent } = useEvents(noteId);
-  const { confirm, dialog: confirmDialog } = useConfirm();
+  const tc = useTranslations("common");
+  const { events, loading, fetchEvents, createEvent, updateEvent, deleteEvent, archiveEvent, restoreEvent, fetchArchivedEvents } = useEvents(noteId);
+  const { confirm, confirmInput, dialog: confirmDialog } = useConfirm();
+  const [archivedEvents, setArchivedEvents] = useState<CalendarEvent[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedLoading, setArchivedLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
@@ -63,6 +68,44 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
     const ok = await confirm(t("deleteConfirm"));
     if (!ok) return;
     await deleteEvent(ev.id);
+  };
+
+  const handleArchiveEvent = async (ev: CalendarEvent) => {
+    const { confirmed, value } = await confirmInput(tc("archiveConfirm"), {
+      confirmLabel: tc("archive"),
+      confirmVariant: "secondary",
+      inputLabel: tc("archiveReason"),
+    });
+    if (!confirmed) return;
+    await archiveEvent(ev.id, value || undefined);
+    if (showArchived) setArchivedEvents((prev) => [...prev, { ...ev, is_archived: true, archive_note: value || null }]);
+  };
+
+  const handleToggleArchived = async () => {
+    if (!showArchived && archivedEvents.length === 0) {
+      setArchivedLoading(true);
+      try {
+        const items = await fetchArchivedEvents();
+        setArchivedEvents(items);
+      } finally {
+        setArchivedLoading(false);
+      }
+    }
+    setShowArchived((v) => !v);
+  };
+
+  const handleRestoreArchived = async (ev: CalendarEvent) => {
+    const ok = await confirm(tc("restoreConfirm"), { confirmLabel: tc("restore"), confirmVariant: "secondary" });
+    if (!ok) return;
+    await restoreEvent(ev.id);
+    setArchivedEvents((prev) => prev.filter((e) => e.id !== ev.id));
+  };
+
+  const handleDeleteArchived = async (ev: CalendarEvent) => {
+    const ok = await confirm(tc("deleteConfirm"));
+    if (!ok) return;
+    await deleteEvent(ev.id);
+    setArchivedEvents((prev) => prev.filter((e) => e.id !== ev.id));
   };
 
   const handleUpload = async (eventId: number, file: File) => {
@@ -124,6 +167,9 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
             </svg>
+          </Button>
+          <Button variant="ghost" size="sm" title={tc("archive")} onClick={() => handleArchiveEvent(ev)}>
+            <ArchiveIcon className="w-4 h-4" />
           </Button>
           <Button variant="ghost-danger" size="sm" onClick={() => handleDeleteEvent(ev)}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -211,6 +257,52 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
           )}
         </div>
       )}
+      {/* Archived events section */}
+      <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
+        <button
+          type="button"
+          onClick={handleToggleArchived}
+          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        >
+          <ArchiveIcon className="h-3.5 w-3.5" />
+          <span>{tc("archivedCount", { count: archivedEvents.length || "…" })}</span>
+          <span className="ml-0.5">{showArchived ? "▲" : "▼"}</span>
+        </button>
+
+        {showArchived && (
+          <div className="mt-2 space-y-1">
+            {archivedLoading && <p className="text-xs text-gray-400">Loading...</p>}
+            {!archivedLoading && archivedEvents.length === 0 && (
+              <p className="text-xs text-gray-400 py-1">{t("noEvents")}</p>
+            )}
+            {archivedEvents.map((ev) => (
+              <div key={ev.id} className="flex items-center gap-2 px-2 py-1.5 rounded bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-200 dark:border-gray-700 opacity-70 group">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{ev.title}</p>
+                  {ev.archive_note && <p className="text-xs text-gray-400 italic truncate">{ev.archive_note}</p>}
+                </div>
+                <button
+                  type="button"
+                  title={tc("restore")}
+                  onClick={() => handleRestoreArchived(ev)}
+                  className="text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <RestoreIcon className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  title={tc("deleteForever")}
+                  onClick={() => handleDeleteArchived(ev)}
+                  className="text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {showModal && (
         <EventFormModal
           event={editingEvent}

@@ -9,7 +9,7 @@ from urllib.parse import quote
 from uuid import uuid4
 
 import aiofiles
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select, update
@@ -148,16 +148,22 @@ async def upload_attachment(
 @router.get("/{note_id}/attachments", response_model=List[AttachmentResponse])
 async def list_attachments(
     note_id: int,
+    include_archived: bool = Query(False),
+    archived_only: bool = Query(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     await _get_owned_note(note_id, current_user, db)
-    result = await db.execute(
+    q = (
         select(Attachment)
         .options(selectinload(Attachment.tags))
         .where(Attachment.note_id == note_id)
-        .order_by(Attachment.position, Attachment.created_at)
     )
+    if archived_only:
+        q = q.where(Attachment.is_archived == True)  # noqa: E712
+    elif not include_archived:
+        q = q.where(Attachment.is_archived == False)  # noqa: E712
+    result = await db.execute(q.order_by(Attachment.position, Attachment.created_at))
     return result.scalars().all()
 
 
@@ -642,6 +648,11 @@ async def update_attachment(
     # Update description if provided
     if body.description is not None:
         attachment.description = body.description
+
+    # Update archive state if provided
+    if body.is_archived is not None:
+        attachment.is_archived = body.is_archived
+        attachment.archive_note = body.archive_note if body.is_archived else None
 
     # Update tags if provided
     if body.tag_ids is not None:

@@ -26,13 +26,14 @@ interface Props {
   onDownload: (attachment: Attachment) => void;
   onDelete: (id: number) => void;
   onEdit: (attachment: Attachment) => void;
+  onArchive?: (id: number, note?: string) => void;
   emlAttachmentsMap?: Record<number, number>;
   onReorder: (items: { id: number; position: number }[]) => Promise<void>;
   setAttachments: (attachments: Attachment[]) => void;
 }
 
 export default function AttachmentGroupedList({
-  attachments, loading, onPreview, onDownload, onDelete, onEdit, emlAttachmentsMap, onReorder, setAttachments,
+  attachments, loading, onPreview, onDownload, onDelete, onEdit, onArchive, emlAttachmentsMap, onReorder, setAttachments,
 }: Props) {
   const t = useTranslations('attachments');
   const [expanded, setExpanded] = useState<Set<MimeCategory>>(new Set());
@@ -119,6 +120,7 @@ export default function AttachmentGroupedList({
                     onDownload={onDownload}
                     onDelete={onDelete}
                     onEdit={onEdit}
+                    onArchive={onArchive}
                     emlAttachmentCount={emlAttachmentsMap?.[att.id] ?? 0}
                   />
                 ))}
