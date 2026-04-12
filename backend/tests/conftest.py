@@ -1,9 +1,12 @@
+import asyncio
 import os
 import tempfile
 import pytest
 import pytest_asyncio
+from asyncpg.exceptions import DeadlockDetectedError
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -75,9 +78,12 @@ FOR EACH ROW EXECUTE FUNCTION bookmarks_fts_trigger_func()
 
 @pytest_asyncio.fixture(scope="session")
 async def engine():
-    """Create schema once per test session — shared across all tests."""
+    """Create schema once per test session — shared across all tests.
+    Drops any leftover tables from a previous aborted run first so the session
+    always starts from a pristine schema."""
     eng = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
     async with eng.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
         await conn.execute(text(_FTS_FUNCTION))
         await conn.execute(text(_FTS_TRIGGER))
@@ -91,22 +97,42 @@ async def engine():
     await eng.dispose()
 
 
-@pytest.fixture(scope="session", autouse=True)
-def override_upload_dir(tmp_path_factory):
-    """Point uploads to a temp dir for tests."""
-    tmp = tmp_path_factory.mktemp("uploads")
-    settings.upload_dir = str(tmp)
-    yield str(tmp)
-
-
 @pytest_asyncio.fixture(autouse=True)
 async def clean_tables(engine):
-    """Truncate all tables before every test for full isolation."""
-    async with engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(
-                text(f'TRUNCATE TABLE "{table.name}" RESTART IDENTITY CASCADE')
-            )
+    """Atomic TRUNCATE of all tables before every test for full isolation.
+    Uses a single statement so Postgres acquires every lock at once in one
+    shot, avoiding the deadlock cycles a per-table loop produced when a
+    previous test's session had not fully released its locks yet."""
+    names = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables)
+    stmt = text(f"TRUNCATE TABLE {names} RESTART IDENTITY CASCADE")
+    for attempt in range(3):
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(stmt)
+            break
+        except DBAPIError as e:
+            if isinstance(e.orig, DeadlockDetectedError) and attempt < 2:
+                await asyncio.sleep(0.05 * (attempt + 1))
+                continue
+            raise
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """slowapi Limiter keeps in-memory state keyed by user:{id}. Since test
+    user IDs restart from 1 each test (RESTART IDENTITY CASCADE), that state
+    leaks across tests and eventually 429s legitimate requests."""
+    from app.security.rate_limit import limiter
+    limiter.reset()
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _reset_upload_dir(tmp_path):
+    """Per-test upload dir so files from previous tests don't collide with
+    identical (user_id, note_id) paths after RESTART IDENTITY."""
+    settings.upload_dir = str(tmp_path / "uploads")
     yield
 
 

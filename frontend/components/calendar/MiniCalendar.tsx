@@ -85,17 +85,17 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
   };
 
   const dayTooltip = (dayEvents: CalendarEventWithNote[], dayTasks: TaskWithNote[]): string => {
-    const titles: string[] = [];
-    const seen = new Set<string>();
+    const lines: string[] = [];
     for (const e of dayEvents) {
-      const label = e.note_title || e.title;
-      if (!seen.has(label)) { seen.add(label); titles.push(label); }
+      lines.push(`📅 ${e.title}`);
+      if (e.description) lines.push(`   ${e.description}`);
+      if (e.note_title) lines.push(`   📝 ${e.note_title}`);
     }
     for (const task of dayTasks) {
-      const label = task.note_title || task.title;
-      if (!seen.has(label)) { seen.add(label); titles.push(label); }
+      lines.push(`☐ ${task.title}`);
+      if (task.note_title) lines.push(`   📝 ${task.note_title}`);
     }
-    return titles.join('\n');
+    return lines.join('\n');
   };
 
   const isToday = (day: number) =>

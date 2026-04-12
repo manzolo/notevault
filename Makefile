@@ -1,4 +1,4 @@
-.PHONY: up down restart build migrate migrate-down test test-backend test-frontend \
+.PHONY: up down restart build migrate migrate-down test test-backend test-reset test-frontend \
         test-e2e logs logs-backend shell-backend shell-db keygen \
         tag publish deploy deploy-update clean help
 
@@ -66,9 +66,30 @@ migrate-down:
 ## test: Run the full test suite (backend + frontend unit)
 test: test-backend test-frontend
 
-## test-backend: Run backend pytest suite (includes full-flow tests with E2eTest123! user)
+## test-backend: Run backend pytest against the already-running stack.
+##               Fails fast if backend is not up. Use `test-reset` for a
+##               guaranteed-clean full cycle.
 test-backend:
-	docker compose exec backend pytest tests/ -v
+	@docker compose ps --services --filter "status=running" | grep -q '^backend$$' \
+		|| { echo "backend not running — use 'make up' first or 'make test-reset'"; exit 1; }
+	docker compose exec -T backend pytest tests/ -v
+
+## test-reset: Full clean → build → up → drop/create test DB → migrate → pytest.
+##             Use this whenever the environment is suspect (after schema
+##             changes, failed runs, or when you want a guaranteed green run).
+test-reset:
+	docker compose down
+	docker compose build backend
+	docker compose up -d db redis
+	@echo "Waiting for db healthy..."
+	@until docker compose exec -T db pg_isready -U notevault -d notevault >/dev/null 2>&1; do sleep 1; done
+	docker compose exec -T db psql -U notevault -d postgres -c "DROP DATABASE IF EXISTS notevault_test;"
+	docker compose exec -T db psql -U notevault -d postgres -c "CREATE DATABASE notevault_test OWNER notevault;"
+	docker compose up -d backend
+	@echo "Waiting for backend ready..."
+	@sleep 5
+	docker compose exec -T backend alembic upgrade head
+	docker compose exec -T backend pytest tests/ -v
 
 ## test-frontend: Run frontend Jest/React unit tests (CI mode)
 test-frontend:

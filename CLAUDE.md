@@ -18,8 +18,10 @@ make keygen         # generate SECRET_KEY + MASTER_KEY for .env
 
 ### Testing
 ```bash
-make test-backend                                # pytest inside backend container (144 tests)
-cd frontend && npm test -- --watchAll=false      # Jest unit tests locally (31 tests)
+make test-reset                                  # Full clean → build → up → drop/create test DB → migrate → pytest.
+                                                 # USE THIS when in doubt — guarantees a deterministic run.
+make test-backend                                # Fast pytest on already-running stack. Fails if backend is not up.
+cd frontend && npm test -- --watchAll=false      # Jest unit tests locally
 # NOTE: make test-frontend is broken — the prod container has no jest. Run locally.
 cd frontend && npx playwright test               # E2E (requires make up first)
 
@@ -28,6 +30,20 @@ docker compose exec backend pytest tests/test_api_notes.py::test_list_notes -v
 # Single frontend test file:
 cd frontend && npm test -- --watchAll=false --testPathPattern=useTags
 ```
+
+**Deterministic test suite.** If `make test-backend` shows failures, do NOT
+conclude "it's test ordering" or "pre-existing failure" — that diagnosis was
+wrong in the past. The real causes were: (1) a per-table `TRUNCATE` loop in
+`conftest.py` that deadlocked with lingering session locks, and (2) the
+slowapi `Limiter` in-memory state keyed by `user:1` (since `RESTART IDENTITY`
+resets user IDs) accumulating across tests and eventually returning 429.
+Both are fixed in `backend/tests/conftest.py` (atomic TRUNCATE with deadlock
+retry + autouse `limiter.reset()` + per-test upload dir). If tests still
+flicker, run `make test-reset` — if that also fails, it's a genuine bug.
+
+**Every new feature must ship with its tests.** Definition-of-done for any
+non-trivial change: the new tests exist, cover the change, and pass under
+`make test-reset`. No more "feature merged, tests added later".
 
 ### Release
 ```bash
