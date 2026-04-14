@@ -7,7 +7,6 @@ Create Date: 2026-04-14 00:00:00.000000
 """
 from typing import Sequence, Union
 
-import sqlalchemy as sa
 from alembic import op
 
 revision: str = '029'
@@ -17,15 +16,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('note_fields', sa.Column('link', sa.Text(), nullable=True))
-    op.add_column('note_fields', sa.Column('field_note', sa.Text(), nullable=True))
-    op.add_column('note_fields', sa.Column('field_date', sa.Date(), nullable=True))
-    op.add_column('note_fields', sa.Column('price', sa.Text(), nullable=True))
+    op.execute("ALTER TABLE note_fields ADD COLUMN IF NOT EXISTS link TEXT")
+    op.execute("ALTER TABLE note_fields ADD COLUMN IF NOT EXISTS field_note TEXT")
+    op.execute("ALTER TABLE note_fields ADD COLUMN IF NOT EXISTS field_date DATE")
+    op.execute("ALTER TABLE note_fields ADD COLUMN IF NOT EXISTS price TEXT")
 
-    op.create_index('ix_note_fields_field_date', 'note_fields', ['field_date'])
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_note_fields_field_date ON note_fields (field_date)"
+    )
 
-    # Update FTS trigger to include field_note (weight D)
-    # CREATE OR REPLACE updates the function body in-place; trigger already points to it
+    # UPDATE FTS trigger to include field_note (weight D)
     op.execute("""
         CREATE OR REPLACE FUNCTION note_fields_fts_trigger_func()
         RETURNS trigger AS $$
@@ -54,8 +54,8 @@ def downgrade() -> None:
         END
         $$ LANGUAGE plpgsql;
     """)
-    op.drop_index('ix_note_fields_field_date', table_name='note_fields')
-    op.drop_column('note_fields', 'price')
-    op.drop_column('note_fields', 'field_date')
-    op.drop_column('note_fields', 'field_note')
-    op.drop_column('note_fields', 'link')
+    op.execute("DROP INDEX IF EXISTS ix_note_fields_field_date")
+    op.execute("ALTER TABLE note_fields DROP COLUMN IF EXISTS price")
+    op.execute("ALTER TABLE note_fields DROP COLUMN IF EXISTS field_date")
+    op.execute("ALTER TABLE note_fields DROP COLUMN IF EXISTS field_note")
+    op.execute("ALTER TABLE note_fields DROP COLUMN IF EXISTS link")
