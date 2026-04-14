@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
-import { CalendarEventWithNote, TaskWithNote } from "@/lib/types";
+import { CalendarEventWithNote, FieldDateEntry, TaskWithNote } from "@/lib/types";
 import { useAllEvents } from "@/hooks/useEvents";
 import { useAllTasks } from "@/hooks/useTasks";
+import { useFieldDates } from "@/hooks/useFieldDates";
 import { CalendarIcon } from "@/components/common/Icons";
 
 function buildCalendarGrid(year: number, month: number): (number | null)[][] {
@@ -34,6 +35,9 @@ function buildCalendarGrid(year: number, month: number): (number | null)[][] {
 
 export default function CalendarPage() {
   const t = useTranslations("calendar");
+  const tEvents = useTranslations("events");
+  const tTasks = useTranslations("tasks");
+  const tFields = useTranslations("fields");
   const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) ?? "en";
@@ -48,6 +52,7 @@ export default function CalendarPage() {
 
   const { events, fetchEvents } = useAllEvents(monthStr);
   const { tasks: allTasks, fetchAllTasks } = useAllTasks();
+  const { fieldDates, fetchFieldDates } = useFieldDates(monthStr);
 
   useEffect(() => {
     fetchEvents();
@@ -56,6 +61,10 @@ export default function CalendarPage() {
   useEffect(() => {
     fetchAllTasks();
   }, [fetchAllTasks]);
+
+  useEffect(() => {
+    fetchFieldDates();
+  }, [fetchFieldDates]);
 
   // Filter tasks that have a due_date in the current month
   const tasks = allTasks.filter((task: TaskWithNote) => {
@@ -93,6 +102,13 @@ export default function CalendarPage() {
       return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
     });
 
+  const fieldDatesOnDay = (day: number): FieldDateEntry[] =>
+    fieldDates.filter((f: FieldDateEntry) => {
+      if (!f.field_date) return false;
+      const [y, m, d] = f.field_date.split("-").map(Number);
+      return y === year && m === month + 1 && d === day;
+    });
+
   const isToday = (day: number) =>
     today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
 
@@ -122,6 +138,14 @@ export default function CalendarPage() {
           >
             &#8250;
           </button>
+          {(year !== today.getFullYear() || month !== today.getMonth()) && (
+            <button
+              onClick={() => setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1))}
+              className="ml-1 text-xs px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors font-medium"
+            >
+              {t("today")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -146,11 +170,13 @@ export default function CalendarPage() {
             {week.map((day, di) => {
               const dayEvents = day ? eventsOnDay(day) : [];
               const dayTasks = day ? tasksOnDay(day) : [];
-              const totalItems = dayEvents.length + dayTasks.length;
-              const MAX_PILLS = 2;
+              const dayFdates = day ? fieldDatesOnDay(day) : [];
+              const totalItems = dayEvents.length + dayTasks.length + dayFdates.length;
+              const MAX_PILLS = 3;
               const combined = [
                 ...dayEvents.map((e) => ({ type: "event" as const, item: e })),
                 ...dayTasks.map((t) => ({ type: "task" as const, item: t })),
+                ...dayFdates.map((f) => ({ type: "field" as const, item: f })),
               ];
               const shown = combined.slice(0, MAX_PILLS);
               const more = Math.max(0, totalItems - MAX_PILLS);
@@ -174,6 +200,20 @@ export default function CalendarPage() {
                     </span>
                   )}
                   {shown.map(({ type, item }, i) => {
+                    if (type === "field") {
+                      const f = item as FieldDateEntry;
+                      const label = f.value ? `${f.key}: ${f.value}` : f.key;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => router.push(`/${locale}/notes/${f.note_id}`)}
+                          className="w-full text-left text-xs truncate rounded px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300"
+                          title={`${label} — ${f.note_title}`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    }
                     const timeStr = type === "event"
                       ? new Date((item as CalendarEventWithNote).start_datetime).toLocaleTimeString(localeStr, { hour: "2-digit", minute: "2-digit" })
                       : null;
@@ -204,7 +244,31 @@ export default function CalendarPage() {
         ))}
       </div>
 
-      {events.length === 0 && tasks.length === 0 && (
+      {/* Legend */}
+      {(events.length > 0 || tasks.length > 0 || fieldDates.length > 0) && (
+        <div className="flex items-center gap-4 mt-4 px-1 flex-wrap">
+          {events.length > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 dark:bg-indigo-500 inline-block" />
+              {tEvents("events")}
+            </span>
+          )}
+          {tasks.length > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 dark:bg-amber-500 inline-block" />
+              {tTasks("tasks")}
+            </span>
+          )}
+          {fieldDates.length > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400 inline-block" />
+              {tFields("fieldDates")}
+            </span>
+          )}
+        </div>
+      )}
+
+      {events.length === 0 && tasks.length === 0 && fieldDates.length === 0 && (
         <p className="text-center text-gray-400 mt-6 text-sm">{t("noItems")}</p>
       )}
     </div>
