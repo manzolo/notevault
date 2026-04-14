@@ -246,7 +246,8 @@
     "results": "Risultati di ricerca ({count})",
     "noResults": "Nessuna nota trovata per la tua ricerca.",
     "foundInAttachment": "Trovato nell'allegato",
-    "foundInBookmark": "Trovato nel segnalibro"
+    "foundInBookmark": "Trovato nel segnalibro",
+    "foundInFields": "Trovato nei campi tecnici"
   },
   "folders": {
     "allNotes": "Senza cartella",
@@ -279,6 +280,7 @@
     "sectionBookmarks": "Segnalibri",
     "sectionSecrets": "Segreti",
     "sectionEvents": "Eventi",
+    "sectionFields": "Campi Tecnici",
     "secretsWarning": "Attenzione: i segreti saranno visibili a chiunque abbia questo link.",
     "visibilityLabel": "Chi può visualizzare",
     "visibilityPublic": "Chiunque",
@@ -374,5 +376,24 @@
     "archiveConfirm": "Archiviare questo elemento?",
     "restoreConfirm": "Ripristinare questo elemento?",
     "deleteConfirm": "Eliminare definitivamente questo elemento?"
+  },
+  "fields": {
+    "panelTitle": "Campi Tecnici",
+    "addGroup": "Aggiungi gruppo",
+    "addField": "Aggiungi campo",
+    "groupNamePlaceholder": "Nome gruppo",
+    "keyPlaceholder": "Nome campo",
+    "valuePlaceholder": "Valore",
+    "linkPlaceholder": "Aggiungi link…",
+    "pricePlaceholder": "Prezzo",
+    "datePlaceholder": "Data",
+    "notePlaceholder": "Nota…",
+    "deleteGroupConfirm": "Eliminare questo gruppo e tutti i suoi campi?",
+    "deleteFieldConfirm": "Eliminare questo campo?",
+    "emptyState": "Nessun gruppo. Clicca \"Aggiungi gruppo\" per iniziare.",
+    "searchBadge": "Trovato nei campi",
+    "fieldDates": "Promemoria",
+    "collapse": "Comprimi",
+    "expand": "Espandi"
   }
 }

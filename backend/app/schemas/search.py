@@ -24,11 +24,24 @@ class MatchingBookmark(BaseModel):
         from_attributes = True
 
 
+class MatchingField(BaseModel):
+    id: int
+    note_id: int
+    group_name: str
+    key: str
+    value: str
+
+    class Config:
+        from_attributes = True
+
+
 class SearchNoteResponse(NoteResponse):
     match_in_attachment: bool = False
     match_in_bookmark: bool = False
+    match_in_fields: bool = False
     matching_attachments: List[MatchingAttachment] = []
     matching_bookmarks: List[MatchingBookmark] = []
+    matching_fields: List[MatchingField] = []
 
     class Config:
         from_attributes = True

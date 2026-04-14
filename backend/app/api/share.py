@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 
 from app.config import get_settings
 from app.database.connection import get_db
-from app.models.database import Attachment, Bookmark, Event, EventAttachment, Note, Secret, ShareToken, Tag, Task, User
+from app.models.database import Attachment, Bookmark, Event, EventAttachment, Note, NoteField, Secret, ShareToken, Tag, Task, User
 from app.schemas.note import NoteResponse
 from app.security.auth import verify_token
 from app.security.dependencies import get_current_user
@@ -36,6 +36,7 @@ _DEFAULT_SECTIONS = {
     "bookmarks": False,
     "secrets": False,
     "events": False,
+    "fields": False,
 }
 
 
@@ -66,6 +67,7 @@ class ShareSections(BaseModel):
     bookmarks: bool = False
     secrets: bool = False
     events: bool = False
+    fields: bool = False
 
 
 class ShareCreate(BaseModel):
@@ -345,6 +347,29 @@ async def get_shared_note(
                 ],
             }
             for e in events
+        ]
+
+    # Technical fields section
+    if sections.get("fields", False):
+        fld_result = await db.execute(
+            select(NoteField)
+            .where(NoteField.note_id == note.id)
+            .order_by(NoteField.position, NoteField.id)
+        )
+        note_fields = fld_result.scalars().all()
+        response["fields"] = [
+            {
+                "id": f.id,
+                "group_name": f.group_name,
+                "key": f.key,
+                "value": f.value,
+                "position": f.position,
+                "link": f.link,
+                "field_note": f.field_note,
+                "field_date": f.field_date.isoformat() if f.field_date else None,
+                "price": f.price,
+            }
+            for f in note_fields
         ]
 
     return response

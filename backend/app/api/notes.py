@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, and_
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Note, Tag, NoteTag, Attachment, Event, Category, Task
+from app.models.database import Note, Tag, NoteTag, Attachment, Event, Category, Task, NoteField
 from app.schemas.note import NoteCreate, NoteUpdate, NoteResponse, NoteListResponse
 from app.security.dependencies import get_current_user
 from app.models.database import User
@@ -134,15 +134,26 @@ async def list_notes(
         if created_before is not None:
             task_match_conds.append(Task.due_date <= created_before)
         task_in_range = select(Task.id).where(*task_match_conds).exists()
+        # Note has a field with field_date in the range (compare DATE to DATE via .date())
+        field_match_conds = [NoteField.note_id == Note.id, NoteField.field_date.isnot(None)]
+        if created_after is not None:
+            field_match_conds.append(NoteField.field_date >= created_after.date())
+        if created_before is not None:
+            field_match_conds.append(NoteField.field_date <= created_before.date())
+        field_in_range = select(NoteField.id).where(*field_match_conds).exists()
         # Note has no events and no tasks with due_date in range (fall back to creation date)
         note_has_no_events = ~select(Event.id).where(Event.note_id == Note.id).exists()
         note_has_no_due_tasks = ~select(Task.id).where(
             Task.note_id == Note.id, Task.due_date.isnot(None), Task.is_archived == False
         ).exists()
+        note_has_no_field_dates = ~select(NoteField.id).where(
+            NoteField.note_id == Note.id, NoteField.field_date.isnot(None)
+        ).exists()
         date_filter_parts: list = [
             event_in_range,
             task_in_range,
-            and_(note_has_no_events, note_has_no_due_tasks, *note_date_conds),
+            field_in_range,
+            and_(note_has_no_events, note_has_no_due_tasks, note_has_no_field_dates, *note_date_conds),
         ]
         if recurring_note_ids:
             date_filter_parts.append(Note.id.in_(recurring_note_ids))

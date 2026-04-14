@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { MatchingAttachment, MatchingBookmark, Note } from '@/lib/types';
+import { MatchingAttachment, MatchingBookmark, MatchingField, Note } from '@/lib/types';
 import { formatRelative, stripMarkdown, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
 import { ArchiveIcon, EyeIcon, FolderIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
@@ -27,8 +27,10 @@ interface NoteCardProps {
   categoryName?: string;
   matchInAttachment?: boolean;
   matchInBookmark?: boolean;
+  matchInFields?: boolean;
   matchingAttachments?: MatchingAttachment[];
   matchingBookmarks?: MatchingBookmark[];
+  matchingFields?: MatchingField[];
   onPreviewAttachment?: (noteId: number, attachment: MatchingAttachment) => void;
 }
 
@@ -50,7 +52,7 @@ function GlobeIcon() {
   );
 }
 
-export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchingAttachments, matchingBookmarks, onPreviewAttachment }: NoteCardProps) {
+export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchInFields, matchingAttachments, matchingBookmarks, matchingFields, onPreviewAttachment }: NoteCardProps) {
   const locale = useLocale();
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
@@ -118,7 +120,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
               <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
             </div>
 
-            {(matchInAttachment || matchInBookmark) && (
+            {(matchInAttachment || matchInBookmark || matchInFields) && (
               <div className="mt-2 flex flex-col gap-1.5">
                 {matchInAttachment && (
                   <div className="flex items-start gap-1.5 flex-wrap">
@@ -169,6 +171,33 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                     ) : (
                       <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
                         {tSearch('foundInBookmark')}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {matchInFields && (
+                  <div className="flex items-start gap-1.5 flex-wrap">
+                    <svg className="h-3.5 w-3.5 shrink-0 text-indigo-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {matchingFields && matchingFields.length > 0 ? (
+                      <span className="flex flex-wrap gap-1">
+                        {matchingFields.map((fld) => (
+                          <span
+                            key={fld.id}
+                            className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded text-xs"
+                            title={`${fld.group_name} › ${fld.key}`}
+                          >
+                            <span className="font-medium">{fld.key}</span>
+                            {fld.value && <span className="text-indigo-400 dark:text-indigo-500 mx-0.5">→</span>}
+                            {fld.value && <span className="font-mono">{fld.value}</span>}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded text-xs">
+                        {tSearch('foundInFields')}
                       </span>
                     )}
                   </div>

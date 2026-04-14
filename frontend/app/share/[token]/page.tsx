@@ -72,6 +72,19 @@ interface ShareSections {
   bookmarks: boolean;
   secrets: boolean;
   events: boolean;
+  fields: boolean;
+}
+
+interface SharedField {
+  id: number;
+  group_name: string;
+  key: string;
+  value: string;
+  position: number;
+  link?: string | null;
+  field_note?: string | null;
+  field_date?: string | null;
+  price?: string | null;
 }
 
 interface SharedNote {
@@ -87,6 +100,7 @@ interface SharedNote {
   bookmarks?: SharedBookmark[];
   secrets?: SharedSecret[];
   events?: SharedEvent[];
+  fields?: SharedField[];
   visibility?: string;
 }
 
@@ -696,6 +710,60 @@ export default function SharePage({ params }: { params: { token: string } }) {
                 </ul>
               </div>
             )}
+
+            {/* Technical Fields section */}
+            {note.share_sections.fields && note.fields && note.fields.length > 0 && (() => {
+              // Group fields by group_name
+              const grouped = new Map<string, SharedField[]>();
+              for (const f of note.fields) {
+                if (!grouped.has(f.group_name)) grouped.set(f.group_name, []);
+                grouped.get(f.group_name)!.push(f);
+              }
+              return (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                  <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Technical Fields
+                  </h2>
+                  <div className="space-y-4">
+                    {Array.from(grouped.entries()).map(([groupName, gFields]) => (
+                      <div key={groupName} className="border border-gray-100 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <div className="bg-gray-50 dark:bg-gray-800/60 px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{groupName}</p>
+                        </div>
+                        <table className="w-full text-xs">
+                          <tbody>
+                            {gFields.map((f) => (
+                              <tr key={f.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0">
+                                <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300 w-2/5 align-top">{f.key}</td>
+                                <td className="px-2 py-2 text-gray-400 w-4 align-top">→</td>
+                                <td className="px-3 py-2 align-top">
+                                  <span className="font-mono text-gray-600 dark:text-gray-400">{f.value}</span>
+                                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                                    {f.link && (
+                                      <a href={f.link} target="_blank" rel="noopener noreferrer"
+                                        className="flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 hover:underline truncate max-w-[200px]">
+                                        🔗 {f.link.replace(/^https?:\/\//, '').split('/')[0]}
+                                      </a>
+                                    )}
+                                    {f.price && <span className="text-green-700 dark:text-green-400">💰 {f.price}</span>}
+                                    {f.field_date && <span className="text-indigo-600 dark:text-indigo-400 font-medium">📅 {f.field_date}</span>}
+                                    {f.field_note && <span className="text-gray-500 dark:text-gray-400 italic">📝 {f.field_note}</span>}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>

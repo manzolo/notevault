@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAllEvents } from '@/hooks/useEvents';
 import { useAllTasks } from '@/hooks/useTasks';
-import { CalendarEventWithNote, TaskWithNote } from '@/lib/types';
+import { useFieldDates } from '@/hooks/useFieldDates';
+import { CalendarEventWithNote, FieldDateEntry, TaskWithNote } from '@/lib/types';
 
 interface MiniCalendarProps {
   selectedDate: string | null; // YYYY-MM-DD or null
@@ -32,6 +33,7 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
   const t = useTranslations('calendar');
   const tEvents = useTranslations('events');
   const tTasks = useTranslations('tasks');
+  const tFields = useTranslations('fields');
 
   const today = new Date();
   const [current, setCurrent] = useState(
@@ -48,9 +50,11 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
 
   const { events, fetchEvents } = useAllEvents(monthStr);
   const { tasks: allTasks, fetchAllTasks } = useAllTasks();
+  const { fieldDates, fetchFieldDates } = useFieldDates(monthStr);
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
   useEffect(() => { fetchAllTasks(); }, [fetchAllTasks]);
+  useEffect(() => { fetchFieldDates(); }, [fetchFieldDates]);
 
   const tasks = allTasks.filter((task: TaskWithNote) => {
     if (!task.due_date) return false;
@@ -84,7 +88,16 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
     });
   };
 
-  const dayTooltip = (dayEvents: CalendarEventWithNote[], dayTasks: TaskWithNote[]): string => {
+  const fieldDatesOnDay = (day: number): FieldDateEntry[] => {
+    return fieldDates.filter((f: FieldDateEntry) => {
+      if (!f.field_date) return false;
+      // Parse as local date to avoid UTC offset shifting the day
+      const [y, m, d] = f.field_date.split('-').map(Number);
+      return y === year && m === month + 1 && d === day;
+    });
+  };
+
+  const dayTooltip = (dayEvents: CalendarEventWithNote[], dayTasks: TaskWithNote[], dayFieldDates: FieldDateEntry[]): string => {
     const lines: string[] = [];
     for (const e of dayEvents) {
       lines.push(`📅 ${e.title}`);
@@ -94,6 +107,10 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
     for (const task of dayTasks) {
       lines.push(`☐ ${task.title}`);
       if (task.note_title) lines.push(`   📝 ${task.note_title}`);
+    }
+    for (const fd of dayFieldDates) {
+      lines.push(`🔧 ${fd.key}${fd.value ? ': ' + fd.value : ''}`);
+      lines.push(`   📝 ${fd.note_title}`);
     }
     return lines.join('\n');
   };
@@ -236,11 +253,13 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
                 }
                 const dayEvents = eventsOnDay(day);
                 const dayTasks = tasksOnDay(day);
+                const dayFdates = fieldDatesOnDay(day);
                 const hasEvent = dayEvents.length > 0;
                 const hasTask = dayTasks.length > 0;
+                const hasFieldDate = dayFdates.length > 0;
                 const today_ = isToday(day);
                 const selected = isSelected(day);
-                const tooltip = (hasEvent || hasTask) ? dayTooltip(dayEvents, dayTasks) : undefined;
+                const tooltip = (hasEvent || hasTask || hasFieldDate) ? dayTooltip(dayEvents, dayTasks, dayFdates) : undefined;
 
                 return (
                   <button
@@ -256,21 +275,16 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
                     }`}
                   >
                     <span className="text-[11px] leading-none font-medium">{day}</span>
-                    {(hasEvent || hasTask) && (
+                    {(hasEvent || hasTask || hasFieldDate) && (
                       <div className="flex gap-0.5 mt-0.5">
                         {hasEvent && (
-                          <span
-                            className={`w-1 h-1 rounded-full ${
-                              selected ? 'bg-white' : 'bg-indigo-400 dark:bg-indigo-500'
-                            }`}
-                          />
+                          <span className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-indigo-400 dark:bg-indigo-500'}`} />
                         )}
                         {hasTask && (
-                          <span
-                            className={`w-1 h-1 rounded-full ${
-                              selected ? 'bg-white' : 'bg-amber-400 dark:bg-amber-500'
-                            }`}
-                          />
+                          <span className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-amber-400 dark:bg-amber-500'}`} />
+                        )}
+                        {hasFieldDate && (
+                          <span className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-emerald-500 dark:bg-emerald-400'}`} />
                         )}
                       </div>
                     )}
@@ -281,8 +295,8 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
           </div>
 
           {/* Legend */}
-          {(events.length > 0 || tasks.length > 0) && (
-            <div className="flex items-center gap-3 mt-2 px-0.5">
+          {(events.length > 0 || tasks.length > 0 || fieldDates.length > 0) && (
+            <div className="flex items-center gap-3 mt-2 px-0.5 flex-wrap">
               {events.length > 0 && (
                 <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 inline-block" />
@@ -293,6 +307,12 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
                 <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500 inline-block" />
                   {tTasks('tasks')}
+                </span>
+              )}
+              {fieldDates.length > 0 && (
+                <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 inline-block" />
+                  {tFields('fieldDates')}
                 </span>
               )}
             </div>

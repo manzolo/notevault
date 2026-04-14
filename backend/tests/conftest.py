@@ -75,6 +75,26 @@ BEFORE INSERT OR UPDATE ON bookmarks
 FOR EACH ROW EXECUTE FUNCTION bookmarks_fts_trigger_func()
 """
 
+_NOTE_FIELDS_FTS_FUNCTION = """
+CREATE OR REPLACE FUNCTION note_fields_fts_trigger_func()
+RETURNS trigger AS $$
+BEGIN
+    NEW.fts_vector :=
+        setweight(to_tsvector('simple', coalesce(NEW.group_name, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(NEW.key, '')), 'B') ||
+        setweight(to_tsvector('simple', coalesce(NEW.value, '')), 'C') ||
+        setweight(to_tsvector('simple', coalesce(NEW.field_note, '')), 'D');
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql
+"""
+
+_NOTE_FIELDS_FTS_TRIGGER = """
+CREATE OR REPLACE TRIGGER note_fields_fts_update
+BEFORE INSERT OR UPDATE ON note_fields
+FOR EACH ROW EXECUTE FUNCTION note_fields_fts_trigger_func()
+"""
+
 
 @pytest_asyncio.fixture(scope="session")
 async def engine():
@@ -91,6 +111,8 @@ async def engine():
         await conn.execute(text(_ATTACHMENT_FTS_TRIGGER))
         await conn.execute(text(_BOOKMARK_FTS_FUNCTION))
         await conn.execute(text(_BOOKMARK_FTS_TRIGGER))
+        await conn.execute(text(_NOTE_FIELDS_FTS_FUNCTION))
+        await conn.execute(text(_NOTE_FIELDS_FTS_TRIGGER))
     yield eng
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

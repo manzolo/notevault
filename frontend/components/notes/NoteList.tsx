@@ -3,13 +3,14 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Category, MatchingAttachment, MatchingBookmark, Note } from '@/lib/types';
+import { Category, MatchingAttachment, MatchingBookmark, MatchingField, Note } from '@/lib/types';
 import NoteCard from './NoteCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface MatchInfo {
   attachment: boolean;
   bookmark: boolean;
+  fields: boolean;
 }
 
 interface NoteListProps {
@@ -23,6 +24,7 @@ interface NoteListProps {
   matchMap?: Map<number, MatchInfo>;
   matchingAttachmentsMap?: Map<number, MatchingAttachment[]>;
   matchingBookmarksMap?: Map<number, MatchingBookmark[]>;
+  matchingFieldsMap?: Map<number, MatchingField[]>;
   onPreviewAttachment?: (noteId: number, attachment: MatchingAttachment) => void;
 }
 
@@ -35,7 +37,7 @@ function findCategoryName(cats: Category[], id: number): string | undefined {
   return undefined;
 }
 
-export default function NoteList({ notes, loading, onDelete, onPin, onArchive, categories, filterActive, matchMap, matchingAttachmentsMap, matchingBookmarksMap, onPreviewAttachment }: NoteListProps) {
+export default function NoteList({ notes, loading, onDelete, onPin, onArchive, categories, filterActive, matchMap, matchingAttachmentsMap, matchingBookmarksMap, matchingFieldsMap, onPreviewAttachment }: NoteListProps) {
   const t = useTranslations('notes');
 
   if (loading) return <LoadingSpinner className="py-12" />;
@@ -64,8 +66,10 @@ export default function NoteList({ notes, loading, onDelete, onPin, onArchive, c
             categoryName={categoryName}
             matchInAttachment={match?.attachment ?? false}
             matchInBookmark={match?.bookmark ?? false}
+            matchInFields={match?.fields ?? false}
             matchingAttachments={matchingAttachmentsMap?.get(note.id)}
             matchingBookmarks={matchingBookmarksMap?.get(note.id)}
+            matchingFields={matchingFieldsMap?.get(note.id)}
             onPreviewAttachment={onPreviewAttachment}
           />
         );

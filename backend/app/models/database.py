@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import (
-    Column, Integer, String, Text, Boolean, DateTime, ForeignKey,
+    Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey,
     UniqueConstraint, Index, Enum as SAEnum, JSON
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR, BYTEA
@@ -76,6 +76,27 @@ class Note(Base):
     tasks = relationship("Task", back_populates="note", cascade="all, delete-orphan")
     share_tokens = relationship("ShareToken", back_populates="note", cascade="all, delete-orphan")
     events = relationship("Event", back_populates="note", cascade="all, delete-orphan")
+    fields = relationship("NoteField", back_populates="note", cascade="all, delete-orphan", order_by="NoteField.position")
+
+
+class NoteField(Base):
+    __tablename__ = "note_fields"
+
+    id = Column(Integer, primary_key=True, index=True)
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
+    group_name = Column(String(200), nullable=False, default='')
+    key = Column(String(500), nullable=False)
+    value = Column(Text, nullable=False, default='')
+    position = Column(Integer, nullable=False, default=0)
+    link = Column(Text, nullable=True)
+    field_note = Column(Text, nullable=True)
+    field_date = Column(Date, nullable=True)
+    price = Column(Text, nullable=True)
+    fts_vector = Column(TSVECTOR)  # populated by DB trigger only
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    note = relationship("Note", back_populates="fields")
 
 
 class Tag(Base):

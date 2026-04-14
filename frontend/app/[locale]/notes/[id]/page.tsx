@@ -16,6 +16,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { Attachment, Bookmark, CalendarEvent, Note } from '@/lib/types';
 import { buildVirtualBookmarks } from '@/lib/virtualBookmarks';
 import NoteEditor from '@/components/notes/NoteEditor';
+import NoteFieldsPanel from '@/components/notes/NoteFieldsPanel';
 import SecretList from '@/components/secrets/SecretList';
 import SecretForm from '@/components/secrets/SecretForm';
 import AttachmentGroupedList from '@/components/attachments/AttachmentGroupedList';
@@ -1023,6 +1024,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           addLabel={`+ ${tBookmarks('add')}`}
         />
       )}
+
+      {/* Technical Fields Panel */}
+      <NoteFieldsPanel noteId={noteId} />
 
       {/* Tasks Section */}
       {tasksLoading || tasks.length > 0 || forceTasksExpanded ? (

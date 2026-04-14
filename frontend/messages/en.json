@@ -246,7 +246,8 @@
     "results": "Search Results ({count})",
     "noResults": "No notes found for your search.",
     "foundInAttachment": "Found in attachment",
-    "foundInBookmark": "Found in bookmark"
+    "foundInBookmark": "Found in bookmark",
+    "foundInFields": "Found in technical fields"
   },
   "folders": {
     "allNotes": "Unfiled",
@@ -279,6 +280,7 @@
     "sectionBookmarks": "Bookmarks",
     "sectionSecrets": "Secrets",
     "sectionEvents": "Events",
+    "sectionFields": "Technical Fields",
     "secretsWarning": "Warning: secrets will be visible to anyone with this link.",
     "visibilityLabel": "Who can view",
     "visibilityPublic": "Anyone",
@@ -374,5 +376,24 @@
     "archiveConfirm": "Archive this item?",
     "restoreConfirm": "Restore this item?",
     "deleteConfirm": "Delete this item permanently?"
+  },
+  "fields": {
+    "panelTitle": "Technical Fields",
+    "addGroup": "Add group",
+    "addField": "Add field",
+    "groupNamePlaceholder": "Group name",
+    "keyPlaceholder": "Field name",
+    "valuePlaceholder": "Value",
+    "linkPlaceholder": "Add link…",
+    "pricePlaceholder": "Price",
+    "datePlaceholder": "Date",
+    "notePlaceholder": "Note…",
+    "deleteGroupConfirm": "Delete this group and all its fields?",
+    "deleteFieldConfirm": "Delete this field?",
+    "emptyState": "No groups yet. Click \"Add group\" to start.",
+    "searchBadge": "Found in fields",
+    "fieldDates": "Reminders",
+    "collapse": "Collapse",
+    "expand": "Expand"
   }
 }

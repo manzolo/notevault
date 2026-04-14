@@ -17,6 +17,7 @@ interface Sections {
   bookmarks: boolean;
   secrets: boolean;
   events: boolean;
+  fields: boolean;
 }
 
 interface UserResult {
@@ -32,6 +33,7 @@ const DEFAULT_SECTIONS: Sections = {
   bookmarks: false,
   secrets: false,
   events: false,
+  fields: false,
 };
 
 type Visibility = 'public' | 'users' | 'specific';
@@ -185,6 +187,7 @@ export default function ShareModal({ noteId, onClose }: ShareModalProps) {
     { key: 'bookmarks', label: t('sectionBookmarks') },
     { key: 'secrets', label: t('sectionSecrets') },
     { key: 'events', label: t('sectionEvents') },
+    { key: 'fields', label: t('sectionFields') },
   ];
 
   return (

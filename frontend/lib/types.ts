@@ -205,11 +205,75 @@ export interface MatchingBookmark {
   description?: string | null;
 }
 
+export interface MatchingField {
+  id: number;
+  note_id: number;
+  group_name: string;
+  key: string;
+  value: string;
+}
+
+export interface NoteField {
+  id: number;
+  note_id: number;
+  group_name: string;
+  key: string;
+  value: string;
+  position: number;
+  link?: string | null;
+  field_note?: string | null;
+  field_date?: string | null;  // YYYY-MM-DD
+  price?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteFieldCreate {
+  group_name?: string;
+  key: string;
+  value?: string;
+  position?: number;
+  link?: string | null;
+  field_note?: string | null;
+  field_date?: string | null;
+  price?: string | null;
+}
+
+export interface NoteFieldUpdate {
+  group_name?: string;
+  key?: string;
+  value?: string;
+  position?: number;
+  link?: string | null;
+  field_note?: string | null;
+  field_date?: string | null;
+  price?: string | null;
+}
+
+export interface FieldDateEntry {
+  id: number;
+  note_id: number;
+  note_title: string;
+  group_name: string;
+  key: string;
+  value: string;
+  field_date: string;  // YYYY-MM-DD
+  link?: string | null;
+  price?: string | null;
+}
+
+export interface NoteFieldGroup {
+  group_name: string;
+  fields: NoteField[];
+}
+
 export interface SearchNote extends Note {
   match_in_attachment?: boolean;
   match_in_bookmark?: boolean;
+  match_in_fields?: boolean;
   matching_attachments?: MatchingAttachment[];
   matching_bookmarks?: MatchingBookmark[];
+  matching_fields?: MatchingField[];
 }
 
 export interface SearchResponse {

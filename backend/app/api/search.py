@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import or_, exists, select, func
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Attachment, Bookmark, Note, NoteTag, User
-from app.schemas.search import MatchingAttachment, MatchingBookmark, SearchResponse, SearchNoteResponse
+from app.models.database import Attachment, Bookmark, Note, NoteField, NoteTag, User
+from app.schemas.search import MatchingAttachment, MatchingBookmark, MatchingField, SearchResponse, SearchNoteResponse
 from app.security.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/search", tags=["search"])
@@ -57,6 +57,17 @@ async def search_notes(
         .label("match_in_bookmark")
     )
 
+    # Correlated subquery: True if the note has matching fields
+    fields_match = (
+        exists()
+        .where(
+            NoteField.note_id == Note.id,
+            NoteField.fts_vector.op("@@")(tsquery),
+        )
+        .correlate(Note)
+        .label("match_in_fields")
+    )
+
     base_where = [
         Note.user_id == current_user.id,
         or_(
@@ -68,6 +79,10 @@ async def search_notes(
             exists().where(
                 Bookmark.note_id == Note.id,
                 Bookmark.fts_vector.op("@@")(tsquery),
+            ),
+            exists().where(
+                NoteField.note_id == Note.id,
+                NoteField.fts_vector.op("@@")(tsquery),
             ),
         ),
     ]
@@ -84,9 +99,9 @@ async def search_notes(
 
     pages = max(1, -(-total // per_page))  # ceiling division
 
-    # Main query with attachment_match and bookmark_match columns
+    # Main query with attachment_match, bookmark_match and fields_match columns
     query = (
-        select(Note, attachment_match, bookmark_match)
+        select(Note, attachment_match, bookmark_match, fields_match)
         .options(selectinload(Note.tags))
         .where(*base_where)
         .order_by(func.ts_rank(Note.fts_vector, tsquery).desc())
@@ -102,7 +117,7 @@ async def search_notes(
 
     # Batch-fetch matching attachments for notes that have a match
     matching_att_map: dict = defaultdict(list)
-    att_note_ids = [note.id for note, ma, mb in rows if ma]
+    att_note_ids = [note.id for note, ma, mb, mf in rows if ma]
     if att_note_ids:
         att_q = select(
             Attachment.id, Attachment.note_id, Attachment.filename, Attachment.mime_type
@@ -117,7 +132,7 @@ async def search_notes(
 
     # Batch-fetch matching bookmarks for notes that have a match
     matching_bm_map: dict = defaultdict(list)
-    bm_note_ids = [note.id for note, ma, mb in rows if mb]
+    bm_note_ids = [note.id for note, ma, mb, mf in rows if mb]
     if bm_note_ids:
         bm_q = select(
             Bookmark.id, Bookmark.note_id, Bookmark.url, Bookmark.title, Bookmark.description
@@ -130,13 +145,30 @@ async def search_notes(
                 MatchingBookmark(id=bm_id, note_id=bm_note_id, url=bm_url, title=bm_title, description=bm_desc)
             )
 
+    # Batch-fetch matching fields for notes that have a match
+    matching_fields_map: dict = defaultdict(list)
+    fields_note_ids = [note.id for note, ma, mb, mf in rows if mf]
+    if fields_note_ids:
+        fld_q = select(
+            NoteField.id, NoteField.note_id, NoteField.group_name, NoteField.key, NoteField.value
+        ).where(
+            NoteField.note_id.in_(fields_note_ids),
+            NoteField.fts_vector.op("@@")(tsquery),
+        )
+        for fld_id, fld_note_id, fld_group, fld_key, fld_value in (await db.execute(fld_q)).all():
+            matching_fields_map[fld_note_id].append(
+                MatchingField(id=fld_id, note_id=fld_note_id, group_name=fld_group, key=fld_key, value=fld_value)
+            )
+
     items = []
-    for note, match_attachment, match_bookmark in rows:
+    for note, match_attachment, match_bookmark, match_fields in rows:
         item = SearchNoteResponse.model_validate(note)
         item.match_in_attachment = bool(match_attachment)
         item.match_in_bookmark = bool(match_bookmark)
+        item.match_in_fields = bool(match_fields)
         item.matching_attachments = matching_att_map.get(note.id, [])
         item.matching_bookmarks = matching_bm_map.get(note.id, [])
+        item.matching_fields = matching_fields_map.get(note.id, [])
         items.append(item)
 
     return SearchResponse(items=items, total=total, query=q, page=page, per_page=per_page, pages=pages)
