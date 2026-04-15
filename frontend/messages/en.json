@@ -247,7 +247,8 @@
     "noResults": "No notes found for your search.",
     "foundInAttachment": "Found in attachment",
     "foundInBookmark": "Found in bookmark",
-    "foundInFields": "Found in technical fields"
+    "foundInFields": "Found in technical fields",
+    "foundInEvent": "Found in event"
   },
   "folders": {
     "allNotes": "Unfiled",

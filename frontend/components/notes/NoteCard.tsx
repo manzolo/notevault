@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { MatchingAttachment, MatchingBookmark, MatchingField, Note } from '@/lib/types';
+import { MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, Note } from '@/lib/types';
 import { formatRelative, stripMarkdown, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
 import { ArchiveIcon, EyeIcon, FolderIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
@@ -28,9 +28,11 @@ interface NoteCardProps {
   matchInAttachment?: boolean;
   matchInBookmark?: boolean;
   matchInFields?: boolean;
+  matchInEvent?: boolean;
   matchingAttachments?: MatchingAttachment[];
   matchingBookmarks?: MatchingBookmark[];
   matchingFields?: MatchingField[];
+  matchingEvents?: MatchingEvent[];
   onPreviewAttachment?: (noteId: number, attachment: MatchingAttachment) => void;
 }
 
@@ -52,7 +54,7 @@ function GlobeIcon() {
   );
 }
 
-export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchInFields, matchingAttachments, matchingBookmarks, matchingFields, onPreviewAttachment }: NoteCardProps) {
+export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchInFields, matchInEvent, matchingAttachments, matchingBookmarks, matchingFields, matchingEvents, onPreviewAttachment }: NoteCardProps) {
   const locale = useLocale();
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
@@ -120,7 +122,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
               <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
             </div>
 
-            {(matchInAttachment || matchInBookmark || matchInFields) && (
+            {(matchInAttachment || matchInBookmark || matchInFields || matchInEvent) && (
               <div className="mt-2 flex flex-col gap-1.5">
                 {matchInAttachment && (
                   <div className="flex items-start gap-1.5 flex-wrap">
@@ -198,6 +200,33 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                     ) : (
                       <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded text-xs">
                         {tSearch('foundInFields')}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {matchInEvent && (
+                  <div className="flex items-start gap-1.5 flex-wrap">
+                    <svg className="h-3.5 w-3.5 shrink-0 text-violet-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {matchingEvents && matchingEvents.length > 0 ? (
+                      <span className="flex flex-wrap gap-1">
+                        {matchingEvents.map((ev) => (
+                          <span
+                            key={ev.id}
+                            className="bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 px-1.5 py-0.5 rounded text-xs"
+                            title={new Date(ev.start_datetime).toLocaleString()}
+                          >
+                            <span className="font-medium">{ev.title}</span>
+                            <span className="ml-1 text-violet-400 dark:text-violet-500 font-normal">
+                              {new Date(ev.start_datetime).toLocaleDateString()}
+                            </span>
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded text-xs">
+                        {tSearch('foundInEvent')}
                       </span>
                     )}
                   </div>

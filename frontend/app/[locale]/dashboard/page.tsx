@@ -199,7 +199,12 @@ export default function DashboardPage() {
     ? new Map(
         searchResults.items.map((item) => [
           item.id,
-          { attachment: item.match_in_attachment ?? false, bookmark: item.match_in_bookmark ?? false, fields: item.match_in_fields ?? false },
+          {
+            attachment: item.match_in_attachment ?? false,
+            bookmark: item.match_in_bookmark ?? false,
+            fields: item.match_in_fields ?? false,
+            event: item.match_in_event ?? false,
+          },
         ])
       )
     : undefined;
@@ -214,6 +219,10 @@ export default function DashboardPage() {
 
   const matchingFieldsMap = searchResults
     ? new Map(searchResults.items.map((item) => [item.id, item.matching_fields ?? []]))
+    : undefined;
+
+  const matchingEventsMap = searchResults
+    ? new Map(searchResults.items.map((item) => [item.id, item.matching_events ?? []]))
     : undefined;
 
   const folderTreeProps = {
@@ -389,6 +398,7 @@ export default function DashboardPage() {
             matchingAttachmentsMap={matchingAttachmentsMap}
             matchingBookmarksMap={matchingBookmarksMap}
             matchingFieldsMap={matchingFieldsMap}
+            matchingEventsMap={matchingEventsMap}
             onPreviewAttachment={handlePreviewAttachment}
           />
         </div>

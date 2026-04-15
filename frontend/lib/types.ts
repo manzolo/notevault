@@ -213,6 +213,14 @@ export interface MatchingField {
   value: string;
 }
 
+export interface MatchingEvent {
+  id: number;
+  note_id: number;
+  title: string;
+  description?: string | null;
+  start_datetime: string;
+}
+
 export interface NoteField {
   id: number;
   note_id: number;
@@ -274,9 +282,11 @@ export interface SearchNote extends Note {
   match_in_attachment?: boolean;
   match_in_bookmark?: boolean;
   match_in_fields?: boolean;
+  match_in_event?: boolean;
   matching_attachments?: MatchingAttachment[];
   matching_bookmarks?: MatchingBookmark[];
   matching_fields?: MatchingField[];
+  matching_events?: MatchingEvent[];
 }
 
 export interface SearchResponse {

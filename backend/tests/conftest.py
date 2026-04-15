@@ -95,6 +95,24 @@ BEFORE INSERT OR UPDATE ON note_fields
 FOR EACH ROW EXECUTE FUNCTION note_fields_fts_trigger_func()
 """
 
+_EVENT_FTS_FUNCTION = """
+CREATE OR REPLACE FUNCTION events_fts_trigger_func()
+RETURNS trigger AS $$
+BEGIN
+    NEW.fts_vector :=
+        setweight(to_tsvector('simple', coalesce(NEW.title, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(NEW.description, '')), 'B');
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql
+"""
+
+_EVENT_FTS_TRIGGER = """
+CREATE OR REPLACE TRIGGER events_fts_update
+BEFORE INSERT OR UPDATE ON events
+FOR EACH ROW EXECUTE FUNCTION events_fts_trigger_func()
+"""
+
 
 @pytest_asyncio.fixture(scope="session")
 async def engine():
@@ -113,6 +131,8 @@ async def engine():
         await conn.execute(text(_BOOKMARK_FTS_TRIGGER))
         await conn.execute(text(_NOTE_FIELDS_FTS_FUNCTION))
         await conn.execute(text(_NOTE_FIELDS_FTS_TRIGGER))
+        await conn.execute(text(_EVENT_FTS_FUNCTION))
+        await conn.execute(text(_EVENT_FTS_TRIGGER))
     yield eng
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

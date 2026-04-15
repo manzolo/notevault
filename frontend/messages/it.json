@@ -247,7 +247,8 @@
     "noResults": "Nessuna nota trovata per la tua ricerca.",
     "foundInAttachment": "Trovato nell'allegato",
     "foundInBookmark": "Trovato nel segnalibro",
-    "foundInFields": "Trovato nei campi tecnici"
+    "foundInFields": "Trovato nei campi tecnici",
+    "foundInEvent": "Trovato negli eventi"
   },
   "folders": {
     "allNotes": "Senza cartella",

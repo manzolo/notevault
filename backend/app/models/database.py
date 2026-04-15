@@ -273,6 +273,7 @@ class Event(Base):
     recurrence_rule = Column(Text, nullable=True)
     is_archived = Column(Boolean, default=False, nullable=False)
     archive_note = Column(Text, nullable=True)
+    fts_vector = Column(TSVECTOR)  # populated by DB trigger only
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
