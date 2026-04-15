@@ -217,31 +217,29 @@ function TreeNode({
                 {category.note_count}
               </span>
             )}
-            {!isDragging && (
-              <div className="hidden group-hover:flex items-center gap-0 shrink-0 pr-0.5">
-                <button
-                  className="p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors"
-                  onClick={(e) => { e.stopPropagation(); onStartCreate(category.id); if (!isExpanded) onToggleExpand(category.id); }}
-                  title="Add subfolder"
-                >
-                  <PlusIcon className="w-3 h-3" />
-                </button>
-                <button
-                  className="p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors"
-                  onClick={(e) => { e.stopPropagation(); onStartRename(category); }}
-                  title="Rename"
-                >
-                  <PencilIcon className="w-3 h-3" />
-                </button>
-                <button
-                  className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
-                  onClick={(e) => { e.stopPropagation(); onDelete(category); }}
-                  title="Delete"
-                >
-                  <TrashIcon className="w-3 h-3" />
-                </button>
-              </div>
-            )}
+            <div className="hidden group-hover:flex items-center gap-0 shrink-0 pr-0.5">
+              <button
+                className="p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors"
+                onClick={(e) => { e.stopPropagation(); onStartCreate(category.id); if (!isExpanded) onToggleExpand(category.id); }}
+                title="Add subfolder"
+              >
+                <PlusIcon className="w-3 h-3" />
+              </button>
+              <button
+                className="p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors"
+                onClick={(e) => { e.stopPropagation(); onStartRename(category); }}
+                title="Rename"
+              >
+                <PencilIcon className="w-3 h-3" />
+              </button>
+              <button
+                className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors"
+                onClick={(e) => { e.stopPropagation(); onDelete(category); }}
+                title="Delete"
+              >
+                <TrashIcon className="w-3 h-3" />
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -602,7 +600,7 @@ export default function FolderTree({
       </div>
 
       {/* Add root folder button */}
-      {!creatingRoot && !isDragging && (
+      {!creatingRoot && (
         <button
           className="mt-1 flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 px-1 py-1 w-full rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
           onClick={() => { setCreatingRoot(true); setCreatingParentId(null); }}

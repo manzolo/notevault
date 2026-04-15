@@ -45,7 +45,6 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
   const [attachPreview, setAttachPreview] = useState<{ noteId: number; attachment: MatchingAttachment } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
 
   // Mobile sidebar accordion state
   const [mobileFoldersOpen, setMobileFoldersOpen] = useState(false);
@@ -235,7 +234,6 @@ export default function DashboardPage() {
     onUpdateCategory: updateCategory,
     onDeleteCategory: deleteCategory,
     onRefresh: fetchCategories,
-    isDragging,
     onDropNote: async (noteId: number, categoryId: number | null) => {
       await updateNote(noteId, { category_id: categoryId });
       const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
@@ -382,26 +380,21 @@ export default function DashboardPage() {
         )}
 
         {/* Note list */}
-        <div
-          onDragStart={() => setIsDragging(true)}
-          onDragEnd={() => setIsDragging(false)}
-        >
-          <NoteList
-            notes={displayNotes}
-            loading={displayLoading}
-            onDelete={handleDelete}
-            onPin={handlePin}
-            onArchive={handleArchive}
-            categories={categories}
-            filterActive={!searchResults}
-            matchMap={matchMap}
-            matchingAttachmentsMap={matchingAttachmentsMap}
-            matchingBookmarksMap={matchingBookmarksMap}
-            matchingFieldsMap={matchingFieldsMap}
-            matchingEventsMap={matchingEventsMap}
-            onPreviewAttachment={handlePreviewAttachment}
-          />
-        </div>
+        <NoteList
+          notes={displayNotes}
+          loading={displayLoading}
+          onDelete={handleDelete}
+          onPin={handlePin}
+          onArchive={handleArchive}
+          categories={categories}
+          filterActive={!searchResults}
+          matchMap={matchMap}
+          matchingAttachmentsMap={matchingAttachmentsMap}
+          matchingBookmarksMap={matchingBookmarksMap}
+          matchingFieldsMap={matchingFieldsMap}
+          matchingEventsMap={matchingEventsMap}
+          onPreviewAttachment={handlePreviewAttachment}
+        />
 
         {searchResults ? (
           <Pagination page={searchPage} pages={searchResults.pages} onPageChange={handleSearchPageChange} />
