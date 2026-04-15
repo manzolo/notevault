@@ -38,6 +38,7 @@ function buildRrule(
   endsType: EndsType,
   endsDate: string,
   endsCount: string,
+  interval: string,
 ): string | undefined {
   if (type === "none" || !startDate) return undefined;
 
@@ -66,6 +67,9 @@ function buildRrule(
       break;
   }
 
+  const intervalNum = parseInt(interval, 10);
+  if (!isNaN(intervalNum) && intervalNum > 1) rule += `;INTERVAL=${intervalNum}`;
+
   if (endsType === "on_date" && endsDate) {
     const until = endsDate.replace(/-/g, "") + "T235959Z";
     rule += `;UNTIL=${until}`;
@@ -83,8 +87,9 @@ function parseRrule(rrule?: string): {
   endsType: EndsType;
   endsDate: string;
   endsCount: string;
+  interval: string;
 } {
-  const empty = { type: "none" as RecurrenceType, weekdays: [], endsType: "never" as EndsType, endsDate: "", endsCount: "" };
+  const empty = { type: "none" as RecurrenceType, weekdays: [], endsType: "never" as EndsType, endsDate: "", endsCount: "", interval: "1" };
   if (!rrule) return empty;
 
   const params: Record<string, string> = {};
@@ -117,7 +122,9 @@ function parseRrule(rrule?: string): {
     endsCount = params["COUNT"];
   }
 
-  return { type, weekdays, endsType, endsDate, endsCount };
+  const interval = params["INTERVAL"] ?? "1";
+
+  return { type, weekdays, endsType, endsDate, endsCount, interval };
 }
 
 /** Human-readable label for monthly_weekday based on start date */
@@ -152,6 +159,7 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
   const [recEndsType, setRecEndsType] = useState<EndsType>(parsedRrule.endsType);
   const [recEndsDate, setRecEndsDate] = useState(parsedRrule.endsDate);
   const [recEndsCount, setRecEndsCount] = useState(parsedRrule.endsCount);
+  const [recInterval, setRecInterval] = useState(parsedRrule.interval);
 
   const toggleWeekday = (code: string) => {
     setRecWeekdays((prev) =>
@@ -172,7 +180,7 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
 
       if (endDate && !endTime) endT = "23:59";
 
-      const rrule = buildRrule(recType, startDate, recWeekdays, recEndsType, recEndsDate, recEndsCount);
+      const rrule = buildRrule(recType, startDate, recWeekdays, recEndsType, recEndsDate, recEndsCount, recInterval);
 
       const data: CalendarEventCreate = {
         title: title.trim(),
@@ -295,7 +303,7 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">{t("recurrence")}</label>
               <select
                 value={recType}
-                onChange={(e) => setRecType(e.target.value as RecurrenceType)}
+                onChange={(e) => { setRecType(e.target.value as RecurrenceType); setRecInterval("1"); }}
                 className={selectClass}
               >
                 <option value="none">{t("recurrenceNone")}</option>
@@ -306,6 +314,27 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
                 <option value="yearly">{t("recurrenceYearly")}</option>
               </select>
             </div>
+
+            {/* Interval */}
+            {recType !== "none" && (
+              <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <span className="shrink-0">{t("recurrenceEvery")}</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={recInterval}
+                  onChange={(e) => setRecInterval(e.target.value)}
+                  className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-xs w-16 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center"
+                />
+                <span className="shrink-0 text-gray-500 dark:text-gray-400">
+                  {recType === "daily" && t("recurrenceUnitDays")}
+                  {recType === "weekly" && t("recurrenceUnitWeeks")}
+                  {(recType === "monthly_day" || recType === "monthly_weekday") && t("recurrenceUnitMonths")}
+                  {recType === "yearly" && t("recurrenceUnitYears")}
+                </span>
+              </div>
+            )}
 
             {/* Weekly: day checkboxes */}
             {recType === "weekly" && (
@@ -340,7 +369,10 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
             {/* Yearly: computed label */}
             {recType === "yearly" && startDate && (
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                {t("recurrenceEveryYear")} <span className="font-medium">{new Date(startDate + "T00:00").toLocaleDateString(undefined, { month: "long", day: "numeric" })}</span>
+                {t("recurrenceEvery")}{" "}
+                {parseInt(recInterval, 10) > 1 && <span className="font-medium">{recInterval} </span>}
+                {t("recurrenceUnitYears")}{" "}{t("recurrenceIntervalOn")}{" "}
+                <span className="font-medium">{new Date(startDate + "T00:00").toLocaleDateString(undefined, { month: "long", day: "numeric" })}</span>
               </p>
             )}
 

@@ -30,6 +30,56 @@ function formatDatetime(iso: string): string {
   });
 }
 
+function formatDate(d: Date): string {
+  return d.toLocaleString(undefined, {
+    year: "numeric", month: "short", day: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+/** Compute the next occurrence of a recurring event that falls on or after now.
+ *  Returns null if the rule is exhausted (UNTIL passed or COUNT reached). */
+function nextOccurrence(rrule: string, startIso: string): Date | null {
+  const params: Record<string, string> = {};
+  rrule.split(";").forEach((part) => {
+    const idx = part.indexOf("=");
+    if (idx !== -1) params[part.slice(0, idx)] = part.slice(idx + 1);
+  });
+
+  const freq = params["FREQ"];
+  if (!freq) return null;
+
+  const interval = parseInt(params["INTERVAL"] ?? "1", 10);
+  const count = params["COUNT"] ? parseInt(params["COUNT"], 10) : null;
+  let until: Date | null = null;
+  if (params["UNTIL"]) {
+    const u = params["UNTIL"];
+    until = new Date(
+      parseInt(u.slice(0, 4)), parseInt(u.slice(4, 6)) - 1, parseInt(u.slice(6, 8)), 23, 59, 59
+    );
+  }
+
+  const now = new Date();
+  const candidate = new Date(startIso);
+  if (candidate >= now) return candidate;
+
+  let steps = 0;
+  while (candidate < now) {
+    steps++;
+    switch (freq) {
+      case "DAILY": candidate.setDate(candidate.getDate() + interval); break;
+      case "WEEKLY": candidate.setDate(candidate.getDate() + 7 * interval); break;
+      case "MONTHLY": candidate.setMonth(candidate.getMonth() + interval); break;
+      case "YEARLY": candidate.setFullYear(candidate.getFullYear() + interval); break;
+      default: return null;
+    }
+    if (count !== null && steps >= count) return null;
+    if (until && candidate > until) return null;
+  }
+
+  return candidate;
+}
+
 export default function EventPanel({ noteId, onCountChange, onEventsChange, onAdd }: Props) {
   const t = useTranslations("events");
   const tc = useTranslations("common");
@@ -61,8 +111,31 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
   }, []);
 
   const now = new Date();
-  const upcoming = events.filter((e) => new Date(e.start_datetime) >= now);
-  const past = events.filter((e) => new Date(e.start_datetime) < now);
+
+  // For recurring events compute next occurrence; exhausted rules stay in past.
+  const displayed = events.map((e) => {
+    if (e.recurrence_rule) {
+      const next = nextOccurrence(e.recurrence_rule, e.start_datetime);
+      if (next) {
+        const duration = e.end_datetime
+          ? new Date(e.end_datetime).getTime() - new Date(e.start_datetime).getTime()
+          : null;
+        return {
+          event: e,
+          displayStart: next,
+          displayEnd: duration !== null ? new Date(next.getTime() + duration) : null,
+        };
+      }
+    }
+    return {
+      event: e,
+      displayStart: new Date(e.start_datetime),
+      displayEnd: e.end_datetime ? new Date(e.end_datetime) : null,
+    };
+  });
+
+  const upcoming = displayed.filter(({ displayStart }) => displayStart >= now);
+  const past = displayed.filter(({ displayStart }) => displayStart < now);
 
   const handleDeleteEvent = async (ev: CalendarEvent) => {
     const ok = await confirm(t("deleteConfirm"));
@@ -139,7 +212,7 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
     }
   };
 
-  const renderEvent = (ev: CalendarEvent) => (
+  const renderEvent = (ev: CalendarEvent, displayStart?: Date, displayEnd?: Date | null) => (
     <div key={ev.id} className="border border-gray-200 dark:border-gray-700 border-l-2 border-l-violet-400/60 dark:border-l-violet-500/50 rounded-lg p-3 space-y-2 bg-gray-50/50 dark:bg-gray-700/20 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -152,8 +225,8 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
               )}
             </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {formatDatetime(ev.start_datetime)}
-            {ev.end_datetime && ` → ${formatDatetime(ev.end_datetime)}`}
+            {displayStart ? formatDate(displayStart) : formatDatetime(ev.start_datetime)}
+            {(displayEnd ?? (ev.end_datetime ? new Date(ev.end_datetime) : null)) && ` → ${formatDate(displayEnd ?? new Date(ev.end_datetime!))}`}
           </p>
           {ev.description && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{ev.description}</p>}
           {ev.url && (
@@ -244,14 +317,14 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
           {upcoming.length === 0 && past.length === 0 && (
             <p className="text-sm text-gray-500 dark:text-gray-400">{t("noEvents")}</p>
           )}
-          {upcoming.map(renderEvent)}
+          {upcoming.map(({ event, displayStart, displayEnd }) => renderEvent(event, displayStart, displayEnd))}
           {past.length > 0 && (
             <details className="mt-2">
               <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 select-none">
                 {t("pastEvents")} ({past.length})
               </summary>
               <div className="mt-2 space-y-2 opacity-70">
-                {past.map(renderEvent)}
+                {past.map(({ event, displayStart, displayEnd }) => renderEvent(event, displayStart, displayEnd))}
               </div>
             </details>
           )}

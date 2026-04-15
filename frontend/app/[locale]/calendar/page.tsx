@@ -121,6 +121,14 @@ export default function CalendarPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
         </div>
         <div className="flex items-center gap-2">
+          {(year !== today.getFullYear() || month !== today.getMonth()) && (
+            <button
+              onClick={() => setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1))}
+              className="text-xs px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors font-medium"
+            >
+              {t("today")}
+            </button>
+          )}
           <button
             onClick={prev}
             aria-label={t("prev")}
@@ -138,14 +146,6 @@ export default function CalendarPage() {
           >
             &#8250;
           </button>
-          {(year !== today.getFullYear() || month !== today.getMonth()) && (
-            <button
-              onClick={() => setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1))}
-              className="ml-1 text-xs px-2 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors font-medium"
-            >
-              {t("today")}
-            </button>
-          )}
         </div>
       </div>
 
