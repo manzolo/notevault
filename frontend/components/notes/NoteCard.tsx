@@ -87,7 +87,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
         draggable
         onDragStart={handleDragStart}
         onDragEnd={() => setDragging(false)}
-        className={`group bg-white dark:bg-gray-800 rounded-xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all border border-gray-200 dark:border-gray-700 p-4 cursor-grab active:cursor-grabbing select-none ${dragging ? 'opacity-40 scale-95' : ''}`}
+        className={`group bg-white dark:bg-gray-800 rounded-xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-shadow border border-gray-200 dark:border-gray-700 p-4 cursor-grab active:cursor-grabbing select-none ${dragging ? 'opacity-40' : ''}`}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
