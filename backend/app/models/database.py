@@ -92,6 +92,7 @@ class NoteField(Base):
     field_note = Column(Text, nullable=True)
     field_date = Column(Date, nullable=True)
     price = Column(Text, nullable=True)
+    field_image = Column(Text, nullable=True)
     fts_vector = Column(TSVECTOR)  # populated by DB trigger only
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

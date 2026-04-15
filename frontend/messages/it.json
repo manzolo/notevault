@@ -394,6 +394,12 @@
     "searchBadge": "Trovato nei campi",
     "fieldDates": "Promemoria",
     "collapse": "Comprimi",
-    "expand": "Espandi"
+    "expand": "Espandi",
+    "imagePasteHint": "Clicca per aggiungere un'immagine (funziona anche Ctrl+V)",
+    "imagePreview": "Anteprima immagine",
+    "imageDelete": "Rimuovi immagine",
+    "imagePasteAction": "Incolla dagli appunti",
+    "imageBrowseAction": "Sfoglia dal disco",
+    "imageAwaitingPaste": "Premi Ctrl+V per incollare — Esc per annullare"
   }
 }

@@ -13,6 +13,7 @@ class NoteFieldCreate(BaseModel):
     field_note: Optional[str] = None
     field_date: Optional[date] = None
     price: Optional[str] = None
+    field_image: Optional[str] = None
 
 
 class NoteFieldUpdate(BaseModel):
@@ -24,6 +25,7 @@ class NoteFieldUpdate(BaseModel):
     field_note: Optional[str] = None
     field_date: Optional[date] = None
     price: Optional[str] = None
+    field_image: Optional[str] = None
 
 
 class NoteFieldResponse(BaseModel):
@@ -37,6 +39,7 @@ class NoteFieldResponse(BaseModel):
     field_note: Optional[str] = None
     field_date: Optional[date] = None
     price: Optional[str] = None
+    field_image: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

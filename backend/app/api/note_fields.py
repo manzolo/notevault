@@ -72,7 +72,7 @@ async def update_field(
     field = result.scalar_one_or_none()
     if not field:
         raise HTTPException(status_code=404, detail="Field not found")
-    for k, v in data.model_dump(exclude_none=True).items():
+    for k, v in data.model_dump(exclude_unset=True).items():
         setattr(field, k, v)
     await db.commit()
     await db.refresh(field)

@@ -224,6 +224,7 @@ export interface NoteField {
   field_note?: string | null;
   field_date?: string | null;  // YYYY-MM-DD
   price?: string | null;
+  field_image?: string | null;  // base64 data URL
   created_at: string;
   updated_at: string;
 }
@@ -237,6 +238,7 @@ export interface NoteFieldCreate {
   field_note?: string | null;
   field_date?: string | null;
   price?: string | null;
+  field_image?: string | null;
 }
 
 export interface NoteFieldUpdate {
@@ -248,6 +250,7 @@ export interface NoteFieldUpdate {
   field_note?: string | null;
   field_date?: string | null;
   price?: string | null;
+  field_image?: string | null;
 }
 
 export interface FieldDateEntry {

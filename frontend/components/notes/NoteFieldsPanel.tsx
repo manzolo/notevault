@@ -7,6 +7,243 @@ import { useNoteFields } from '@/hooks/useNoteFields';
 import { useConfirm } from '@/hooks/useConfirm';
 import { NoteField } from '@/lib/types';
 
+// ---------------------------------------------------------------------------
+// Image field cell — paste zone + thumbnail preview
+// ---------------------------------------------------------------------------
+
+interface ImageFieldCellProps {
+  value: string | null | undefined;
+  onSave: (dataUrl: string | null) => void;
+}
+
+function ImageFieldCell({ value, onSave }: ImageFieldCellProps) {
+  const t = useTranslations('fields');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [awaitingPaste, setAwaitingPaste] = useState(false);
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  // Cancel awaiting-paste mode on Escape or outside click
+  useEffect(() => {
+    if (!awaitingPaste) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAwaitingPaste(false);
+    };
+    const handleClick = (e: MouseEvent) => {
+      if (zoneRef.current && !zoneRef.current.contains(e.target as Node)) {
+        setAwaitingPaste(false);
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    document.addEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('mousedown', handleClick);
+    };
+  }, [awaitingPaste]);
+
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const saveFile = async (file: File) => {
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      onSave(dataUrl);
+    } catch {
+      toast.error('Failed to read image');
+    }
+  };
+
+  const extractImage = (clipboardData: DataTransfer | null): File | null => {
+    if (!clipboardData) return null;
+    for (const item of Array.from(clipboardData.items)) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        return item.getAsFile();
+      }
+    }
+    return null;
+  };
+
+  // Enter awaiting-paste mode: focus zone so the next Ctrl+V is captured
+  // by onPaste natively — no browser permission dialog involved.
+  const enterAwaitingPaste = () => {
+    setMenuOpen(false);
+    setAwaitingPaste(true);
+    setTimeout(() => zoneRef.current?.focus(), 0);
+  };
+
+  const browseFile = () => {
+    setMenuOpen(false);
+    fileInputRef.current?.click();
+  };
+
+  const handleClick = () => {
+    if (awaitingPaste) { setAwaitingPaste(false); return; }
+    setMenuOpen((v) => !v);
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const file = extractImage(e.clipboardData);
+    if (!file) return;
+    e.stopPropagation();
+    e.preventDefault();
+    setAwaitingPaste(false);
+    await saveFile(file);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') { setAwaitingPaste(false); setMenuOpen(false); }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await saveFile(file);
+    e.target.value = '';
+  };
+
+  if (value) {
+    return (
+      <>
+        <div className="flex items-center gap-1.5">
+          {/* Thumbnail + eye */}
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            title={t('imagePreview')}
+            className="flex items-center gap-1 group/img"
+          >
+            <img
+              src={value}
+              alt="field"
+              className="h-6 w-10 object-cover rounded border border-gray-300 dark:border-gray-600 group-hover/img:opacity-80 transition-opacity"
+            />
+            <svg className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
+          {/* Delete */}
+          <button
+            type="button"
+            onClick={() => onSave(null)}
+            title={t('imageDelete')}
+            className="text-gray-300 hover:text-red-400 text-xs leading-none flex-shrink-0"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Lightbox */}
+        {lightboxOpen && (
+          <div
+            className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <div className="relative max-w-3xl max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+              <img
+                src={value}
+                alt="preview"
+                className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
+              />
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(false)}
+                className="absolute -top-3 -right-3 w-7 h-7 rounded-full bg-gray-800 text-white flex items-center justify-center hover:bg-gray-600 text-sm font-bold"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <div className="relative inline-flex">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      {/* Paste zone */}
+      <div
+        ref={zoneRef}
+        tabIndex={0}
+        role="button"
+        data-image-paste-zone="true"
+        onPaste={handlePaste}
+        onKeyDown={handleKeyDown}
+        onClick={handleClick}
+        title={awaitingPaste ? t('imageAwaitingPaste') : t('imagePasteHint')}
+        className={`flex items-center gap-1 px-1.5 py-0.5 rounded border border-dashed text-xs cursor-pointer focus:outline-none transition-colors select-none
+          ${awaitingPaste
+            ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 animate-pulse bg-indigo-50 dark:bg-indigo-900/20'
+            : 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-indigo-400 hover:text-indigo-500 focus:border-indigo-500 focus:text-indigo-600'
+          }`}
+      >
+        <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span>{awaitingPaste ? 'Ctrl+V' : 'img'}</span>
+      </div>
+
+      {/* Context menu */}
+      {menuOpen && (
+        <div
+          ref={menuRef}
+          className="absolute bottom-full left-0 mb-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden text-xs min-w-[140px]"
+        >
+          <button
+            type="button"
+            onClick={enterAwaitingPaste}
+            className="w-full flex items-center gap-2 px-3 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            {t('imagePasteAction')}
+          </button>
+          <button
+            type="button"
+            onClick={browseFile}
+            className="w-full flex items-center gap-2 px-3 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+            </svg>
+            {t('imageBrowseAction')}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface NoteFieldsPanelProps {
   noteId: number;
 }
@@ -243,6 +480,12 @@ function FieldRow({ field, isFirst, isLast, onUpdate, onDelete, onMoveUp, onMove
               onSave={(v) => onUpdate(field.id, { price: v || null })}
               className="text-xs text-green-700 dark:text-green-400 w-20" />
           </div>
+
+          {/* Image */}
+          <ImageFieldCell
+            value={field.field_image}
+            onSave={(v) => onUpdate(field.id, { field_image: v })}
+          />
         </div>
       </div>
     </div>

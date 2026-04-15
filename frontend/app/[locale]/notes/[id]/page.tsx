@@ -218,6 +218,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       // Don't trigger if a modal filename input is focused or modal already open
       if (filenameInputRef.current && document.activeElement === filenameInputRef.current) return;
       if (pasteFile) return;
+      // Don't trigger if focus is inside a field image paste zone
+      if (document.activeElement?.closest('[data-image-paste-zone]')) return;
 
       const pastedFiles: File[] = Array.from(e.clipboardData?.items ?? [])
         .filter((item) => item.kind === 'file')

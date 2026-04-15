@@ -394,6 +394,12 @@
     "searchBadge": "Found in fields",
     "fieldDates": "Reminders",
     "collapse": "Collapse",
-    "expand": "Expand"
+    "expand": "Expand",
+    "imagePasteHint": "Click to add image (Ctrl+V also works)",
+    "imagePreview": "Preview image",
+    "imageDelete": "Remove image",
+    "imagePasteAction": "Paste from clipboard",
+    "imageBrowseAction": "Browse from disk",
+    "imageAwaitingPaste": "Press Ctrl+V to paste — Esc to cancel"
   }
 }
