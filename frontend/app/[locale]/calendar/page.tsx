@@ -207,28 +207,32 @@ export default function CalendarPage() {
                         <button
                           key={i}
                           onClick={() => router.push(`/${locale}/notes/${f.note_id}`)}
-                          className="w-full text-left text-xs truncate rounded px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300"
+                          className="w-full text-left rounded px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 overflow-hidden"
                           title={`${label} — ${f.note_title}`}
                         >
-                          {label}
+                          <div className="text-xs truncate">{label}</div>
+                          {f.note_title && <div className="text-[10px] truncate opacity-60">{f.note_title}</div>}
                         </button>
                       );
                     }
+                    const ev = item as CalendarEventWithNote;
                     const timeStr = type === "event"
-                      ? new Date((item as CalendarEventWithNote).start_datetime).toLocaleTimeString(localeStr, { hour: "2-digit", minute: "2-digit" })
+                      ? new Date(ev.start_datetime).toLocaleTimeString(localeStr, { hour: "2-digit", minute: "2-digit" })
                       : null;
+                    const noteTitle = type === "event" ? ev.note_title : (item as TaskWithNote).note_title;
                     return (
                       <button
                         key={i}
                         onClick={() => router.push(`/${locale}/notes/${item.note_id}`)}
-                        className={`w-full text-left text-xs truncate rounded px-1.5 py-0.5 ${
+                        className={`w-full text-left rounded px-1.5 py-0.5 overflow-hidden ${
                           type === "event"
                             ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
                             : "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300"
                         }`}
                         title={timeStr ? `${item.title} — ${timeStr}` : item.title}
                       >
-                        {timeStr ? `${timeStr} ${item.title}` : item.title}
+                        <div className="text-xs truncate">{timeStr ? `${timeStr} ${item.title}` : item.title}</div>
+                        {noteTitle && <div className="text-[10px] truncate opacity-60">{noteTitle}</div>}
                       </button>
                     );
                   })}

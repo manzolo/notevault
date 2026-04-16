@@ -262,7 +262,7 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
           </div>
 
           {/* Start / End datetimes */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("startDatetime")}</label>
               <div className="flex gap-2">
@@ -321,7 +321,7 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
               <select
                 value={recType}
                 onChange={(e) => { setRecType(e.target.value as RecurrenceType); setRecInterval("1"); }}
-                className={selectClass}
+                className={`${selectClass} flex-1 min-w-0`}
               >
                 <option value="none">{t("recurrenceNone")}</option>
                 <option value="daily">{t("recurrenceDaily")}</option>
