@@ -5,8 +5,8 @@ from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
 
 from app.database.connection import AsyncSessionLocal
-from app.models.database import Event, EventReminder, Notification, User
-from app.services.notifications import dispatch_reminder
+from app.models.database import Event, EventReminder, Notification, Task, TaskReminder, User
+from app.services.notifications import dispatch_reminder, dispatch_task_reminder
 
 logger = logging.getLogger(__name__)
 
@@ -48,20 +48,19 @@ def _datetimes_equal(a: datetime, b: datetime) -> bool:
     return abs((a - b).total_seconds()) < 1
 
 
+def _task_trigger_time(task: Task, minutes_before: int) -> datetime | None:
+    """Return the UTC trigger time for a task reminder, or None if no due_date."""
+    if not task.due_date:
+        return None
+    return task.due_date - timedelta(minutes=minutes_before)
+
+
 async def check_reminders() -> None:
     """APScheduler job: fire due reminders. Runs every 60 seconds."""
     now = datetime.now(tz=timezone.utc)
 
     try:
         async with AsyncSessionLocal() as db:
-            result = await db.execute(
-                select(EventReminder).options(
-                    selectinload(EventReminder.event).selectinload(Event.user),
-                    selectinload(EventReminder.event).selectinload(Event.note)
-                )
-            )
-            reminders = result.scalars().all()
-
             from app.config import get_settings
             settings = get_settings()
             smtp_cfg = {
@@ -72,6 +71,15 @@ async def check_reminders() -> None:
                 "smtp_from": settings.smtp_from,
                 "use_tls": settings.smtp_tls,
             }
+
+            # ── Event reminders ──────────────────────────────────────────────
+            result = await db.execute(
+                select(EventReminder).options(
+                    selectinload(EventReminder.event).selectinload(Event.user),
+                    selectinload(EventReminder.event).selectinload(Event.note)
+                )
+            )
+            reminders = result.scalars().all()
 
             for reminder in reminders:
                 event = reminder.event
@@ -112,6 +120,44 @@ async def check_reminders() -> None:
                     smtp_cfg=smtp_cfg,
                 )
                 reminder.last_notified_occurrence = next_occ
+
+            # ── Task reminders ───────────────────────────────────────────────
+            task_result = await db.execute(
+                select(TaskReminder).options(
+                    selectinload(TaskReminder.task).selectinload(Task.user),
+                    selectinload(TaskReminder.task).selectinload(Task.note),
+                )
+            )
+            task_reminders = task_result.scalars().all()
+
+            for tr in task_reminders:
+                task = tr.task
+                # Skip if task is archived, done, or has no due_date
+                if task.is_archived or task.is_done or not task.due_date:
+                    continue
+                # Skip if already fired
+                if tr.notified_at is not None:
+                    continue
+
+                trigger_time = _task_trigger_time(task, tr.minutes_before)
+                if trigger_time is None or trigger_time > now:
+                    continue
+
+                logger.info(
+                    "Firing task reminder %d for task %d (due %s)",
+                    tr.id,
+                    task.id,
+                    task.due_date,
+                )
+                await dispatch_task_reminder(
+                    db=db,
+                    task=task,
+                    reminder=tr,
+                    trigger_dt=trigger_time,
+                    bot_token=settings.telegram_bot_token,
+                    smtp_cfg=smtp_cfg,
+                )
+                tr.notified_at = now
 
             # Purge read notifications older than 30 days
             cutoff = now - timedelta(days=30)

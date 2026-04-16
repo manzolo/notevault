@@ -88,3 +88,35 @@ async def test_tasks_cascade_delete_with_note(client, auth_headers):
     # Note is gone, so task endpoint returns 404
     r = await client.get(f"/api/notes/{note_id}/tasks", headers=auth_headers)
     assert r.status_code == 404
+
+
+async def test_update_due_date_resets_reminder_notified_at(client, auth_headers):
+    note_id = await _note(client, auth_headers)
+    task_id = (
+        await client.post(
+            f"/api/notes/{note_id}/tasks",
+            json={"title": "Remind me", "due_date": "2030-01-01T10:00:00Z"},
+            headers=auth_headers,
+        )
+    ).json()["id"]
+
+    # Add a reminder
+    r = await client.post(
+        f"/api/tasks/{task_id}/reminders",
+        json={"minutes_before": 60, "notify_in_app": True},
+        headers=auth_headers,
+    )
+    assert r.status_code == 201
+
+    # Change due_date → notified_at should be reset
+    r = await client.put(
+        f"/api/notes/{note_id}/tasks/{task_id}",
+        json={"due_date": "2030-06-01T10:00:00Z"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+
+    r = await client.get(f"/api/tasks/{task_id}/reminders", headers=auth_headers)
+    assert r.status_code == 200
+    for reminder in r.json():
+        assert reminder["notified_at"] is None

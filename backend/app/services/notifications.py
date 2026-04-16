@@ -17,12 +17,14 @@ async def send_in_app(
     title: str,
     body: Optional[str],
     event_id: Optional[int] = None,
+    task_id: Optional[int] = None,
 ) -> None:
     notif = Notification(
         user_id=user_id,
         title=title,
         body=body,
         event_id=event_id,
+        task_id=task_id,
     )
     db.add(notif)
 
@@ -146,10 +148,64 @@ async def dispatch_reminder(
     inapp_body = _build_inapp_body(occurrence_dt, tz_name, note_title, desc, reminder.minutes_before)
 
     if reminder.notify_in_app:
-        await send_in_app(db, user.id, inapp_title, inapp_body, event.id)
+        await send_in_app(db, user.id, inapp_title, inapp_body, event_id=event.id)
 
     if reminder.notify_telegram and user.telegram_chat_id:
         tg_text = _build_telegram_text(event.title, note_title, desc, occurrence_dt, reminder.minutes_before, tz_name)
+        await send_telegram(user.telegram_chat_id, bot_token, tg_text)
+
+    if reminder.notify_email:
+        email_to = user.notification_email or user.email
+        await send_email(
+            to=email_to,
+            subject=inapp_title,
+            body=inapp_body,
+            **smtp_cfg,
+        )
+
+
+def _build_task_telegram_text(task_title: str, note_title: Optional[str],
+                               trigger_dt: datetime, minutes_before: int, tz_name: str) -> str:
+    local_time = _format_dt_local(trigger_dt, tz_name)
+    safe_title = _escape_mdv2(task_title)
+    safe_time = _escape_mdv2(local_time)
+    safe_anticipation = _escape_mdv2(_anticipation_label(minutes_before))
+    text = f"🔔 *NoteVault* — Promemoria task \\({safe_anticipation}\\)\n\n"
+    if note_title:
+        text += f"📓 {_escape_mdv2(note_title)}\n"
+    text += f"✅ *{safe_title}*\n⏰ {safe_time}\n"
+    return text
+
+
+def _build_task_inapp_body(trigger_dt: datetime, tz_name: str,
+                            note_title: Optional[str], minutes_before: int) -> str:
+    parts = [f"{_anticipation_label(minutes_before)} · {_format_dt_local(trigger_dt, tz_name)}"]
+    if note_title:
+        parts.append(f"📓 {note_title}")
+    return " — ".join(parts)
+
+
+async def dispatch_task_reminder(
+    db: AsyncSession,
+    task,
+    reminder,
+    trigger_dt: datetime,
+    bot_token: str,
+    smtp_cfg: dict,
+) -> None:
+    from app.config import get_settings
+    tz_name = get_settings().timezone
+
+    user = task.user
+    note_title = task.note.title if task.note else None
+    inapp_title = f"✅ {task.title}"
+    inapp_body = _build_task_inapp_body(trigger_dt, tz_name, note_title, reminder.minutes_before)
+
+    if reminder.notify_in_app:
+        await send_in_app(db, user.id, inapp_title, inapp_body, task_id=task.id)
+
+    if reminder.notify_telegram and user.telegram_chat_id:
+        tg_text = _build_task_telegram_text(task.title, note_title, trigger_dt, reminder.minutes_before, tz_name)
         await send_telegram(user.telegram_chat_id, bot_token, tg_text)
 
     if reminder.notify_email:

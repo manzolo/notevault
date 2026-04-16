@@ -22,12 +22,25 @@ export interface EventReminder {
   created_at: string;
 }
 
+export interface TaskReminder {
+  id: number;
+  task_id: number;
+  user_id: number;
+  minutes_before: number;
+  notify_in_app: boolean;
+  notify_telegram: boolean;
+  notify_email: boolean;
+  notified_at?: string | null;
+  created_at: string;
+}
+
 export interface AppNotification {
   id: number;
   user_id: number;
   title: string;
   body?: string | null;
   event_id?: number | null;
+  task_id?: number | null;
   is_read: boolean;
   created_at: string;
 }

@@ -248,7 +248,9 @@
     "noteLink": "In note",
     "dueDate": "Due date",
     "setDueDate": "Set due date",
-    "editDueDate": "Edit due date"
+    "editDueDate": "Edit due date",
+    "reminders": "Reminders",
+    "reminderNoDueDate": "Set a due date to enable reminders."
   },
   "search": {
     "placeholder": "Search notes...",
@@ -429,7 +431,12 @@
     "reminder1h": "1 hour before",
     "reminder2h": "2 hours before",
     "reminder1d": "1 day before",
-    "reminder1w": "1 week before"
+    "reminder1w": "1 week before",
+    "customMinutes": "Custom…",
+    "unitMinutes": "min",
+    "unitHours": "hours",
+    "unitDays": "days",
+    "unitWeeks": "weeks"
   },
   "notifications": {
     "title": "Notifications",

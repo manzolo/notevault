@@ -248,7 +248,9 @@
     "noteLink": "Nella nota",
     "dueDate": "Scadenza",
     "setDueDate": "Imposta scadenza",
-    "editDueDate": "Modifica scadenza"
+    "editDueDate": "Modifica scadenza",
+    "reminders": "Promemoria",
+    "reminderNoDueDate": "Imposta una scadenza per abilitare i promemoria."
   },
   "search": {
     "placeholder": "Cerca note...",
@@ -429,7 +431,12 @@
     "reminder1h": "1 ora prima",
     "reminder2h": "2 ore prima",
     "reminder1d": "1 giorno prima",
-    "reminder1w": "1 settimana prima"
+    "reminder1w": "1 settimana prima",
+    "customMinutes": "Personalizzato…",
+    "unitMinutes": "min",
+    "unitHours": "ore",
+    "unitDays": "giorni",
+    "unitWeeks": "settimane"
   },
   "notifications": {
     "title": "Notifiche",

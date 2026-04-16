@@ -32,6 +32,7 @@ class User(Base):
     events = relationship("Event", back_populates="user", cascade="all, delete-orphan")
     event_attachments = relationship("EventAttachment", back_populates="user", cascade="all, delete-orphan")
     event_reminders = relationship("EventReminder", back_populates="user", cascade="all, delete-orphan")
+    task_reminders = relationship("TaskReminder", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -242,6 +243,24 @@ class Task(Base):
 
     note = relationship("Note", back_populates="tasks")
     user = relationship("User", back_populates="tasks")
+    reminders = relationship("TaskReminder", back_populates="task", cascade="all, delete-orphan")
+
+
+class TaskReminder(Base):
+    __tablename__ = "task_reminders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    minutes_before = Column(Integer, nullable=False)
+    notify_in_app = Column(Boolean, default=True, nullable=False)
+    notify_telegram = Column(Boolean, default=False, nullable=False)
+    notify_email = Column(Boolean, default=False, nullable=False)
+    notified_at = Column(DateTime(timezone=True), nullable=True)  # set when fired; single-occurrence
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    task = relationship("Task", back_populates="reminders")
+    user = relationship("User", back_populates="task_reminders")
 
 
 class ShareToken(Base):
@@ -329,8 +348,10 @@ class Notification(Base):
     title = Column(String(255), nullable=False)
     body = Column(Text, nullable=True)
     event_id = Column(Integer, ForeignKey("events.id", ondelete="SET NULL"), nullable=True)
+    task_id = Column(Integer, ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)
     is_read = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="notifications")
     event = relationship("Event")
+    task = relationship("Task")

@@ -3,8 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Task, Note, User
+from app.models.database import Task, Note, TaskReminder, User
 from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskWithNoteResponse
 from app.security.dependencies import get_current_user
 
@@ -103,17 +104,29 @@ async def update_task(
     db: AsyncSession = Depends(get_db),
 ):
     task = await _get_task_owned(task_id, note_id, current_user, db)
+    due_date_changed = False
     if data.title is not None:
         task.title = data.title
     if data.is_done is not None:
         task.is_done = data.is_done
     if data.due_date is not None or "due_date" in data.model_fields_set:
+        if task.due_date != data.due_date:
+            due_date_changed = True
         task.due_date = data.due_date
     if data.position is not None:
         task.position = data.position
     if data.is_archived is not None:
         task.is_archived = data.is_archived
         task.archive_note = data.archive_note if data.is_archived else None
+
+    # When due_date changes, reset all reminders so scheduler re-fires them
+    if due_date_changed:
+        await db.execute(
+            update(TaskReminder)
+            .where(TaskReminder.task_id == task.id)
+            .values(notified_at=None)
+        )
+
     await db.flush()
     await db.refresh(task)
     return task
@@ -128,6 +141,21 @@ async def delete_task(
 ):
     task = await _get_task_owned(task_id, note_id, current_user, db)
     await db.delete(task)
+
+
+@router.get("/api/tasks/{task_id}", response_model=TaskResponse)
+async def get_task(
+    task_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Task).where(Task.id == task_id, Task.user_id == current_user.id)
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    return task
 
 
 @router.get("/api/tasks", response_model=list[TaskWithNoteResponse])

@@ -20,7 +20,7 @@ interface Props {
   onDeletedChange: (ids: number[]) => void;
 }
 
-const PRESETS = [10, 30, 60, 120, 1440, 10080];
+export const PRESETS = [10, 30, 60, 120, 1440, 10080];
 
 export function minutesLabel(minutes: number, t: (k: string) => string): string {
   const map: Record<number, string> = {
@@ -55,6 +55,9 @@ export default function RemindersSection({
   const [existingReminders, setExistingReminders] = useState<EventReminder[]>([]);
   const [adding, setAdding] = useState(false);
   const [newMinutes, setNewMinutes] = useState(60);
+  const [customValue, setCustomValue] = useState("");
+  const [customUnit, setCustomUnit] = useState<"min" | "hours" | "days" | "weeks">("min");
+  const unitMultiplier = { min: 1, hours: 60, days: 1440, weeks: 10080 } as const;
   const [newInApp, setNewInApp] = useState(true);
   const [newTelegram, setNewTelegram] = useState(false);
   const [newEmail, setNewEmail] = useState(false);
@@ -67,12 +70,24 @@ export default function RemindersSection({
       .catch(() => {});
   }, [eventId]);
 
-  const addPending = () => {
+  const addPending = (minutes?: number) => {
+    let mins: number;
+    if (minutes !== undefined) {
+      mins = minutes;
+    } else if (customValue) {
+      const val = parseInt(customValue, 10);
+      if (!val || val <= 0) return;
+      mins = val * unitMultiplier[customUnit];
+    } else {
+      mins = newMinutes;
+    }
+    if (!mins || mins <= 0) return;
     if (!newInApp && !newTelegram && !newEmail) return;
     onPendingChange([
       ...pendingReminders,
-      { minutes_before: newMinutes, notify_in_app: newInApp, notify_telegram: newTelegram, notify_email: newEmail },
+      { minutes_before: mins, notify_in_app: newInApp, notify_telegram: newTelegram, notify_email: newEmail },
     ]);
+    setCustomValue("");
     setAdding(false);
   };
 
@@ -147,17 +162,48 @@ export default function RemindersSection({
 
       {adding && (
         <div className="pt-2 border-t border-gray-100 dark:border-gray-700 space-y-2">
-          <select
-            value={newMinutes}
-            onChange={(e) => setNewMinutes(Number(e.target.value))}
-            className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
+          {/* Preset pills */}
+          <div className="flex flex-wrap gap-1.5">
             {PRESETS.map((m) => (
-              <option key={m} value={m}>
+              <button
+                key={m}
+                type="button"
+                onClick={() => { setNewMinutes(m); setCustomValue(""); }}
+                className={`px-2.5 py-0.5 rounded-full text-xs border transition-colors ${
+                  newMinutes === m && !customValue
+                    ? "bg-indigo-600 text-white border-transparent"
+                    : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-indigo-400"
+                }`}
+              >
                 {minutesLabel(m, t)}
-              </option>
+              </button>
             ))}
-          </select>
+          </div>
+
+          {/* Custom input with unit selector */}
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="1"
+              value={customValue}
+              onChange={(e) => setCustomValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addPending()}
+              placeholder={t("customMinutes")}
+              className="w-20 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 dark:text-white"
+            />
+            <select
+              value={customUnit}
+              onChange={(e) => setCustomUnit(e.target.value as typeof customUnit)}
+              className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-1 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700 dark:text-gray-300"
+            >
+              <option value="min">{t("unitMinutes")}</option>
+              <option value="hours">{t("unitHours")}</option>
+              <option value="days">{t("unitDays")}</option>
+              <option value="weeks">{t("unitWeeks")}</option>
+            </select>
+          </div>
+
+          {/* Channel checkboxes */}
           <div className="flex flex-wrap gap-3 text-sm">
             <label className="flex items-center gap-1.5 cursor-pointer">
               <input type="checkbox" checked={newInApp} onChange={(e) => setNewInApp(e.target.checked)} className="accent-indigo-600" />
@@ -172,10 +218,11 @@ export default function RemindersSection({
               <span className="text-gray-700 dark:text-gray-300">Email</span>
             </label>
           </div>
+
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={addPending}
+              onClick={() => addPending()}
               className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md transition-colors"
             >
               {t("confirm")}

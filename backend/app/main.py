@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from app.config import get_settings
 from app.middleware.logging import AuditLoggingMiddleware
 from app.security.rate_limit import limiter
-from app.api import auth, notes, tags, categories, secrets, search, attachments, bookmarks, tasks, share, events, note_fields, field_dates, reminders, notifications
+from app.api import auth, notes, tags, categories, secrets, search, attachments, bookmarks, tasks, share, events, note_fields, field_dates, reminders, notifications, task_reminders
 
 logging.basicConfig(
     level=logging.INFO,
@@ -73,6 +73,7 @@ app.include_router(events.router)
 app.include_router(note_fields.router)
 app.include_router(field_dates.router)
 app.include_router(reminders.router)
+app.include_router(task_reminders.router)
 app.include_router(notifications.router)
 
 

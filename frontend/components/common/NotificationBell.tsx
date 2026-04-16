@@ -93,17 +93,20 @@ export default function NotificationBell() {
                 }`}
                 onClick={async () => {
                   if (!n.is_read) markRead(n.id);
+                  setOpen(false);
                   if (n.event_id) {
-                    setOpen(false);
                     try {
                       const { data } = await api.get(`/api/events/${n.event_id}`);
-                      if (data.note_id) {
-                        router.push(`/${locale}/notes/${data.note_id}`);
-                      } else {
-                        router.push(`/${locale}/calendar`);
-                      }
+                      router.push(data.note_id ? `/${locale}/notes/${data.note_id}` : `/${locale}/calendar`);
                     } catch {
                       router.push(`/${locale}/calendar`);
+                    }
+                  } else if (n.task_id) {
+                    try {
+                      const { data } = await api.get(`/api/tasks/${n.task_id}`);
+                      router.push(`/${locale}/notes/${data.note_id}`);
+                    } catch {
+                      router.push(`/${locale}/tasks`);
                     }
                   }
                 }}
