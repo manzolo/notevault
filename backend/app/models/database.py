@@ -21,6 +21,8 @@ class User(Base):
     totp_secret = Column(BYTEA, nullable=True)  # encrypted nonce||ciphertext
     totp_enabled = Column(Boolean, default=False, nullable=False)
     calendar_token = Column(String(64), nullable=True, unique=True, index=True)
+    telegram_chat_id = Column(String(100), nullable=True)
+    notification_email = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -29,6 +31,8 @@ class User(Base):
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
     events = relationship("Event", back_populates="user", cascade="all, delete-orphan")
     event_attachments = relationship("EventAttachment", back_populates="user", cascade="all, delete-orphan")
+    event_reminders = relationship("EventReminder", back_populates="user", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -280,6 +284,7 @@ class Event(Base):
     note = relationship("Note", back_populates="events")
     user = relationship("User", back_populates="events")
     attachments = relationship("EventAttachment", back_populates="event", cascade="all, delete-orphan")
+    reminders = relationship("EventReminder", back_populates="event", cascade="all, delete-orphan")
 
 
 class EventAttachment(Base):
@@ -297,3 +302,35 @@ class EventAttachment(Base):
 
     event = relationship("Event", back_populates="attachments")
     user = relationship("User", back_populates="event_attachments")
+
+
+class EventReminder(Base):
+    __tablename__ = "event_reminders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    minutes_before = Column(Integer, nullable=False)
+    notify_in_app = Column(Boolean, default=True, nullable=False)
+    notify_telegram = Column(Boolean, default=False, nullable=False)
+    notify_email = Column(Boolean, default=False, nullable=False)
+    last_notified_occurrence = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    event = relationship("Event", back_populates="reminders")
+    user = relationship("User", back_populates="event_reminders")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    body = Column(Text, nullable=True)
+    event_id = Column(Integer, ForeignKey("events.id", ondelete="SET NULL"), nullable=True)
+    is_read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="notifications")
+    event = relationship("Event")

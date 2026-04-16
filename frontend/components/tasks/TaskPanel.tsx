@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, KeyboardEvent, useRef, useEffect } from 'react';
+import { useState, KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { Task } from '@/lib/types';
-import { ArchiveIcon, CalendarIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import DateTimePicker from '@/components/common/DateTimePicker';
 import { useConfirm } from '@/hooks/useConfirm';
 import {
   DndContext,
@@ -40,7 +41,7 @@ export default function TaskPanel({
   const tc = useTranslations('common');
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [newTitle, setNewTitle] = useState('');
-  const [newDueDate, setNewDueDate] = useState('');
+  const [newDueDate, setNewDueDate] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
   const [showArchived, setShowArchived] = useState(false);
@@ -56,9 +57,9 @@ export default function TaskPanel({
     if (!title) return;
     setAdding(true);
     try {
-      await onCreate(title, newDueDate || undefined);
+      await onCreate(title, newDueDate ?? undefined);
       setNewTitle('');
-      setNewDueDate('');
+      setNewDueDate(null);
     } finally {
       setAdding(false);
     }
@@ -168,12 +169,11 @@ export default function TaskPanel({
           placeholder={t('addPlaceholder')}
           className="flex-1 min-w-0 rounded-md border border-transparent bg-transparent dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:border-gray-300 dark:focus:border-gray-600 focus:bg-white dark:focus:bg-gray-800 placeholder-gray-300 dark:placeholder-gray-600 transition-colors"
         />
-        <input
-          type="date"
+        <DateTimePicker
           value={newDueDate}
-          onChange={(e) => setNewDueDate(e.target.value)}
-          title={t('dueDate')}
-          className="rounded-md border border-transparent bg-transparent dark:text-gray-400 px-1.5 py-1 text-xs focus:outline-none focus:border-gray-300 dark:focus:border-gray-600 focus:bg-white dark:focus:bg-gray-800 text-gray-400 transition-colors cursor-pointer w-[130px]"
+          onChange={setNewDueDate}
+          placeholder={t('dueDate')}
+          triggerClassName="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors px-1.5 py-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/40"
         />
         {newTitle.trim() && (
           <Button variant="ghost" size="sm" onClick={handleAdd} loading={adding}>
@@ -243,12 +243,10 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
   onUpdate: (id: number, data: Partial<Task>) => Promise<void>;
   onArchive?: (note?: string) => void;
 }) {
-  const t = useTranslations('tasks');
   const tc = useTranslations('common');
+  const t = useTranslations('tasks');
   const { confirmInput, dialog: archiveDialog } = useConfirm();
   const [toggling, setToggling] = useState(false);
-  const [editingDate, setEditingDate] = useState(false);
-  const dateInputRef = useRef<HTMLInputElement>(null);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   const handleToggle = async () => {
@@ -257,36 +255,11 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
     finally { setToggling(false); }
   };
 
-  const handleDateClick = () => {
-    setEditingDate(true);
+  const handleDateChange = async (iso: string | null) => {
+    await onUpdate(task.id, { due_date: iso });
   };
 
-  useEffect(() => {
-    if (editingDate && dateInputRef.current) {
-      dateInputRef.current.focus();
-      dateInputRef.current.showPicker?.();
-    }
-  }, [editingDate]);
-
-  const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    await onUpdate(task.id, { due_date: val || null });
-    setEditingDate(false);
-  };
-
-  const handleDateBlur = () => {
-    setEditingDate(false);
-  };
-
-  const isPastDue = task.due_date && !task.is_done && new Date(task.due_date) < new Date(new Date().toDateString());
-
-  const dueDateFormatted = task.due_date
-    ? new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-    : null;
-
-  const dueDateValue = task.due_date
-    ? new Date(task.due_date).toISOString().substring(0, 10)
-    : '';
+  const isPastDue = task.due_date && !task.is_done && new Date(task.due_date) < new Date();
 
   const handleArchive = async () => {
     if (!onArchive) return;
@@ -327,39 +300,18 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
         {task.title}
       </span>
 
-      {/* Due date area */}
-      {editingDate ? (
-        <input
-          ref={dateInputRef}
-          type="date"
-          defaultValue={dueDateValue}
-          onChange={handleDateChange}
-          onBlur={handleDateBlur}
-          className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs px-1 py-0.5 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-indigo-400 w-[120px]"
-        />
-      ) : task.due_date ? (
-        <button
-          type="button"
-          onClick={handleDateClick}
-          title={t('editDueDate')}
-          className={`text-xs whitespace-nowrap transition-colors ${
-            isPastDue
-              ? 'text-red-500 dark:text-red-400 font-medium'
-              : 'text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400'
-          }`}
-        >
-          {dueDateFormatted}
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={handleDateClick}
-          title={t('setDueDate')}
-          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-indigo-400 dark:text-gray-600 dark:hover:text-indigo-400 transition-opacity"
-        >
-          <CalendarIcon className="h-3.5 w-3.5" />
-        </button>
-      )}
+      {/* Due date */}
+      <DateTimePicker
+        value={task.due_date ?? null}
+        onChange={handleDateChange}
+        placeholder={t('setDueDate')}
+        iconOnly={!task.due_date}
+        triggerClassName={
+          task.due_date
+            ? `text-xs whitespace-nowrap transition-colors ${isPastDue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400'}`
+            : 'opacity-0 group-hover:opacity-100 text-gray-300 hover:text-indigo-400 dark:text-gray-600 dark:hover:text-indigo-400 transition-opacity'
+        }
+      />
 
       {onArchive && (
         <button

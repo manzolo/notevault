@@ -8,6 +8,7 @@ from app.schemas.user import (
     UserCreate, UserLogin, UserResponse, TokenResponse,
     LoginResponse, TotpSetupResponse, TotpEnableRequest,
     TotpDisableRequest, TotpVerifyRequest, ChangePasswordRequest,
+    UserNotificationUpdate,
 )
 from app.security.auth import hash_password, verify_password, create_access_token, verify_token
 from app.security.dependencies import get_current_user
@@ -101,6 +102,21 @@ async def totp_verify(data: TotpVerifyRequest, db: AsyncSession = Depends(get_db
 
 @router.get("/me", response_model=UserResponse)
 async def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.patch("/me/notifications", response_model=UserResponse)
+async def update_notification_settings(
+    data: UserNotificationUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if data.telegram_chat_id is not None:
+        current_user.telegram_chat_id = data.telegram_chat_id or None
+    if data.notification_email is not None:
+        current_user.notification_email = data.notification_email or None
+    await db.commit()
+    await db.refresh(current_user)
     return current_user
 
 

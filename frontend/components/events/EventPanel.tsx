@@ -381,9 +381,9 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
           event={editingEvent}
           onSave={async (data) => {
             if (editingEvent) {
-              await updateEvent(editingEvent.id, data);
+              return updateEvent(editingEvent.id, data);
             } else {
-              await createEvent(data as CalendarEventCreate);
+              return createEvent(data as CalendarEventCreate);
             }
           }}
           onClose={() => { setShowModal(false); setEditingEvent(undefined); }}

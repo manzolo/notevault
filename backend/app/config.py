@@ -32,6 +32,20 @@ class Settings(BaseSettings):
     # Bookmarks — fetch favicon from origin/favicon.ico (off by default, privacy-preserving)
     favicon_fetch_enabled: bool = False
 
+    # Telegram
+    telegram_bot_token: str = ""
+
+    # Email (SMTP)
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_tls: bool = True
+
+    # Timezone for notification formatting (IANA tz name, e.g. Europe/Rome)
+    timezone: str = "Europe/Rome"
+
     # App
     app_name: str = "NoteVault"
     debug: bool = False

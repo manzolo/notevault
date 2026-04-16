@@ -45,6 +45,17 @@ export default function SettingsPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [changePasswordLoading, setChangePasswordLoading] = useState(false);
 
+  // Notification settings state
+  const [telegramChatId, setTelegramChatId] = useState('');
+  const [notificationEmail, setNotificationEmail] = useState('');
+  const [notifSaving, setNotifSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setTelegramChatId(user.telegram_chat_id ?? '');
+    setNotificationEmail(user.notification_email ?? '');
+  }, [user?.id]);
+
   const handleSetup = async () => {
     try {
       const data = await setupTotp();
@@ -178,6 +189,23 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveNotifications = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNotifSaving(true);
+    try {
+      await api.patch('/api/auth/me/notifications', {
+        telegram_chat_id: telegramChatId.trim() || null,
+        notification_email: notificationEmail.trim() || null,
+      });
+      await refresh();
+      toast.success(t('notifSaved'));
+    } catch {
+      toast.error(t('notifSaveFailed'));
+    } finally {
+      setNotifSaving(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -266,6 +294,45 @@ export default function SettingsPage() {
             </div>
           </div>
         ) : null}
+      </div>
+
+      {/* ── Notification settings section ── */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold">{t('notifTitle')}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('notifDesc')}</p>
+        </div>
+        <form onSubmit={handleSaveNotifications} className="space-y-4 max-w-sm">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t('telegramChatId')}
+            </label>
+            <input
+              type="text"
+              value={telegramChatId}
+              onChange={(e) => setTelegramChatId(e.target.value)}
+              placeholder="123456789"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+            />
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t('telegramHint')}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t('notifEmail')}
+            </label>
+            <input
+              type="email"
+              value={notificationEmail}
+              onChange={(e) => setNotificationEmail(e.target.value)}
+              placeholder={user.email}
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+            />
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t('notifEmailHint')}</p>
+          </div>
+          <Button variant="secondary" type="submit" loading={notifSaving}>
+            {t('notifSave')}
+          </Button>
+        </form>
       </div>
 
       {/* ── TOTP section ── */}

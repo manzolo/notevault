@@ -4,6 +4,31 @@ export interface User {
   email: string;
   is_active: boolean;
   totp_enabled: boolean;
+  calendar_token?: string | null;
+  telegram_chat_id?: string | null;
+  notification_email?: string | null;
+  created_at: string;
+}
+
+export interface EventReminder {
+  id: number;
+  event_id: number;
+  user_id: number;
+  minutes_before: number;
+  notify_in_app: boolean;
+  notify_telegram: boolean;
+  notify_email: boolean;
+  last_notified_occurrence?: string | null;
+  created_at: string;
+}
+
+export interface AppNotification {
+  id: number;
+  user_id: number;
+  title: string;
+  body?: string | null;
+  event_id?: number | null;
+  is_read: boolean;
   created_at: string;
 }
 

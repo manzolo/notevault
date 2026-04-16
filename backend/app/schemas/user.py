@@ -21,10 +21,17 @@ class UserResponse(BaseModel):
     is_active: bool
     totp_enabled: bool
     calendar_token: Optional[str] = None
+    telegram_chat_id: Optional[str] = None
+    notification_email: Optional[str] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class UserNotificationUpdate(BaseModel):
+    telegram_chat_id: Optional[str] = None
+    notification_email: Optional[str] = None
 
 
 class TokenResponse(BaseModel):

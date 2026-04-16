@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CalendarEvent, CalendarEventCreate, CalendarEventUpdate } from "@/lib/types";
 import Button from "@/components/common/Button";
+import RemindersSection, { PendingReminder } from "./RemindersSection";
+import api from "@/lib/api";
 
 interface Props {
   event?: CalendarEvent;
-  onSave: (data: CalendarEventCreate | CalendarEventUpdate) => Promise<void>;
+  onSave: (data: CalendarEventCreate | CalendarEventUpdate) => Promise<CalendarEvent>;
   onClose: () => void;
 }
 
@@ -152,6 +154,10 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Reminder state
+  const [pendingReminders, setPendingReminders] = useState<PendingReminder[]>([]);
+  const [deletedReminderIds, setDeletedReminderIds] = useState<number[]>([]);
+
   // Recurrence state
   const parsedRrule = parseRrule(event?.recurrence_rule);
   const [recType, setRecType] = useState<RecurrenceType>(parsedRrule.type);
@@ -190,7 +196,18 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
         url: url.trim() || undefined,
         recurrence_rule: rrule,
       };
-      await onSave(data);
+      const savedEvent = await onSave(data);
+      const eid = savedEvent.id;
+
+      // Delete reminders marked for removal (edit mode)
+      await Promise.allSettled(
+        deletedReminderIds.map((rid) => api.delete(`/api/events/${eid}/reminders/${rid}`))
+      );
+      // Create new pending reminders
+      await Promise.allSettled(
+        pendingReminders.map((r) => api.post(`/api/events/${eid}/reminders`, r))
+      );
+
       onClose();
     } catch {
       setError(t("saveFailed"));
@@ -427,6 +444,15 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
               </div>
             )}
           </div>
+
+          {/* Reminders */}
+          <RemindersSection
+            eventId={event?.id}
+            pendingReminders={pendingReminders}
+            deletedReminderIds={deletedReminderIds}
+            onPendingChange={setPendingReminders}
+            onDeletedChange={setDeletedReminderIds}
+          />
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <div className="flex justify-end gap-3 pt-2">

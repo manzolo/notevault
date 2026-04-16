@@ -71,7 +71,16 @@
     "feedRegenerate": "Regenerate",
     "feedRegenerateConfirm": "Regenerating will invalidate the old URL. Any apps subscribed to it will stop syncing. Continue?",
     "feedLoading": "Loading…",
-    "feedError": "Failed to load calendar URL."
+    "feedError": "Failed to load calendar URL.",
+    "notifTitle": "Notifications",
+    "notifDesc": "Configure channels for event reminders (Telegram, email).",
+    "telegramChatId": "Telegram Chat ID",
+    "telegramHint": "Start @userinfobot on Telegram, send any message, and use the chat ID it returns.",
+    "notifEmail": "Notification email",
+    "notifEmailHint": "Leave blank to use your account email.",
+    "notifSave": "Save",
+    "notifSaved": "Notification settings saved.",
+    "notifSaveFailed": "Failed to save notification settings."
   },
   "notes": {
     "myNotes": "My Notes",
@@ -407,5 +416,25 @@
     "imagePasteAction": "Paste from clipboard",
     "imageBrowseAction": "Browse from disk",
     "imageAwaitingPaste": "Press Ctrl+V to paste — Esc to cancel"
+  },
+  "reminders": {
+    "title": "Reminders",
+    "add": "Add reminder",
+    "noReminders": "No reminders configured.",
+    "remove": "Remove",
+    "confirm": "Add",
+    "cancel": "Cancel",
+    "reminder10min": "10 minutes before",
+    "reminder30min": "30 minutes before",
+    "reminder1h": "1 hour before",
+    "reminder2h": "2 hours before",
+    "reminder1d": "1 day before",
+    "reminder1w": "1 week before"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "loading": "Loading...",
+    "empty": "No notifications."
   }
 }

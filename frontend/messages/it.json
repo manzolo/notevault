@@ -71,7 +71,16 @@
     "feedRegenerate": "Rigenera",
     "feedRegenerateConfirm": "Rigenerando l'URL, quello vecchio verrà invalidato. Le app già abbonate smetteranno di sincronizzarsi. Continuare?",
     "feedLoading": "Caricamento…",
-    "feedError": "Impossibile caricare l'URL del calendario."
+    "feedError": "Impossibile caricare l'URL del calendario.",
+    "notifTitle": "Notifiche",
+    "notifDesc": "Configura i canali per i promemoria degli eventi (Telegram, email).",
+    "telegramChatId": "Telegram Chat ID",
+    "telegramHint": "Avvia @userinfobot su Telegram, invia un messaggio qualsiasi e usa il chat ID restituito.",
+    "notifEmail": "Email per notifiche",
+    "notifEmailHint": "Lascia vuoto per usare l'email dell'account.",
+    "notifSave": "Salva",
+    "notifSaved": "Impostazioni notifiche salvate.",
+    "notifSaveFailed": "Impossibile salvare le impostazioni notifiche."
   },
   "notes": {
     "myNotes": "Le mie Note",
@@ -407,5 +416,25 @@
     "imagePasteAction": "Incolla dagli appunti",
     "imageBrowseAction": "Sfoglia dal disco",
     "imageAwaitingPaste": "Premi Ctrl+V per incollare — Esc per annullare"
+  },
+  "reminders": {
+    "title": "Promemoria",
+    "add": "Aggiungi promemoria",
+    "noReminders": "Nessun promemoria configurato.",
+    "remove": "Rimuovi",
+    "confirm": "Aggiungi",
+    "cancel": "Annulla",
+    "reminder10min": "10 minuti prima",
+    "reminder30min": "30 minuti prima",
+    "reminder1h": "1 ora prima",
+    "reminder2h": "2 ore prima",
+    "reminder1d": "1 giorno prima",
+    "reminder1w": "1 settimana prima"
+  },
+  "notifications": {
+    "title": "Notifiche",
+    "markAllRead": "Segna tutte come lette",
+    "loading": "Caricamento...",
+    "empty": "Nessuna notifica."
   }
 }

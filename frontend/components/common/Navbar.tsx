@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from './ThemeProvider';
 import LanguageSwitcher from './LanguageSwitcher';
+import NotificationBell from './NotificationBell';
 import {
   HomeIcon,
   PlusIcon,
@@ -96,7 +97,7 @@ export default function Navbar() {
             {/* Desktop nav */}
             <div className="hidden md:flex items-center gap-1 flex-1 justify-end">
 
-              {/* Controls: theme + language */}
+              {/* Controls: theme + language + notifications */}
               <div className="flex items-center gap-1 mr-2">
                 <button
                   onClick={toggleTheme}
@@ -106,6 +107,7 @@ export default function Navbar() {
                   {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
                 </button>
                 <LanguageSwitcher />
+                {user && <NotificationBell />}
               </div>
 
               {/* Separator */}
@@ -193,6 +195,7 @@ export default function Navbar() {
                 {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
               <LanguageSwitcher />
+              {user && <div className="ml-auto"><NotificationBell /></div>}
             </div>
 
             <div className="h-px bg-gray-100 dark:bg-gray-800 mx-1 mb-1" />
