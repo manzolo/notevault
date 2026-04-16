@@ -95,17 +95,17 @@ def _anticipation_label(minutes: int) -> str:
     return f"{minutes // 10080} sett. prima"
 
 
-def _build_telegram_text(event_title: str, event_description: Optional[str],
+def _build_telegram_text(event_title: str, note_title: Optional[str],
+                          event_description: Optional[str],
                           occurrence_dt: datetime, minutes_before: int, tz_name: str) -> str:
     local_time = _format_dt_local(occurrence_dt, tz_name)
     safe_title = _escape_mdv2(event_title)
     safe_time = _escape_mdv2(local_time)
     safe_anticipation = _escape_mdv2(_anticipation_label(minutes_before))
-    text = (
-        f"🔔 *NoteVault* — Promemoria \\({safe_anticipation}\\)\n\n"
-        f"📅 *{safe_title}*\n"
-        f"⏰ {safe_time}\n"
-    )
+    text = f"🔔 *NoteVault* — Promemoria \\({safe_anticipation}\\)\n\n"
+    if note_title:
+        text += f"📓 {_escape_mdv2(note_title)}\n"
+    text += f"📅 *{safe_title}*\n⏰ {safe_time}\n"
     if event_description:
         snippet = event_description[:120].strip()
         if len(event_description) > 120:
@@ -115,8 +115,11 @@ def _build_telegram_text(event_title: str, event_description: Optional[str],
 
 
 def _build_inapp_body(occurrence_dt: datetime, tz_name: str,
-                       event_description: Optional[str], minutes_before: int) -> str:
+                       note_title: Optional[str], event_description: Optional[str],
+                       minutes_before: int) -> str:
     parts = [f"{_anticipation_label(minutes_before)} · {_format_dt_local(occurrence_dt, tz_name)}"]
+    if note_title:
+        parts.append(f"📓 {note_title}")
     if event_description:
         snippet = event_description[:80].strip()
         if len(event_description) > 80:
@@ -138,14 +141,15 @@ async def dispatch_reminder(
 
     user = event.user
     desc = event.description or ""
+    note_title = event.note.title if event.note else None
     inapp_title = f"📅 {event.title}"
-    inapp_body = _build_inapp_body(occurrence_dt, tz_name, desc, reminder.minutes_before)
+    inapp_body = _build_inapp_body(occurrence_dt, tz_name, note_title, desc, reminder.minutes_before)
 
     if reminder.notify_in_app:
         await send_in_app(db, user.id, inapp_title, inapp_body, event.id)
 
     if reminder.notify_telegram and user.telegram_chat_id:
-        tg_text = _build_telegram_text(event.title, desc, occurrence_dt, reminder.minutes_before, tz_name)
+        tg_text = _build_telegram_text(event.title, note_title, desc, occurrence_dt, reminder.minutes_before, tz_name)
         await send_telegram(user.telegram_chat_id, bot_token, tg_text)
 
     if reminder.notify_email:

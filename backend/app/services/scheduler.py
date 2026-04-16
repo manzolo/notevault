@@ -56,7 +56,8 @@ async def check_reminders() -> None:
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(EventReminder).options(
-                    selectinload(EventReminder.event).selectinload(Event.user)
+                    selectinload(EventReminder.event).selectinload(Event.user),
+                    selectinload(EventReminder.event).selectinload(Event.note)
                 )
             )
             reminders = result.scalars().all()
