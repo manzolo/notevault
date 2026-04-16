@@ -191,7 +191,7 @@ async def delete_event(
 
 # ── Global calendar endpoint ───────────────────────────────────────────────────
 
-@router.get("/api/events/{event_id}", response_model=EventWithNoteResponse)
+@router.get("/api/events/{event_id:int}", response_model=EventWithNoteResponse)
 async def get_event(
     event_id: int,
     current_user: User = Depends(get_current_user),
