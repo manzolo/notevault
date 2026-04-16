@@ -191,6 +191,23 @@ async def delete_event(
 
 # ── Global calendar endpoint ───────────────────────────────────────────────────
 
+@router.get("/api/events/{event_id}", response_model=EventWithNoteResponse)
+async def get_event(
+    event_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Event)
+        .options(selectinload(Event.attachments), selectinload(Event.note))
+        .where(Event.id == event_id, Event.user_id == current_user.id)
+    )
+    event = result.scalar_one_or_none()
+    if not event:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    return event
+
+
 @router.get("/api/events", response_model=List[EventWithNoteResponse])
 async def list_all_events(
     month: Optional[str] = Query(None, description="YYYY-MM"),

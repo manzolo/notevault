@@ -85,27 +85,44 @@ def _escape_mdv2(text: str) -> str:
     return "".join(f"\\{c}" if c in r"_*[]()~`>#+-=|{}.!" else c for c in text)
 
 
-def _build_telegram_text(event_title: str, occurrence_dt: datetime, minutes_before: int, tz_name: str) -> str:
+def _anticipation_label(minutes: int) -> str:
+    if minutes < 60:
+        return f"{minutes} min prima"
+    if minutes < 1440:
+        return f"{minutes // 60}h prima"
+    if minutes < 10080:
+        return f"{minutes // 1440}g prima"
+    return f"{minutes // 10080} sett. prima"
+
+
+def _build_telegram_text(event_title: str, event_description: Optional[str],
+                          occurrence_dt: datetime, minutes_before: int, tz_name: str) -> str:
     local_time = _format_dt_local(occurrence_dt, tz_name)
     safe_title = _escape_mdv2(event_title)
     safe_time = _escape_mdv2(local_time)
-    mins = minutes_before
-    if mins < 60:
-        anticipation = f"{mins} min prima"
-    elif mins < 1440:
-        anticipation = f"{mins // 60}h prima"
-    else:
-        anticipation = f"{mins // 1440}g prima"
-    safe_anticipation = _escape_mdv2(anticipation)
-    return (
+    safe_anticipation = _escape_mdv2(_anticipation_label(minutes_before))
+    text = (
         f"🔔 *NoteVault* — Promemoria \\({safe_anticipation}\\)\n\n"
         f"📅 *{safe_title}*\n"
         f"⏰ {safe_time}\n"
     )
+    if event_description:
+        snippet = event_description[:120].strip()
+        if len(event_description) > 120:
+            snippet += "…"
+        text += f"\n_{_escape_mdv2(snippet)}_\n"
+    return text
 
 
-def _build_inapp_body(occurrence_dt: datetime, tz_name: str) -> str:
-    return f"Inizia il {_format_dt_local(occurrence_dt, tz_name)}"
+def _build_inapp_body(occurrence_dt: datetime, tz_name: str,
+                       event_description: Optional[str], minutes_before: int) -> str:
+    parts = [f"{_anticipation_label(minutes_before)} · {_format_dt_local(occurrence_dt, tz_name)}"]
+    if event_description:
+        snippet = event_description[:80].strip()
+        if len(event_description) > 80:
+            snippet += "…"
+        parts.append(snippet)
+    return " — ".join(parts)
 
 
 async def dispatch_reminder(
@@ -120,14 +137,15 @@ async def dispatch_reminder(
     tz_name = get_settings().timezone
 
     user = event.user
-    inapp_title = f"Promemoria: {event.title}"
-    inapp_body = _build_inapp_body(occurrence_dt, tz_name)
+    desc = event.description or ""
+    inapp_title = f"📅 {event.title}"
+    inapp_body = _build_inapp_body(occurrence_dt, tz_name, desc, reminder.minutes_before)
 
     if reminder.notify_in_app:
         await send_in_app(db, user.id, inapp_title, inapp_body, event.id)
 
     if reminder.notify_telegram and user.telegram_chat_id:
-        tg_text = _build_telegram_text(event.title, occurrence_dt, reminder.minutes_before, tz_name)
+        tg_text = _build_telegram_text(event.title, desc, occurrence_dt, reminder.minutes_before, tz_name)
         await send_telegram(user.telegram_chat_id, bot_token, tg_text)
 
     if reminder.notify_email:

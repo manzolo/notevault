@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useNotifications } from "@/hooks/useNotifications";
+import api from "@/lib/api";
 
 function BellIcon({ className }: { className?: string }) {
   return (
@@ -23,6 +25,8 @@ function timeAgo(iso: string): string {
 
 export default function NotificationBell() {
   const t = useTranslations("notifications");
+  const locale = useLocale();
+  const router = useRouter();
   const { unreadCount, notifications, loadingList, fetchNotifications, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -87,7 +91,22 @@ export default function NotificationBell() {
                 className={`px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
                   !n.is_read ? "bg-indigo-50/60 dark:bg-indigo-900/10" : ""
                 }`}
-                onClick={() => { if (!n.is_read) markRead(n.id); }}
+                onClick={async () => {
+                  if (!n.is_read) markRead(n.id);
+                  if (n.event_id) {
+                    setOpen(false);
+                    try {
+                      const { data } = await api.get(`/api/events/${n.event_id}`);
+                      if (data.note_id) {
+                        router.push(`/${locale}/notes/${data.note_id}`);
+                      } else {
+                        router.push(`/${locale}/calendar`);
+                      }
+                    } catch {
+                      router.push(`/${locale}/calendar`);
+                    }
+                  }
+                }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className={`text-sm leading-snug ${!n.is_read ? "font-semibold text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-300"}`}>

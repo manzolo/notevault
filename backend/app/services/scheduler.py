@@ -81,6 +81,12 @@ async def check_reminders() -> None:
                 if next_occ is None:
                     continue
 
+                # Occurrence already in the past (e.g. reminder added after the event):
+                # advance silently without notifying, so the next future occurrence fires instead.
+                if next_occ < now:
+                    reminder.last_notified_occurrence = next_occ
+                    continue
+
                 trigger_time = next_occ - timedelta(minutes=reminder.minutes_before)
                 if trigger_time > now:
                     continue
