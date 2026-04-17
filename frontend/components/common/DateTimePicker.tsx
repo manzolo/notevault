@@ -84,6 +84,7 @@ export default function DateTimePicker({
         showTimeInput
         timeInputLabel=""
         customTimeInput={<NativeTimeInput />}
+        timeFormat="HH:mm"
         dateFormat="dd/MM/yyyy HH:mm"
         placeholderText={placeholder}
         popperPlacement="bottom-end"
