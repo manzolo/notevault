@@ -133,6 +133,77 @@ def _build_inapp_body(occurrence_dt: datetime, tz_name: str,
     return " — ".join(parts)
 
 
+def _note_url(base_url: str, note_id: Optional[int]) -> Optional[str]:
+    if not base_url or not note_id:
+        return None
+    return f"{base_url.rstrip('/')}/en/notes/{note_id}"
+
+
+def _build_email_subject(note_title: Optional[str], item_title: str) -> str:
+    if note_title:
+        return f"[{note_title}] - {item_title}"
+    return f"NoteVault - {item_title}"
+
+
+def _build_event_email_body(
+    event_title: str,
+    note_title: Optional[str],
+    note_id: Optional[int],
+    description: Optional[str],
+    occurrence_dt: datetime,
+    trigger_dt: datetime,
+    minutes_before: int,
+    tz_name: str,
+    base_url: str,
+) -> str:
+    lines = [
+        "NoteVault — Promemoria evento",
+        "",
+        f"📅 Evento: {event_title}",
+    ]
+    if note_title:
+        lines.append(f"📓 Nota:   {note_title}")
+    lines.append(f"⏰ Data:   {_format_dt_local(occurrence_dt, tz_name)}")
+    if description:
+        lines += ["", "Descrizione:", description.strip()]
+    url = _note_url(base_url, note_id)
+    if url:
+        lines += ["", f"🔗 Apri nota: {url}"]
+    lines += [
+        "",
+        f"({_anticipation_label(minutes_before)} · Promemoria: {_format_dt_local(trigger_dt, tz_name)})",
+    ]
+    return "\n".join(lines)
+
+
+def _build_task_email_body(
+    task_title: str,
+    note_title: Optional[str],
+    note_id: Optional[int],
+    due_dt: datetime,
+    trigger_dt: datetime,
+    minutes_before: int,
+    tz_name: str,
+    base_url: str,
+) -> str:
+    lines = [
+        "NoteVault — Promemoria task",
+        "",
+        f"✅ Task:    {task_title}",
+    ]
+    if note_title:
+        lines.append(f"📓 Nota:    {note_title}")
+    lines.append(f"⏰ Scadenza: {_format_dt_local(due_dt, tz_name)}")
+    url = _note_url(base_url, note_id)
+    if url:
+        lines += ["", f"🔗 Apri nota: {url}"]
+    lines += [
+        "",
+        f"({_anticipation_label(minutes_before)} · Promemoria: {_format_dt_local(trigger_dt, tz_name)})",
+    ]
+    return "\n".join(lines)
+
+
 async def dispatch_reminder(
     db: AsyncSession,
     event,
@@ -142,11 +213,13 @@ async def dispatch_reminder(
     smtp_cfg: dict,
 ) -> None:
     from app.config import get_settings
-    tz_name = get_settings().timezone
+    settings = get_settings()
+    tz_name = settings.timezone
 
     user = event.user
     desc = event.description or ""
     note_title = event.note.title if event.note else None
+    note_id = event.note_id
     inapp_title = f"📅 {event.title}"
     inapp_body = _build_inapp_body(occurrence_dt, tz_name, note_title, desc, reminder.minutes_before)
 
@@ -158,11 +231,17 @@ async def dispatch_reminder(
         await send_telegram(user.telegram_chat_id, bot_token, tg_text)
 
     if reminder.notify_email:
+        from datetime import timedelta
+        trigger_dt = occurrence_dt - timedelta(minutes=reminder.minutes_before)
         email_to = user.notification_email or user.email
         await send_email(
             to=email_to,
-            subject=inapp_title,
-            body=inapp_body,
+            subject=_build_email_subject(note_title, event.title),
+            body=_build_event_email_body(
+                event.title, note_title, note_id, desc or None,
+                occurrence_dt, trigger_dt, reminder.minutes_before,
+                tz_name, settings.app_base_url,
+            ),
             **smtp_cfg,
         )
 
@@ -197,10 +276,12 @@ async def dispatch_task_reminder(
     smtp_cfg: dict,
 ) -> None:
     from app.config import get_settings
-    tz_name = get_settings().timezone
+    settings = get_settings()
+    tz_name = settings.timezone
 
     user = task.user
     note_title = task.note.title if task.note else None
+    note_id = task.note_id
     inapp_title = f"✅ {task.title}"
     inapp_body = _build_task_inapp_body(task.due_date, tz_name, note_title, reminder.minutes_before)
 
@@ -215,7 +296,11 @@ async def dispatch_task_reminder(
         email_to = user.notification_email or user.email
         await send_email(
             to=email_to,
-            subject=inapp_title,
-            body=inapp_body,
+            subject=_build_email_subject(note_title, task.title),
+            body=_build_task_email_body(
+                task.title, note_title, note_id,
+                task.due_date, trigger_dt, reminder.minutes_before,
+                tz_name, settings.app_base_url,
+            ),
             **smtp_cfg,
         )

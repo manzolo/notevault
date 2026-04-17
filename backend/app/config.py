@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
     # App
     app_name: str = "NoteVault"
+    app_base_url: str = ""
     debug: bool = False
 
     @property
