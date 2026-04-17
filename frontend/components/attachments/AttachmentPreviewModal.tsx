@@ -472,7 +472,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
     <>
       {/* EML part preview overlay (above main modal) */}
       {emlPartPreview && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md" onClick={handleEmlPartPreviewClose}>
+        <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md" onClick={handleEmlPartPreviewClose}>
           <div className="relative bg-white dark:bg-vault-800 rounded-xl shadow-modal w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-cream-300/60 dark:border-vault-600/60" onClick={(e) => e.stopPropagation()}>
             <div className="border-t-[3px] border-t-violet-500 dark:border-t-violet-400 px-4 py-3 flex items-center justify-between border-b border-cream-200 dark:border-vault-700/80 bg-gradient-to-br from-violet-50/60 to-white dark:from-vault-700/30 dark:to-vault-800 shrink-0">
               <span className="font-display text-sm font-semibold tracking-tight text-gray-900 dark:text-vault-50 truncate">{emlPartPreview.filename}</span>
@@ -493,7 +493,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
 
       {/* ZIP EML part preview overlay */}
       {zipEmlPartPreview && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md" onClick={handleZipEmlPartPreviewClose}>
+        <div className="fixed inset-0 z-[240] flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md" onClick={handleZipEmlPartPreviewClose}>
           <div className="relative bg-white dark:bg-vault-800 rounded-xl shadow-modal w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-cream-300/60 dark:border-vault-600/60" onClick={(e) => e.stopPropagation()}>
             <div className="border-t-[3px] border-t-violet-500 dark:border-t-violet-400 px-4 py-3 flex items-center justify-between border-b border-cream-200 dark:border-vault-700/80 bg-gradient-to-br from-violet-50/60 to-white dark:from-vault-700/30 dark:to-vault-800 shrink-0">
               <span className="font-display text-sm font-semibold tracking-tight text-gray-900 dark:text-vault-50 truncate">{zipEmlPartPreview.filename}</span>
@@ -514,7 +514,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
 
       {/* ZIP entry preview overlay */}
       {zipEntryPreview && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md" onClick={handleZipEntryPreviewClose}>
+        <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md" onClick={handleZipEntryPreviewClose}>
           <div className="relative bg-white dark:bg-vault-800 rounded-xl shadow-modal w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-cream-300/60 dark:border-vault-600/60" onClick={(e) => e.stopPropagation()}>
             <div className="border-t-[3px] border-t-violet-500 dark:border-t-violet-400 px-4 py-3 flex items-center justify-between border-b border-cream-200 dark:border-vault-700/80 bg-gradient-to-br from-violet-50/60 to-white dark:from-vault-700/30 dark:to-vault-800 shrink-0">
               <span className="font-display text-sm font-semibold tracking-tight text-gray-900 dark:text-vault-50 truncate">{zipEntryPreview.filename}</span>
