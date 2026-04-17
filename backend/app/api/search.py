@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import or_, exists, select, func
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Attachment, Bookmark, Event, Note, NoteField, NoteTag, User
-from app.schemas.search import MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, SearchResponse, SearchNoteResponse
+from app.models.database import Attachment, Bookmark, Event, Note, NoteField, NoteTag, Task, User
+from app.schemas.search import MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, MatchingTask, SearchResponse, SearchNoteResponse
 from app.security.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/search", tags=["search"])
@@ -80,6 +80,18 @@ async def search_notes(
         .label("match_in_event")
     )
 
+    # Correlated subquery: True if the note has matching tasks
+    task_match = (
+        exists()
+        .where(
+            Task.note_id == Note.id,
+            Task.is_archived == False,  # noqa: E712
+            Task.fts_vector.op("@@")(tsquery),
+        )
+        .correlate(Note)
+        .label("match_in_task")
+    )
+
     base_where = [
         Note.user_id == current_user.id,
         or_(
@@ -101,6 +113,11 @@ async def search_notes(
                 Event.is_archived == False,  # noqa: E712
                 Event.fts_vector.op("@@")(tsquery),
             ),
+            exists().where(
+                Task.note_id == Note.id,
+                Task.is_archived == False,  # noqa: E712
+                Task.fts_vector.op("@@")(tsquery),
+            ),
         ),
     ]
 
@@ -116,9 +133,9 @@ async def search_notes(
 
     pages = max(1, -(-total // per_page))  # ceiling division
 
-    # Main query with attachment_match, bookmark_match, fields_match and event_match columns
+    # Main query with all match columns
     query = (
-        select(Note, attachment_match, bookmark_match, fields_match, event_match)
+        select(Note, attachment_match, bookmark_match, fields_match, event_match, task_match)
         .options(selectinload(Note.tags))
         .where(*base_where)
         .order_by(func.ts_rank(Note.fts_vector, tsquery).desc())
@@ -134,7 +151,7 @@ async def search_notes(
 
     # Batch-fetch matching attachments for notes that have a match
     matching_att_map: dict = defaultdict(list)
-    att_note_ids = [note.id for note, ma, mb, mf, me in rows if ma]
+    att_note_ids = [note.id for note, ma, mb, mf, me, mt in rows if ma]
     if att_note_ids:
         att_q = select(
             Attachment.id, Attachment.note_id, Attachment.filename, Attachment.mime_type
@@ -149,7 +166,7 @@ async def search_notes(
 
     # Batch-fetch matching bookmarks for notes that have a match
     matching_bm_map: dict = defaultdict(list)
-    bm_note_ids = [note.id for note, ma, mb, mf, me in rows if mb]
+    bm_note_ids = [note.id for note, ma, mb, mf, me, mt in rows if mb]
     if bm_note_ids:
         bm_q = select(
             Bookmark.id, Bookmark.note_id, Bookmark.url, Bookmark.title, Bookmark.description
@@ -164,7 +181,7 @@ async def search_notes(
 
     # Batch-fetch matching fields for notes that have a match
     matching_fields_map: dict = defaultdict(list)
-    fields_note_ids = [note.id for note, ma, mb, mf, me in rows if mf]
+    fields_note_ids = [note.id for note, ma, mb, mf, me, mt in rows if mf]
     if fields_note_ids:
         fld_q = select(
             NoteField.id, NoteField.note_id, NoteField.group_name, NoteField.key, NoteField.value
@@ -179,7 +196,7 @@ async def search_notes(
 
     # Batch-fetch matching events for notes that have a match
     matching_events_map: dict = defaultdict(list)
-    event_note_ids = [note.id for note, ma, mb, mf, me in rows if me]
+    event_note_ids = [note.id for note, ma, mb, mf, me, mt in rows if me]
     if event_note_ids:
         ev_q = select(
             Event.id, Event.note_id, Event.title, Event.description, Event.start_datetime
@@ -199,17 +216,35 @@ async def search_notes(
                 )
             )
 
+    # Batch-fetch matching tasks for notes that have a match
+    matching_tasks_map: dict = defaultdict(list)
+    task_note_ids = [note.id for note, ma, mb, mf, me, mt in rows if mt]
+    if task_note_ids:
+        tk_q = select(
+            Task.id, Task.note_id, Task.title, Task.is_done
+        ).where(
+            Task.note_id.in_(task_note_ids),
+            Task.is_archived == False,  # noqa: E712
+            Task.fts_vector.op("@@")(tsquery),
+        )
+        for tk_id, tk_note_id, tk_title, tk_is_done in (await db.execute(tk_q)).all():
+            matching_tasks_map[tk_note_id].append(
+                MatchingTask(id=tk_id, note_id=tk_note_id, title=tk_title, is_done=tk_is_done)
+            )
+
     items = []
-    for note, match_attachment, match_bookmark, match_fields, match_event in rows:
+    for note, match_attachment, match_bookmark, match_fields, match_event, match_task in rows:
         item = SearchNoteResponse.model_validate(note)
         item.match_in_attachment = bool(match_attachment)
         item.match_in_bookmark = bool(match_bookmark)
         item.match_in_fields = bool(match_fields)
         item.match_in_event = bool(match_event)
+        item.match_in_task = bool(match_task)
         item.matching_attachments = matching_att_map.get(note.id, [])
         item.matching_bookmarks = matching_bm_map.get(note.id, [])
         item.matching_fields = matching_fields_map.get(note.id, [])
         item.matching_events = matching_events_map.get(note.id, [])
+        item.matching_tasks = matching_tasks_map.get(note.id, [])
         items.append(item)
 
     return SearchResponse(items=items, total=total, query=q, page=page, per_page=per_page, pages=pages)

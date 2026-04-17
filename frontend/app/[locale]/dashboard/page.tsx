@@ -17,7 +17,7 @@ import Pagination from '@/components/common/Pagination';
 import Button from '@/components/common/Button';
 import { PlusIcon, FolderIcon, CalendarIcon, ChevronDownIcon } from '@/components/common/Icons';
 import api from '@/lib/api';
-import { MatchingAttachment, SearchResponse } from '@/lib/types';
+import { MatchingAttachment, MatchingTask, SearchResponse } from '@/lib/types';
 import { dateToLocalStart, dateToLocalEnd } from '@/lib/utils';
 import AttachmentPreviewModal from '@/components/attachments/AttachmentPreviewModal';
 
@@ -203,6 +203,7 @@ export default function DashboardPage() {
             bookmark: item.match_in_bookmark ?? false,
             fields: item.match_in_fields ?? false,
             event: item.match_in_event ?? false,
+            task: item.match_in_task ?? false,
           },
         ])
       )
@@ -222,6 +223,10 @@ export default function DashboardPage() {
 
   const matchingEventsMap = searchResults
     ? new Map(searchResults.items.map((item) => [item.id, item.matching_events ?? []]))
+    : undefined;
+
+  const matchingTasksMap = searchResults
+    ? new Map(searchResults.items.map((item) => [item.id, item.matching_tasks ?? []]))
     : undefined;
 
   const folderTreeProps = {
@@ -393,6 +398,7 @@ export default function DashboardPage() {
           matchingBookmarksMap={matchingBookmarksMap}
           matchingFieldsMap={matchingFieldsMap}
           matchingEventsMap={matchingEventsMap}
+          matchingTasksMap={matchingTasksMap}
           onPreviewAttachment={handlePreviewAttachment}
         />
 

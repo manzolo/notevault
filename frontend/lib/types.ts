@@ -316,15 +316,24 @@ export interface NoteFieldGroup {
   fields: NoteField[];
 }
 
+export interface MatchingTask {
+  id: number;
+  note_id: number;
+  title: string;
+  is_done: boolean;
+}
+
 export interface SearchNote extends Note {
   match_in_attachment?: boolean;
   match_in_bookmark?: boolean;
   match_in_fields?: boolean;
   match_in_event?: boolean;
+  match_in_task?: boolean;
   matching_attachments?: MatchingAttachment[];
   matching_bookmarks?: MatchingBookmark[];
   matching_fields?: MatchingField[];
   matching_events?: MatchingEvent[];
+  matching_tasks?: MatchingTask[];
 }
 
 export interface SearchResponse {

@@ -46,15 +46,27 @@ class MatchingEvent(BaseModel):
         from_attributes = True
 
 
+class MatchingTask(BaseModel):
+    id: int
+    note_id: int
+    title: str
+    is_done: bool = False
+
+    class Config:
+        from_attributes = True
+
+
 class SearchNoteResponse(NoteResponse):
     match_in_attachment: bool = False
     match_in_bookmark: bool = False
     match_in_fields: bool = False
     match_in_event: bool = False
+    match_in_task: bool = False
     matching_attachments: List[MatchingAttachment] = []
     matching_bookmarks: List[MatchingBookmark] = []
     matching_fields: List[MatchingField] = []
     matching_events: List[MatchingEvent] = []
+    matching_tasks: List[MatchingTask] = []
 
     class Config:
         from_attributes = True

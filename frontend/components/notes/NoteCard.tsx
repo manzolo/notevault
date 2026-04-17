@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import { MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, Note } from '@/lib/types';
+import { MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, MatchingTask, Note } from '@/lib/types';
 import { formatRelative, stripMarkdown, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
 import { ArchiveIcon, EyeIcon, FolderIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
@@ -28,10 +28,12 @@ interface NoteCardProps {
   matchInBookmark?: boolean;
   matchInFields?: boolean;
   matchInEvent?: boolean;
+  matchInTask?: boolean;
   matchingAttachments?: MatchingAttachment[];
   matchingBookmarks?: MatchingBookmark[];
   matchingFields?: MatchingField[];
   matchingEvents?: MatchingEvent[];
+  matchingTasks?: MatchingTask[];
   onPreviewAttachment?: (noteId: number, attachment: MatchingAttachment) => void;
 }
 
@@ -53,7 +55,7 @@ function GlobeIcon() {
   );
 }
 
-export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchInFields, matchInEvent, matchingAttachments, matchingBookmarks, matchingFields, matchingEvents, onPreviewAttachment }: NoteCardProps) {
+export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchInFields, matchInEvent, matchInTask, matchingAttachments, matchingBookmarks, matchingFields, matchingEvents, matchingTasks, onPreviewAttachment }: NoteCardProps) {
   const locale = useLocale();
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
@@ -118,7 +120,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
               <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
             </div>
 
-            {(matchInAttachment || matchInBookmark || matchInFields || matchInEvent) && (
+            {(matchInAttachment || matchInBookmark || matchInFields || matchInEvent || matchInTask) && (
               <div className="mt-2 flex flex-col gap-1.5">
                 {matchInAttachment && (
                   <div className="flex items-start gap-1.5 flex-wrap">
@@ -223,6 +225,29 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                     ) : (
                       <span className="bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded text-xs">
                         {tSearch('foundInEvent')}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {matchInTask && (
+                  <div className="flex items-start gap-1.5 flex-wrap">
+                    <svg className="h-3.5 w-3.5 shrink-0 text-emerald-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    {matchingTasks && matchingTasks.length > 0 ? (
+                      <span className="flex flex-wrap gap-1">
+                        {matchingTasks.map((tk) => (
+                          <span
+                            key={tk.id}
+                            className={`bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded text-xs ${tk.is_done ? 'line-through text-emerald-400 dark:text-emerald-600' : 'text-emerald-700 dark:text-emerald-300'}`}
+                          >
+                            {tk.title}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded text-xs">
+                        {tSearch('foundInTask')}
                       </span>
                     )}
                   </div>

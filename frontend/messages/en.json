@@ -259,7 +259,8 @@
     "foundInAttachment": "Found in attachment",
     "foundInBookmark": "Found in bookmark",
     "foundInFields": "Found in technical fields",
-    "foundInEvent": "Found in event"
+    "foundInEvent": "Found in event",
+    "foundInTask": "Found in task"
   },
   "folders": {
     "allNotes": "Unfiled",

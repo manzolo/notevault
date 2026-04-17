@@ -259,7 +259,8 @@
     "foundInAttachment": "Trovato nell'allegato",
     "foundInBookmark": "Trovato nel segnalibro",
     "foundInFields": "Trovato nei campi tecnici",
-    "foundInEvent": "Trovato negli eventi"
+    "foundInEvent": "Trovato negli eventi",
+    "foundInTask": "Trovato nei task"
   },
   "folders": {
     "allNotes": "Senza cartella",
