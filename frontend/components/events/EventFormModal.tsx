@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CalendarEvent, CalendarEventCreate, CalendarEventUpdate } from "@/lib/types";
 import Button from "@/components/common/Button";
-import RemindersSection, { PendingReminder } from "./RemindersSection";
+import RemindersSection, { PendingReminder, RemindersSectionHandle } from "./RemindersSection";
 import api from "@/lib/api";
 
 interface Props {
@@ -157,6 +157,7 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
   // Reminder state
   const [pendingReminders, setPendingReminders] = useState<PendingReminder[]>([]);
   const [deletedReminderIds, setDeletedReminderIds] = useState<number[]>([]);
+  const reminderRef = useRef<RemindersSectionHandle>(null);
 
   // Recurrence state
   const parsedRrule = parseRrule(event?.recurrence_rule);
@@ -199,13 +200,17 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
       const savedEvent = await onSave(data);
       const eid = savedEvent.id;
 
+      // Flush any pending custom input before saving
+      const extra = reminderRef.current?.getAndFlush() ?? null;
+      const allPending = extra ? [...pendingReminders, extra] : pendingReminders;
+
       // Delete reminders marked for removal (edit mode)
       await Promise.allSettled(
         deletedReminderIds.map((rid) => api.delete(`/api/events/${eid}/reminders/${rid}`))
       );
       // Create new pending reminders
       await Promise.allSettled(
-        pendingReminders.map((r) => api.post(`/api/events/${eid}/reminders`, r))
+        allPending.map((r) => api.post(`/api/events/${eid}/reminders`, r))
       );
 
       onClose();
@@ -447,6 +452,7 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
 
           {/* Reminders */}
           <RemindersSection
+            ref={reminderRef}
             eventId={event?.id}
             pendingReminders={pendingReminders}
             deletedReminderIds={deletedReminderIds}

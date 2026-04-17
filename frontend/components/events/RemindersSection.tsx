@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { EventReminder } from "@/lib/types";
 import { BellIcon, TelegramIcon, MailIcon } from "@/components/common/Icons";
@@ -11,6 +11,11 @@ export interface PendingReminder {
   notify_in_app: boolean;
   notify_telegram: boolean;
   notify_email: boolean;
+}
+
+export interface RemindersSectionHandle {
+  /** Returns the pending custom input as a reminder (if valid) and clears the input. */
+  getAndFlush: () => PendingReminder | null;
 }
 
 interface Props {
@@ -49,13 +54,13 @@ function ChannelIcons({ inApp, telegram, email }: { inApp: boolean; telegram: bo
   );
 }
 
-export default function RemindersSection({
+const RemindersSection = forwardRef<RemindersSectionHandle, Props>(function RemindersSection({
   eventId,
   pendingReminders,
   deletedReminderIds,
   onPendingChange,
   onDeletedChange,
-}: Props) {
+}, ref) {
   const t = useTranslations("reminders");
   const [existingReminders, setExistingReminders] = useState<EventReminder[]>([]);
   const [adding, setAdding] = useState(false);
@@ -65,6 +70,19 @@ export default function RemindersSection({
   const [notifyInApp, setNotifyInApp] = useState(true);
   const [notifyTelegram, setNotifyTelegram] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState(false);
+  const addFormRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    getAndFlush: () => {
+      const val = parseInt(customValue, 10);
+      if (!val || val <= 0) return null;
+      if (!notifyInApp && !notifyTelegram && !notifyEmail) return null;
+      const mins = val * unitMultiplier[customUnit];
+      setCustomValue("");
+      setAdding(false);
+      return { minutes_before: mins, notify_in_app: notifyInApp, notify_telegram: notifyTelegram, notify_email: notifyEmail };
+    },
+  }));
 
   useEffect(() => {
     if (!eventId) return;
@@ -148,7 +166,7 @@ export default function RemindersSection({
 
       {/* Add form */}
       {adding && (
-        <div className="pt-2 border-t border-gray-100 dark:border-gray-700 space-y-2">
+        <div ref={addFormRef} className="pt-2 border-t border-gray-100 dark:border-gray-700 space-y-2">
           {/* Channel icon-pill toggles */}
           <div className="flex gap-1.5">
             {channels.map(({ label, active, set, Icon, activeClass }) => (
@@ -173,6 +191,12 @@ export default function RemindersSection({
               <input type="number" min="1" value={customValue}
                 onChange={(e) => setCustomValue(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit()}
+                onBlur={(e) => {
+                  const related = e.relatedTarget as Node | null;
+                  if (customValue && parseInt(customValue, 10) > 0 && (!related || !addFormRef.current?.contains(related))) {
+                    handleCustomSubmit();
+                  }
+                }}
                 placeholder={t("customMinutes")}
                 className="w-14 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-900 dark:text-white" />
               <select value={customUnit} onChange={(e) => setCustomUnit(e.target.value as typeof customUnit)}
@@ -182,8 +206,6 @@ export default function RemindersSection({
                 <option value="days">{t("unitDays")}</option>
                 <option value="weeks">{t("unitWeeks")}</option>
               </select>
-              <button type="button" disabled={!customValue} onClick={handleCustomSubmit}
-                className="px-1.5 py-0.5 rounded text-xs bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 transition-colors">▶</button>
               <button type="button" onClick={() => { setAdding(false); setCustomValue(""); }}
                 className="px-1.5 py-0.5 rounded text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">✕</button>
             </div>
@@ -192,4 +214,6 @@ export default function RemindersSection({
       )}
     </div>
   );
-}
+});
+
+export default RemindersSection;

@@ -37,6 +37,7 @@ export default function TaskRemindersSection({ taskId, hasDueDate }: Props) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const didFetch = useRef(false);
+  const addFormRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!didFetch.current) {
@@ -102,7 +103,7 @@ export default function TaskRemindersSection({ taskId, hasDueDate }: Props) {
           </div>
 
           {/* Presets + custom in one wrapping row */}
-          <div className="flex flex-wrap gap-1.5 items-center">
+          <div ref={addFormRef} className="flex flex-wrap gap-1.5 items-center">
             {PRESETS.map((m) => (
               <button key={m} type="button" disabled={creating} onClick={() => addWith(m)}
                 className="px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors disabled:opacity-50">
@@ -113,6 +114,12 @@ export default function TaskRemindersSection({ taskId, hasDueDate }: Props) {
               <input type="number" min="1" value={customValue}
                 onChange={(e) => setCustomValue(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit()}
+                onBlur={(e) => {
+                  const related = e.relatedTarget as Node | null;
+                  if (customValue && parseInt(customValue, 10) > 0 && (!related || !addFormRef.current?.contains(related))) {
+                    handleCustomSubmit();
+                  }
+                }}
                 placeholder={t("customMinutes")}
                 className="w-14 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
               <select value={customUnit} onChange={(e) => setCustomUnit(e.target.value as typeof customUnit)}
@@ -122,8 +129,6 @@ export default function TaskRemindersSection({ taskId, hasDueDate }: Props) {
                 <option value="days">{t("unitDays")}</option>
                 <option value="weeks">{t("unitWeeks")}</option>
               </select>
-              <button type="button" disabled={creating || !customValue} onClick={handleCustomSubmit}
-                className="px-1.5 py-0.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 transition-colors">▶</button>
             </div>
           </div>
 
