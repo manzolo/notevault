@@ -44,6 +44,12 @@ export function useNotifications() {
     setUnreadCount(0);
   }, []);
 
+  const snoozeNotification = useCallback(async (id: number, minutes: number) => {
+    await api.post(`/api/notifications/${id}/snooze`, { minutes });
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    setUnreadCount((c) => Math.max(0, c - 1));
+  }, []);
+
   useEffect(() => {
     fetchCount();
     timerRef.current = setInterval(fetchCount, POLL_INTERVAL);
@@ -52,5 +58,5 @@ export function useNotifications() {
     };
   }, [fetchCount]);
 
-  return { unreadCount, notifications, loadingList, fetchNotifications, markRead, markAllRead };
+  return { unreadCount, notifications, loadingList, fetchNotifications, markRead, markAllRead, snoozeNotification };
 }

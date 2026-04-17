@@ -11,6 +11,7 @@ class NotificationResponse(BaseModel):
     event_id: Optional[int] = None
     task_id: Optional[int] = None
     is_read: bool
+    snoozed_until: Optional[datetime] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -18,3 +19,7 @@ class NotificationResponse(BaseModel):
 
 class NotificationCountResponse(BaseModel):
     unread: int
+
+
+class SnoozeRequest(BaseModel):
+    minutes: int

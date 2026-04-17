@@ -51,6 +51,22 @@ const Trigger = forwardRef<HTMLButtonElement, TriggerProps>(
 );
 Trigger.displayName = 'DateTimePickerTrigger';
 
+// Custom time input using the native <input type="time"> so the browser handles
+// hour→minute focus progression natively, avoiding the focus-jump bug in the
+// default react-datepicker time input.
+const NativeTimeInput = forwardRef<HTMLInputElement, { value?: string; onChange?: (v: string) => void }>(
+  ({ value, onChange }, ref) => (
+    <input
+      ref={ref}
+      type="time"
+      value={value ?? ''}
+      onChange={(e) => onChange?.(e.target.value)}
+      className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+    />
+  ),
+);
+NativeTimeInput.displayName = 'NativeTimeInput';
+
 export default function DateTimePicker({
   value,
   onChange,
@@ -67,6 +83,7 @@ export default function DateTimePicker({
         onChange={(date) => onChange(date ? date.toISOString() : null)}
         showTimeInput
         timeInputLabel=""
+        customTimeInput={<NativeTimeInput />}
         dateFormat="dd/MM/yyyy HH:mm"
         placeholderText={placeholder}
         popperPlacement="bottom-end"

@@ -42,6 +42,7 @@ export interface AppNotification {
   event_id?: number | null;
   task_id?: number | null;
   is_read: boolean;
+  snoozed_until?: string | null;
   created_at: string;
 }
 

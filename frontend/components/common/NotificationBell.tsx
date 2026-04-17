@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useNotifications } from "@/hooks/useNotifications";
 import api from "@/lib/api";
+import { AppNotification } from "@/lib/types";
 
 function BellIcon({ className }: { className?: string }) {
   return (
@@ -23,19 +24,74 @@ function timeAgo(iso: string): string {
   return `${Math.floor(diff / 86400)}g fa`;
 }
 
+const SNOOZE_PRESETS: Array<{ key: string; minutes: number }> = [
+  { key: "snooze10m", minutes: 10 },
+  { key: "snooze30m", minutes: 30 },
+  { key: "snooze1h", minutes: 60 },
+  { key: "snooze3h", minutes: 180 },
+  { key: "snooze8h", minutes: 480 },
+  { key: "snooze1d", minutes: 1440 },
+  { key: "snooze1w", minutes: 10080 },
+];
+
+function SnoozeMenu({
+  notification,
+  onSnooze,
+  onClose,
+}: {
+  notification: AppNotification;
+  onSnooze: (id: number, minutes: number) => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations("notifications");
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handle = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [onClose]);
+
+  return (
+    <div
+      ref={menuRef}
+      className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-[200] overflow-hidden py-1"
+    >
+      {SNOOZE_PRESETS.map(({ key, minutes }) => (
+        <button
+          key={key}
+          className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSnooze(notification.id, minutes);
+            onClose();
+          }}
+        >
+          {t(key as keyof ReturnType<typeof useTranslations<"notifications">>)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function NotificationBell() {
   const t = useTranslations("notifications");
   const locale = useLocale();
   const router = useRouter();
-  const { unreadCount, notifications, loadingList, fetchNotifications, markRead, markAllRead } = useNotifications();
+  const { unreadCount, notifications, loadingList, fetchNotifications, markRead, markAllRead, snoozeNotification } = useNotifications();
   const [open, setOpen] = useState(false);
+  const [snoozeMenuId, setSnoozeMenuId] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     const handle = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpen(false);
+        setSnoozeMenuId(null);
       }
     };
     document.addEventListener("mousedown", handle);
@@ -44,7 +100,33 @@ export default function NotificationBell() {
 
   const handleOpen = () => {
     setOpen((v) => !v);
+    setSnoozeMenuId(null);
     if (!open) fetchNotifications();
+  };
+
+  const handleSnooze = async (id: number, minutes: number) => {
+    await snoozeNotification(id, minutes);
+  };
+
+  const handleNotificationClick = async (n: AppNotification) => {
+    if (!n.is_read) markRead(n.id);
+    setOpen(false);
+    setSnoozeMenuId(null);
+    if (n.event_id) {
+      try {
+        const { data } = await api.get(`/api/events/${n.event_id}`);
+        router.push(data.note_id ? `/${locale}/notes/${data.note_id}` : `/${locale}/calendar`);
+      } catch {
+        router.push(`/${locale}/calendar`);
+      }
+    } else if (n.task_id) {
+      try {
+        const { data } = await api.get(`/api/tasks/${n.task_id}`);
+        router.push(`/${locale}/notes/${data.note_id}`);
+      } catch {
+        router.push(`/${locale}/tasks`);
+      }
+    }
   };
 
   return (
@@ -88,36 +170,44 @@ export default function NotificationBell() {
             {!loadingList && notifications.map((n) => (
               <div
                 key={n.id}
-                className={`px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                className={`relative px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
                   !n.is_read ? "bg-indigo-50/60 dark:bg-indigo-900/10" : ""
                 }`}
-                onClick={async () => {
-                  if (!n.is_read) markRead(n.id);
-                  setOpen(false);
-                  if (n.event_id) {
-                    try {
-                      const { data } = await api.get(`/api/events/${n.event_id}`);
-                      router.push(data.note_id ? `/${locale}/notes/${data.note_id}` : `/${locale}/calendar`);
-                    } catch {
-                      router.push(`/${locale}/calendar`);
-                    }
-                  } else if (n.task_id) {
-                    try {
-                      const { data } = await api.get(`/api/tasks/${n.task_id}`);
-                      router.push(`/${locale}/notes/${data.note_id}`);
-                    } catch {
-                      router.push(`/${locale}/tasks`);
-                    }
-                  }
-                }}
+                onClick={() => handleNotificationClick(n)}
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className={`text-sm leading-snug ${!n.is_read ? "font-semibold text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-300"}`}>
                     {n.title}
                   </p>
-                  {!n.is_read && (
-                    <span className="mt-0.5 w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
-                  )}
+                  <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                    {/* Snooze button */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        title={t("snooze")}
+                        className="p-0.5 rounded text-gray-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSnoozeMenuId(snoozeMenuId === n.id ? null : n.id);
+                        }}
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                      {snoozeMenuId === n.id && (
+                        <SnoozeMenu
+                          notification={n}
+                          onSnooze={handleSnooze}
+                          onClose={() => setSnoozeMenuId(null)}
+                        />
+                      )}
+                    </div>
+                    {!n.is_read && (
+                      <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                    )}
+                  </div>
                 </div>
                 {n.body && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{n.body}</p>

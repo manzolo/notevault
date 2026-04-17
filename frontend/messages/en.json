@@ -443,6 +443,14 @@
     "title": "Notifications",
     "markAllRead": "Mark all read",
     "loading": "Loading...",
-    "empty": "No notifications."
+    "empty": "No notifications.",
+    "snooze": "Snooze",
+    "snooze10m": "10 min",
+    "snooze30m": "30 min",
+    "snooze1h": "1 hour",
+    "snooze3h": "3 hours",
+    "snooze8h": "8 hours",
+    "snooze1d": "1 day",
+    "snooze1w": "1 week"
   }
 }

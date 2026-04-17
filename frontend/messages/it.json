@@ -443,6 +443,14 @@
     "title": "Notifiche",
     "markAllRead": "Segna tutte come lette",
     "loading": "Caricamento...",
-    "empty": "Nessuna notifica."
+    "empty": "Nessuna notifica.",
+    "snooze": "Posticipa",
+    "snooze10m": "10 min",
+    "snooze30m": "30 min",
+    "snooze1h": "1 ora",
+    "snooze3h": "3 ore",
+    "snooze8h": "8 ore",
+    "snooze1d": "1 giorno",
+    "snooze1w": "1 settimana"
   }
 }

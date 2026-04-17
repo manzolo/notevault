@@ -94,3 +94,39 @@ async def test_notification_isolation(client, auth_headers, second_auth_headers,
     await _seed_notifications(db_session, user_id, count=3)
     r = await client.get("/api/notifications", headers=second_auth_headers)
     assert r.json() == []
+
+
+async def test_snooze_hides_notification(client, auth_headers, db_session):
+    user_id = await _get_user_id(db_session, "testuser")
+    await _seed_notifications(db_session, user_id, count=1)
+    r = await client.get("/api/notifications", headers=auth_headers)
+    notif_id = r.json()[0]["id"]
+
+    r = await client.post(f"/api/notifications/{notif_id}/snooze", json={"minutes": 30}, headers=auth_headers)
+    assert r.status_code == 204
+
+    r = await client.get("/api/notifications", headers=auth_headers)
+    assert r.json() == []
+
+    r = await client.get("/api/notifications/count", headers=auth_headers)
+    assert r.json()["unread"] == 0
+
+
+async def test_snooze_invalid_minutes(client, auth_headers, db_session):
+    user_id = await _get_user_id(db_session, "testuser")
+    await _seed_notifications(db_session, user_id, count=1)
+    r = await client.get("/api/notifications", headers=auth_headers)
+    notif_id = r.json()[0]["id"]
+
+    r = await client.post(f"/api/notifications/{notif_id}/snooze", json={"minutes": 0}, headers=auth_headers)
+    assert r.status_code == 400
+
+
+async def test_snooze_wrong_user(client, auth_headers, second_auth_headers, db_session):
+    user_id = await _get_user_id(db_session, "testuser")
+    await _seed_notifications(db_session, user_id, count=1)
+    r = await client.get("/api/notifications", headers=auth_headers)
+    notif_id = r.json()[0]["id"]
+
+    r = await client.post(f"/api/notifications/{notif_id}/snooze", json={"minutes": 10}, headers=second_auth_headers)
+    assert r.status_code == 404
