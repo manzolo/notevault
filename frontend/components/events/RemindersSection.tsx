@@ -31,7 +31,11 @@ export function minutesLabel(minutes: number, t: (k: string) => string): string 
     1440: t("reminder1d"),
     10080: t("reminder1w"),
   };
-  return map[minutes] ?? `${minutes} min`;
+  if (map[minutes]) return map[minutes];
+  if (minutes % 10080 === 0) return `${minutes / 10080} ${t("unitWeeks")}`;
+  if (minutes % 1440 === 0) return `${minutes / 1440} ${t("unitDays")}`;
+  if (minutes % 60 === 0) return `${minutes / 60} ${t("unitHours")}`;
+  return `${minutes} ${t("unitMinutes")}`;
 }
 
 function ChannelBadges({ r }: { r: Pick<PendingReminder, "notify_in_app" | "notify_telegram" | "notify_email"> }) {

@@ -88,13 +88,13 @@ def _escape_mdv2(text: str) -> str:
 
 
 def _anticipation_label(minutes: int) -> str:
-    if minutes < 60:
-        return f"{minutes} min prima"
-    if minutes < 1440:
-        return f"{minutes // 60}h prima"
-    if minutes < 10080:
+    if minutes % 10080 == 0:
+        return f"{minutes // 10080} sett. prima"
+    if minutes % 1440 == 0:
         return f"{minutes // 1440}g prima"
-    return f"{minutes // 10080} sett. prima"
+    if minutes % 60 == 0:
+        return f"{minutes // 60}h prima"
+    return f"{minutes} min prima"
 
 
 def _build_telegram_text(event_title: str, note_title: Optional[str],
