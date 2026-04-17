@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useAttachments } from '@/hooks/useAttachments';
@@ -287,13 +288,13 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
     }
     if (attachment.mime_type === 'message/rfc822' && emailContent) {
       return (
-        <div className="w-full max-h-[70vh] overflow-auto rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm flex flex-col">
-          <div className="flex border-b border-gray-200 dark:border-gray-700 shrink-0">
+        <div className="w-full max-h-[70vh] overflow-auto rounded border border-cream-300/60 dark:border-vault-700/60 bg-white dark:bg-vault-800 text-sm flex flex-col">
+          <div className="flex border-b border-gray-200 dark:border-vault-700/60 shrink-0">
             {(['rendered', 'raw'] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => handleEmlViewToggle(v)}
-                className={`px-4 py-2 text-xs font-medium transition-colors ${emlView === v ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                className={`px-4 py-2 text-xs font-medium transition-colors ${emlView === v ? 'border-b-2 border-violet-500 text-violet-600 dark:text-violet-400' : 'text-gray-500 dark:text-vault-300 hover:text-gray-700 dark:hover:text-vault-100'}`}
               >
                 {v === 'raw' ? tAttachments('emlRaw') : tAttachments('emlRendered')}
               </button>
@@ -301,7 +302,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
           </div>
           {emlView === 'raw' ? (
             <>
-              <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1">
+              <div className="border-b border-gray-200 dark:border-vault-700/60 px-4 py-3 space-y-1">
                 {['From', 'To', 'Cc', 'Date', 'Subject'].map((key) => emailContent.headers[key] ? (
                   <div key={key} className="flex gap-2">
                     <span className="font-medium text-gray-400 dark:text-gray-500 w-16 shrink-0">{key}:</span>
@@ -317,7 +318,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
             <div className="flex-1 flex items-center justify-center py-12"><LoadingSpinner /></div>
           ) : emlParsed ? (
             <>
-              <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1 shrink-0">
+              <div className="border-b border-gray-200 dark:border-vault-700/60 px-4 py-3 space-y-1 shrink-0">
                 {['From', 'To', 'Cc', 'Bcc', 'Date', 'Subject', 'Reply-To'].map((key) => emlParsed.headers[key] ? (
                   <div key={key} className="flex gap-2">
                     <span className="font-medium text-gray-400 dark:text-gray-500 w-20 shrink-0">{key}:</span>
@@ -333,13 +334,13 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
                 </pre>
               )}
               {emlParsed.attachments.length > 0 && (
-                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
+                <div className="border-t border-gray-200 dark:border-vault-700/60 px-4 py-3 shrink-0">
                   <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                     {tAttachments('emlAttachments')}
                   </p>
                   <div className="space-y-1">
                     {emlParsed.attachments.map((a) => (
-                      <div key={a.index} className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <div key={a.index} className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-cream-100 dark:hover:bg-vault-700/50">
                         <div className="min-w-0">
                           <span className="text-sm text-gray-700 dark:text-gray-300 truncate block">{a.filename}</span>
                           <span className="text-xs text-gray-400">{a.content_type} · {formatBytes(a.size)}</span>
@@ -348,7 +349,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
                           {EML_PREVIEW_MIMES.has(a.content_type) && (
                             <button
                               onClick={() => handleEmlPartPreview(a.index, a.filename, a.content_type)}
-                              className="p-1.5 rounded text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                              className="p-1.5 rounded text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors"
                               title={`Preview ${a.filename}`}
                             >
                               <EyeIcon />
@@ -356,7 +357,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
                           )}
                           <button
                             onClick={() => downloadEmlPart(attachment.id, a.index, a.filename)}
-                            className="p-1.5 rounded text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                            className="p-1.5 rounded text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors"
                             title={`Download ${a.filename}`}
                           >
                             <ArrowDownTrayIcon />
@@ -374,7 +375,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
     }
     if (attachment.mime_type === 'application/zip') {
       return (
-        <div className="w-full max-h-[70vh] overflow-auto rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm flex flex-col">
+        <div className="w-full max-h-[70vh] overflow-auto rounded border border-cream-300/60 dark:border-vault-700/60 bg-white dark:bg-vault-800 text-sm flex flex-col">
           {zipLoading ? (
             <div className="flex-1 flex items-center justify-center py-12"><LoadingSpinner /></div>
           ) : zipEncrypted && !zipPasswordUnlocked ? (
@@ -388,7 +389,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
                   onChange={(e) => { setZipPassword(e.target.value); setZipPasswordError(''); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleZipUnlock(); }}
                   placeholder={tAttachments('zipPasswordPlaceholder')}
-                  className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="block w-full rounded-md border border-cream-300 dark:border-vault-600 dark:bg-vault-700 dark:text-vault-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                   autoFocus
                 />
                 {zipPasswordError && <p className="text-xs text-red-500">{zipPasswordError}</p>}
@@ -404,12 +405,12 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
               <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {zipEntries.map((entry, idx) => (
                   entry.is_dir ? (
-                    <div key={idx} className="flex items-center gap-3 px-4 py-2 bg-gray-50 dark:bg-gray-700/30">
+                    <div key={idx} className="flex items-center gap-3 px-4 py-2 bg-cream-100 dark:bg-vault-700/30">
                       <FolderIcon className="h-4 w-4 text-yellow-500 shrink-0" />
                       <span className="text-sm text-gray-500 dark:text-gray-400 truncate">{entry.name}</span>
                     </div>
                   ) : (
-                    <div key={idx} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <div key={idx} className="flex items-center gap-3 px-4 py-2.5 hover:bg-cream-100 dark:hover:bg-vault-700/50">
                       <div className="flex-1 min-w-0">
                         <span className="text-sm text-gray-700 dark:text-gray-300 truncate block">
                           {entry.name.split('/').pop() || entry.name}
@@ -423,7 +424,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
                           <button
                             onClick={() => handleZipEntryPreview(entry.name, entry.content_type)}
                             disabled={zipEntryLoadingPath === entry.name}
-                            className="p-1.5 rounded text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors disabled:opacity-60 disabled:cursor-wait"
+                            className="p-1.5 rounded text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors disabled:opacity-60 disabled:cursor-wait"
                             title={`Preview ${entry.name.split('/').pop()}`}
                           >
                             {zipEntryLoadingPath === entry.name ? (
@@ -441,7 +442,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
                         )}
                         <button
                           onClick={() => downloadZipEntry(attachment.id, entry.name, entry.name.split('/').pop() || entry.name, zipPassword || undefined)}
-                          className="p-1.5 rounded text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                          className="p-1.5 rounded text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors"
                           title={`Download ${entry.name.split('/').pop()}`}
                         >
                           <ArrowDownTrayIcon />
@@ -458,7 +459,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
     }
     if (textContent !== null) {
       return (
-        <pre className="w-full h-[70vh] overflow-auto p-4 text-xs font-mono text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700 whitespace-pre-wrap break-all leading-relaxed">
+        <pre className="w-full h-[70vh] overflow-auto p-4 text-xs font-mono text-gray-800 dark:text-vault-100 bg-cream-100 dark:bg-vault-900 rounded border border-cream-300/60 dark:border-vault-700/60 whitespace-pre-wrap break-all leading-relaxed">
           {textContent}
         </pre>
       );
@@ -467,17 +468,17 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
     return <img src={url} alt={attachment.filename} className="max-w-full max-h-[70vh] object-contain rounded" />;
   };
 
-  return (
+  return createPortal(
     <>
       {/* EML part preview overlay (above main modal) */}
       {emlPartPreview && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50" onClick={handleEmlPartPreviewClose}>
-          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
-              <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{emlPartPreview.filename}</span>
-              <button onClick={handleEmlPartPreviewClose} className="ml-4 text-gray-400 hover:text-gray-600"><XMarkIcon /></button>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md" onClick={handleEmlPartPreviewClose}>
+          <div className="relative bg-white dark:bg-vault-800 rounded-xl shadow-modal w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-cream-300/60 dark:border-vault-600/60" onClick={(e) => e.stopPropagation()}>
+            <div className="border-t-[3px] border-t-violet-500 dark:border-t-violet-400 px-4 py-3 flex items-center justify-between border-b border-cream-200 dark:border-vault-700/80 bg-gradient-to-br from-violet-50/60 to-white dark:from-vault-700/30 dark:to-vault-800 shrink-0">
+              <span className="font-display text-sm font-semibold tracking-tight text-gray-900 dark:text-vault-50 truncate">{emlPartPreview.filename}</span>
+              <button onClick={handleEmlPartPreviewClose} className="ml-4 text-gray-400 dark:text-vault-300 hover:text-gray-700 dark:hover:text-vault-50 transition-colors rounded-md p-0.5 hover:bg-cream-200/60 dark:hover:bg-vault-700/60"><XMarkIcon /></button>
             </div>
-            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-800">
+            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-cream-100 dark:bg-vault-900">
               {emlPartPreview.content_type === 'application/pdf' ? (
                 <iframe src={emlPartPreview.url} className="w-full h-[70vh] rounded" title={emlPartPreview.filename} />
               ) : emlPartPreview.content_type.startsWith('video/') ? (
@@ -492,13 +493,13 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
 
       {/* ZIP EML part preview overlay */}
       {zipEmlPartPreview && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/50" onClick={handleZipEmlPartPreviewClose}>
-          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
-              <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{zipEmlPartPreview.filename}</span>
-              <button onClick={handleZipEmlPartPreviewClose} className="ml-4 text-gray-400 hover:text-gray-600"><XMarkIcon /></button>
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md" onClick={handleZipEmlPartPreviewClose}>
+          <div className="relative bg-white dark:bg-vault-800 rounded-xl shadow-modal w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-cream-300/60 dark:border-vault-600/60" onClick={(e) => e.stopPropagation()}>
+            <div className="border-t-[3px] border-t-violet-500 dark:border-t-violet-400 px-4 py-3 flex items-center justify-between border-b border-cream-200 dark:border-vault-700/80 bg-gradient-to-br from-violet-50/60 to-white dark:from-vault-700/30 dark:to-vault-800 shrink-0">
+              <span className="font-display text-sm font-semibold tracking-tight text-gray-900 dark:text-vault-50 truncate">{zipEmlPartPreview.filename}</span>
+              <button onClick={handleZipEmlPartPreviewClose} className="ml-4 text-gray-400 dark:text-vault-300 hover:text-gray-700 dark:hover:text-vault-50 transition-colors rounded-md p-0.5 hover:bg-cream-200/60 dark:hover:bg-vault-700/60"><XMarkIcon /></button>
             </div>
-            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-800">
+            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-cream-100 dark:bg-vault-900">
               {zipEmlPartPreview.content_type === 'application/pdf' ? (
                 <iframe src={zipEmlPartPreview.url} className="w-full h-[70vh] rounded" title={zipEmlPartPreview.filename} />
               ) : zipEmlPartPreview.content_type.startsWith('video/') ? (
@@ -513,25 +514,25 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
 
       {/* ZIP entry preview overlay */}
       {zipEntryPreview && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50" onClick={handleZipEntryPreviewClose}>
-          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
-              <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{zipEntryPreview.filename}</span>
-              <button onClick={handleZipEntryPreviewClose} className="ml-4 text-gray-400 hover:text-gray-600"><XMarkIcon /></button>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md" onClick={handleZipEntryPreviewClose}>
+          <div className="relative bg-white dark:bg-vault-800 rounded-xl shadow-modal w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-cream-300/60 dark:border-vault-600/60" onClick={(e) => e.stopPropagation()}>
+            <div className="border-t-[3px] border-t-violet-500 dark:border-t-violet-400 px-4 py-3 flex items-center justify-between border-b border-cream-200 dark:border-vault-700/80 bg-gradient-to-br from-violet-50/60 to-white dark:from-vault-700/30 dark:to-vault-800 shrink-0">
+              <span className="font-display text-sm font-semibold tracking-tight text-gray-900 dark:text-vault-50 truncate">{zipEntryPreview.filename}</span>
+              <button onClick={handleZipEntryPreviewClose} className="ml-4 text-gray-400 dark:text-vault-300 hover:text-gray-700 dark:hover:text-vault-50 transition-colors rounded-md p-0.5 hover:bg-cream-200/60 dark:hover:bg-vault-700/60"><XMarkIcon /></button>
             </div>
-            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-800">
+            <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-cream-100 dark:bg-vault-900">
               {zipEntryPreview.content_type === 'application/pdf' ? (
                 <iframe src={zipEntryPreview.url} className="w-full h-[70vh] rounded" title={zipEntryPreview.filename} />
               ) : zipEntryPreview.content_type.startsWith('video/') ? (
                 <video src={zipEntryPreview.url} controls className="max-w-full max-h-[70vh] rounded" />
               ) : zipEntryPreview.content_type === 'message/rfc822' ? (
-                <div className="w-full h-[70vh] flex flex-col overflow-hidden rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
-                  <div className="flex border-b border-gray-200 dark:border-gray-700 shrink-0">
+                <div className="w-full h-[70vh] flex flex-col overflow-hidden rounded border border-gray-200 dark:border-vault-700/60 bg-white dark:bg-vault-800 text-sm">
+                  <div className="flex border-b border-gray-200 dark:border-vault-700/60 shrink-0">
                     {(['rendered', 'raw'] as const).map((v) => (
                       <button
                         key={v}
                         onClick={() => setZipEmlView(v)}
-                        className={`px-4 py-2 text-xs font-medium transition-colors ${zipEmlView === v ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                        className={`px-4 py-2 text-xs font-medium transition-colors ${zipEmlView === v ? 'border-b-2 border-violet-500 text-violet-600 dark:text-violet-400' : 'text-gray-500 dark:text-vault-300 hover:text-gray-700 dark:hover:text-vault-100'}`}
                       >
                         {v === 'raw' ? tAttachments('emlRaw') : tAttachments('emlRendered')}
                       </button>
@@ -543,7 +544,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
                     </pre>
                   ) : zipEntryPreview.emlParsed ? (
                     <>
-                      <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1 shrink-0">
+                      <div className="border-b border-gray-200 dark:border-vault-700/60 px-4 py-3 space-y-1 shrink-0">
                         {['From', 'To', 'Cc', 'Bcc', 'Date', 'Subject', 'Reply-To'].map((key) => zipEntryPreview.emlParsed!.headers[key] ? (
                           <div key={key} className="flex gap-2">
                             <span className="font-medium text-gray-400 dark:text-gray-500 w-20 shrink-0">{key}:</span>
@@ -564,13 +565,13 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
                         </pre>
                       )}
                       {zipEntryPreview.emlParsed.attachments.length > 0 && (
-                        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
+                        <div className="border-t border-gray-200 dark:border-vault-700/60 px-4 py-3 shrink-0">
                           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                             {tAttachments('emlAttachments')}
                           </p>
                           <div className="space-y-1">
                             {zipEntryPreview.emlParsed.attachments.map((a) => (
-                              <div key={a.index} className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                              <div key={a.index} className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-cream-100 dark:hover:bg-vault-700/50">
                                 <div className="min-w-0">
                                   <span className="text-sm text-gray-700 dark:text-gray-300 truncate block">{a.filename}</span>
                                   <span className="text-xs text-gray-400">{a.content_type} · {formatBytes(a.size)}</span>
@@ -580,7 +581,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
                                     <button
                                       onClick={() => handleZipEmlPartPreview(zipEntryPreview!.entryPath, a.index, a.content_type)}
                                       disabled={zipEmlPartLoadingIndex === a.index}
-                                      className="p-1.5 rounded text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors disabled:opacity-60 disabled:cursor-wait"
+                                      className="p-1.5 rounded text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors disabled:opacity-60 disabled:cursor-wait"
                                       title={`Preview ${a.filename}`}
                                     >
                                       {zipEmlPartLoadingIndex === a.index ? (
@@ -593,7 +594,7 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
                                   )}
                                   <button
                                     onClick={() => downloadZipEmlPart(attachment.id, zipEntryPreview!.entryPath, a.index, a.filename, zipPassword || undefined)}
-                                    className="p-1.5 rounded text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                                    className="p-1.5 rounded text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors"
                                     title={`Download ${a.filename}`}
                                   >
                                     <ArrowDownTrayIcon />
@@ -618,21 +619,22 @@ export default function AttachmentPreviewModal({ noteId, attachment, onClose }: 
       )}
 
       {/* Main preview modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={onClose}>
-        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{attachment.filename}</span>
-            <button onClick={onClose} className="ml-4 text-gray-400 hover:text-gray-600">
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md" onClick={onClose}>
+        <div className="relative bg-white dark:bg-vault-900 rounded-xl shadow-modal w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-cream-300/60 dark:border-vault-700/60" onClick={(e) => e.stopPropagation()}>
+          <div className="border-t-[3px] border-t-violet-500 dark:border-t-violet-400 px-4 py-3 flex items-center justify-between border-b border-cream-200 dark:border-vault-700/50 bg-gradient-to-br from-violet-50/60 to-white dark:from-vault-900 dark:to-vault-900 shrink-0">
+            <span className="font-display text-sm font-semibold tracking-tight text-gray-900 dark:text-vault-50 truncate">{attachment.filename}</span>
+            <button onClick={onClose} className="ml-4 text-gray-400 dark:text-vault-300 hover:text-gray-700 dark:hover:text-vault-50 transition-colors rounded-md p-0.5 hover:bg-cream-200/60 dark:hover:bg-vault-700/60">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-800">
+          <div className="overflow-auto flex-1 flex items-center justify-center p-4 bg-cream-100 dark:bg-vault-900">
             {renderContent()}
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }

@@ -192,14 +192,14 @@ async def check_reminders() -> None:
                             ev = notif.event
                             note_title = ev.note.title if ev.note else None
                             # Approximate occurrence from notification body context
-                            tg_text = f"🔔 *NoteVault* \\— Promemoria posticipato\n\n📅 *{_escape_mdv2(ev.title)}*"
+                            tg_text = f"🔔 *NoteVault* — Promemoria posticipato\n\n📅 *{_escape_mdv2(ev.title)}*"
                             if note_title:
                                 tg_text += f"\n📓 {_escape_mdv2(note_title)}"
                             await send_telegram(user.telegram_chat_id, settings.telegram_bot_token, tg_text)
                         elif notif.task_id and notif.task:
                             tk = notif.task
                             note_title = tk.note.title if tk.note else None
-                            tg_text = f"🔔 *NoteVault* \\— Promemoria posticipato\n\n✅ *{_escape_mdv2(tk.title)}*"
+                            tg_text = f"🔔 *NoteVault* — Promemoria posticipato\n\n✅ *{_escape_mdv2(tk.title)}*"
                             if note_title:
                                 tg_text += f"\n📓 {_escape_mdv2(note_title)}"
                             await send_telegram(user.telegram_chat_id, settings.telegram_bot_token, tg_text)
