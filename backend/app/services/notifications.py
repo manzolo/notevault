@@ -165,8 +165,8 @@ async def dispatch_reminder(
 
 
 def _build_task_telegram_text(task_title: str, note_title: Optional[str],
-                               trigger_dt: datetime, minutes_before: int, tz_name: str) -> str:
-    local_time = _format_dt_local(trigger_dt, tz_name)
+                               due_dt: datetime, minutes_before: int, tz_name: str) -> str:
+    local_time = _format_dt_local(due_dt, tz_name)
     safe_title = _escape_mdv2(task_title)
     safe_time = _escape_mdv2(local_time)
     safe_anticipation = _escape_mdv2(_anticipation_label(minutes_before))
@@ -177,9 +177,9 @@ def _build_task_telegram_text(task_title: str, note_title: Optional[str],
     return text
 
 
-def _build_task_inapp_body(trigger_dt: datetime, tz_name: str,
+def _build_task_inapp_body(due_dt: datetime, tz_name: str,
                             note_title: Optional[str], minutes_before: int) -> str:
-    parts = [f"{_anticipation_label(minutes_before)} · {_format_dt_local(trigger_dt, tz_name)}"]
+    parts = [f"{_anticipation_label(minutes_before)} · {_format_dt_local(due_dt, tz_name)}"]
     if note_title:
         parts.append(f"📓 {note_title}")
     return " — ".join(parts)
@@ -199,13 +199,13 @@ async def dispatch_task_reminder(
     user = task.user
     note_title = task.note.title if task.note else None
     inapp_title = f"✅ {task.title}"
-    inapp_body = _build_task_inapp_body(trigger_dt, tz_name, note_title, reminder.minutes_before)
+    inapp_body = _build_task_inapp_body(task.due_date, tz_name, note_title, reminder.minutes_before)
 
     if reminder.notify_in_app:
         await send_in_app(db, user.id, inapp_title, inapp_body, task_id=task.id)
 
     if reminder.notify_telegram and user.telegram_chat_id:
-        tg_text = _build_task_telegram_text(task.title, note_title, trigger_dt, reminder.minutes_before, tz_name)
+        tg_text = _build_task_telegram_text(task.title, note_title, task.due_date, reminder.minutes_before, tz_name)
         await send_telegram(user.telegram_chat_id, bot_token, tg_text)
 
     if reminder.notify_email:
