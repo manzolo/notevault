@@ -9,6 +9,7 @@ from app.database.connection import get_db
 from app.models.database import Notification, User
 from app.schemas.notification import NotificationCountResponse, NotificationResponse, SnoozeRequest
 from app.security.dependencies import get_current_user
+from app.config import get_settings
 
 router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 
@@ -18,6 +19,17 @@ _MAX_LIST = 50
 def _not_snoozed(now: datetime):
     """SQLAlchemy clause: notification is not currently snoozed."""
     return (Notification.snoozed_until == None) | (Notification.snoozed_until <= now)  # noqa: E711
+
+
+@router.get("/channels")
+async def get_notification_channels(
+    current_user: User = Depends(get_current_user),
+):
+    settings = get_settings()
+    return {
+        "telegram": bool(settings.telegram_bot_token),
+        "email": bool(settings.smtp_host and settings.smtp_from),
+    }
 
 
 @router.get("/count", response_model=NotificationCountResponse)

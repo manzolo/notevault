@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 import { useTranslations } from "next-intl";
 import { EventReminder } from "@/lib/types";
 import { BellIcon, TelegramIcon, MailIcon } from "@/components/common/Icons";
+import { useNotificationChannels } from "@/hooks/useNotificationChannels";
 import api from "@/lib/api";
 
 export interface PendingReminder {
@@ -47,9 +48,9 @@ export function minutesLabel(minutes: number, t: (k: string) => string): string 
 function ChannelIcons({ inApp, telegram, email }: { inApp: boolean; telegram: boolean; email: boolean }) {
   return (
     <span className="flex items-center gap-1">
-      {inApp    && <BellIcon     className="h-3 w-3 text-indigo-500 dark:text-indigo-400" />}
-      {telegram && <TelegramIcon className="h-3 w-3 text-sky-500 dark:text-sky-400" />}
-      {email    && <MailIcon     className="h-3 w-3 text-amber-500 dark:text-amber-400" />}
+      {inApp    && <BellIcon     className="h-3 w-3 text-indigo-400" />}
+      {telegram && <TelegramIcon className="h-3 w-3 text-sky-400" />}
+      {email    && <MailIcon     className="h-3 w-3 text-amber-400" />}
     </span>
   );
 }
@@ -62,6 +63,7 @@ const RemindersSection = forwardRef<RemindersSectionHandle, Props>(function Remi
   onDeletedChange,
 }, ref) {
   const t = useTranslations("reminders");
+  const availableChannels = useNotificationChannels();
   const [existingReminders, setExistingReminders] = useState<EventReminder[]>([]);
   const [adding, setAdding] = useState(false);
   const [customValue, setCustomValue] = useState("");
@@ -114,80 +116,84 @@ const RemindersSection = forwardRef<RemindersSectionHandle, Props>(function Remi
   const hasAny = visibleExisting.length > 0 || pendingReminders.length > 0;
 
   const channels = [
-    { label: "App",      active: notifyInApp,      set: setNotifyInApp,      Icon: BellIcon,     activeClass: "bg-indigo-600 border-indigo-600 text-white" },
-    { label: "Telegram", active: notifyTelegram,   set: setNotifyTelegram,   Icon: TelegramIcon, activeClass: "bg-sky-500 border-sky-500 text-white" },
-    { label: "Email",    active: notifyEmail,      set: setNotifyEmail,      Icon: MailIcon,     activeClass: "bg-amber-500 border-amber-500 text-white" },
+    { label: "App",      active: notifyInApp,    set: setNotifyInApp,    Icon: BellIcon,     activeClass: "bg-indigo-600 border-indigo-600 text-white", show: true },
+    { label: "Telegram", active: notifyTelegram, set: setNotifyTelegram, Icon: TelegramIcon, activeClass: "bg-sky-500 border-sky-500 text-white",    show: availableChannels.telegram },
+    { label: "Email",    active: notifyEmail,    set: setNotifyEmail,    Icon: MailIcon,     activeClass: "bg-amber-500 border-amber-500 text-white", show: availableChannels.email },
   ];
 
   return (
-    <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-2">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1.5 uppercase tracking-wide">
-          <BellIcon className="h-3.5 w-3.5" /> {t("title")}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1.5 uppercase tracking-wider">
+          <BellIcon className="h-3.5 w-3.5 text-indigo-500" /> {t("title")}
         </span>
         {!adding && (
           <button type="button" onClick={() => setAdding(true)}
-            className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+            className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
             + {t("add")}
           </button>
         )}
       </div>
 
-      {/* Existing reminder rows */}
-      {!hasAny && !adding && (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noReminders")}</p>
-      )}
-      {visibleExisting.map((r) => (
-        <div key={r.id} className="flex items-center justify-between text-xs text-gray-700 dark:text-gray-300">
-          <span>{minutesLabel(r.minutes_before, t)}</span>
-          <div className="flex items-center gap-2">
-            <ChannelIcons inApp={r.notify_in_app} telegram={r.notify_telegram} email={r.notify_email} />
-            <button type="button" onClick={() => markDelete(r.id)}
-              className="text-gray-400 hover:text-red-500 transition-colors w-4 h-4 flex items-center justify-center"
-              title={t("remove")}>×</button>
+      <div className="px-3 py-2 space-y-1.5">
+        {/* Existing reminder rows */}
+        {!hasAny && !adding && (
+          <p className="text-xs text-gray-400 dark:text-gray-500 py-0.5">{t("noReminders")}</p>
+        )}
+        {visibleExisting.map((r) => (
+          <div key={r.id} className="flex items-center justify-between text-xs rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700">
+            <span className="text-gray-700 dark:text-gray-300 font-medium">{minutesLabel(r.minutes_before, t)}</span>
+            <div className="flex items-center gap-2">
+              <ChannelIcons inApp={r.notify_in_app} telegram={r.notify_telegram} email={r.notify_email} />
+              <button type="button" onClick={() => markDelete(r.id)}
+                className="text-gray-300 hover:text-red-400 dark:text-gray-600 dark:hover:text-red-400 transition-colors leading-none"
+                title={t("remove")}>×</button>
+            </div>
           </div>
-        </div>
-      ))}
-      {pendingReminders.map((r, idx) => (
-        <div key={`p-${idx}`} className="flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400">
-          <span className="flex items-center gap-1">
-            {minutesLabel(r.minutes_before, t)}
-            <span className="text-gray-400 dark:text-gray-500 font-normal">(+)</span>
-          </span>
-          <div className="flex items-center gap-2">
-            <ChannelIcons inApp={r.notify_in_app} telegram={r.notify_telegram} email={r.notify_email} />
-            <button type="button" onClick={() => removePending(idx)}
-              className="text-gray-400 hover:text-red-500 transition-colors w-4 h-4 flex items-center justify-center"
-              title={t("remove")}>×</button>
+        ))}
+        {pendingReminders.map((r, idx) => (
+          <div key={`p-${idx}`} className="flex items-center justify-between text-xs rounded-lg px-2 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/40">
+            <span className="text-indigo-700 dark:text-indigo-300 font-medium flex items-center gap-1.5">
+              {minutesLabel(r.minutes_before, t)}
+              <span className="text-indigo-400 dark:text-indigo-500 font-normal text-[10px] bg-indigo-100 dark:bg-indigo-900/40 rounded px-1">+</span>
+            </span>
+            <div className="flex items-center gap-2">
+              <ChannelIcons inApp={r.notify_in_app} telegram={r.notify_telegram} email={r.notify_email} />
+              <button type="button" onClick={() => removePending(idx)}
+                className="text-indigo-300 hover:text-red-400 dark:text-indigo-600 dark:hover:text-red-400 transition-colors leading-none"
+                title={t("remove")}>×</button>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
 
-      {/* Add form */}
-      {adding && (
-        <div ref={addFormRef} className="pt-2 border-t border-gray-100 dark:border-gray-700 space-y-2">
-          {/* Channel icon-pill toggles */}
-          <div className="flex gap-1.5">
-            {channels.map(({ label, active, set, Icon, activeClass }) => (
-              <button key={label} type="button" onClick={() => set((v) => !v)}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border font-medium transition-colors ${
-                  active ? activeClass : "border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-400"
-                }`}>
-                <Icon className="h-3 w-3" />{label}
-              </button>
-            ))}
-          </div>
+        {/* Add form */}
+        {adding && (
+          <div ref={addFormRef} className="pt-1.5 border-t border-gray-100 dark:border-gray-700 space-y-2.5 mt-1">
+            {/* Channel toggles */}
+            <div className="flex gap-1.5">
+              {channels.filter((c) => c.show).map(({ label, active, set, Icon, activeClass }) => (
+                <button key={label} type="button" onClick={() => set((v) => !v)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border font-medium transition-all ${
+                    active ? activeClass : "border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-gray-300 dark:hover:border-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                  }`}>
+                  <Icon className="h-3 w-3" />{label}
+                </button>
+              ))}
+            </div>
 
-          {/* Presets + custom in one wrapping row */}
-          <div className="flex flex-wrap gap-1.5 items-center">
-            {PRESETS.map((m) => (
-              <button key={m} type="button" onClick={() => addWith(m)}
-                className="px-2 py-0.5 rounded-full text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-                {minutesLabel(m, t)}
-              </button>
-            ))}
-            <div className="flex items-center gap-1">
+            {/* Presets */}
+            <div className="flex flex-wrap gap-1.5">
+              {PRESETS.map((m) => (
+                <button key={m} type="button" onClick={() => addWith(m)}
+                  className="px-2.5 py-1 rounded-full text-xs border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-indigo-400 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
+                  {minutesLabel(m, t)}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom input row */}
+            <div className="flex items-center gap-1.5">
               <input type="number" min="1" value={customValue}
                 onChange={(e) => setCustomValue(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit()}
@@ -198,20 +204,20 @@ const RemindersSection = forwardRef<RemindersSectionHandle, Props>(function Remi
                   }
                 }}
                 placeholder={t("customMinutes")}
-                className="w-14 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-900 dark:text-white" />
+                className="w-16 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 text-gray-900 dark:text-white placeholder-gray-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
               <select value={customUnit} onChange={(e) => setCustomUnit(e.target.value as typeof customUnit)}
-                className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-700 dark:text-gray-300">
+                className="rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 text-gray-700 dark:text-gray-300">
                 <option value="min">{t("unitMinutes")}</option>
                 <option value="hours">{t("unitHours")}</option>
                 <option value="days">{t("unitDays")}</option>
                 <option value="weeks">{t("unitWeeks")}</option>
               </select>
               <button type="button" onClick={() => { setAdding(false); setCustomValue(""); }}
-                className="px-1.5 py-0.5 rounded text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">✕</button>
+                className="ml-auto px-2 py-1 rounded-lg text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">✕</button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 });
