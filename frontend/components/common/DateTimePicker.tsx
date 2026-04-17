@@ -61,6 +61,9 @@ const NativeTimeInput = forwardRef<HTMLInputElement, { value?: string; onChange?
       type="time"
       value={value ?? ''}
       onChange={(e) => onChange?.(e.target.value)}
+      onKeyDown={(e) => e.stopPropagation()}
+      onKeyUp={(e) => e.stopPropagation()}
+      onKeyPress={(e) => e.stopPropagation()}
       className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
     />
   ),
