@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel
+from .reminder import EventReminderResponse
 
 
 class EventAttachmentResponse(BaseModel):
@@ -51,6 +52,7 @@ class EventResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     attachments: List[EventAttachmentResponse] = []
+    reminders: List[EventReminderResponse] = []
 
     model_config = {"from_attributes": True}
 

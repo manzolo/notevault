@@ -85,38 +85,38 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
       <div
         draggable
         onDragStart={handleDragStart}
-        className="group bg-white dark:bg-gray-800 rounded-xl shadow-card hover:shadow-card-hover transition-shadow border border-gray-200 dark:border-gray-700 p-4 cursor-grab active:cursor-grabbing select-none"
+        className="group bg-white dark:bg-vault-800 rounded-xl shadow-card hover:shadow-card-hover transition-[box-shadow,border-color] duration-200 border border-cream-300/60 dark:border-vault-600/50 border-l-2 border-l-violet-400/50 dark:border-l-violet-500/60 hover:border-l-violet-500 dark:hover:border-l-violet-400 p-4 cursor-grab active:cursor-grabbing select-none"
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 min-w-0">
               {note.is_pinned && (
-                <span className="text-indigo-600 text-xs font-medium shrink-0">📌 {t('pinned')}</span>
+                <span className="text-violet-600 dark:text-violet-400 text-xs font-semibold shrink-0 font-mono tracking-wide">⬆ {t('pinned')}</span>
               )}
               {note.is_archived && (
-                <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded font-medium shrink-0">🗄 {t('archived')}</span>
+                <span className="bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0 border border-amber-200/60 dark:border-amber-500/20">{t('archived')}</span>
               )}
               <Link
                 href={`/${locale}/notes/${note.id}`}
-                className="text-gray-900 dark:text-gray-100 font-semibold hover:text-indigo-600 dark:hover:text-indigo-400 truncate min-w-0"
+                className="font-display text-gray-900 dark:text-vault-50 font-semibold hover:text-violet-700 dark:hover:text-violet-300 truncate min-w-0 tracking-tight transition-colors duration-150"
               >
                 {note.title}
               </Link>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{truncate(stripMarkdown(note.content), 120)}</p>
+            <p className="text-sm text-gray-500 dark:text-vault-300 mb-2 leading-relaxed">{truncate(stripMarkdown(note.content), 120)}</p>
             <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
               {note.tags.map((tag) => (
-                <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-2 py-0.5 rounded-full">
+                <span key={tag.id} className="bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 text-xs px-2 py-0.5 rounded-full border border-violet-200/60 dark:border-violet-500/20">
                   {tag.name}
                 </span>
               ))}
               {categoryName && (
-                <span className="inline-flex items-center gap-1 text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 px-2 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-500/20">
                   <FolderIcon className="w-3 h-3" />
                   {categoryName}
                 </span>
               )}
-              <span className="text-xs text-gray-400">{formatRelative(note.updated_at)}</span>
+              <span className="font-mono text-xs text-gray-400 dark:text-vault-400 tabular-nums">{formatRelative(note.updated_at)}</span>
               <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
             </div>
 
@@ -129,7 +129,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                       matchingAttachments.map((att) => (
                         <span
                           key={att.id}
-                          className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs"
+                          className="inline-flex items-center gap-1 bg-cream-200/80 dark:bg-vault-700/60 text-gray-700 dark:text-vault-200 px-1.5 py-0.5 rounded text-xs border border-cream-300/60 dark:border-vault-600/40"
                         >
                           <span className="truncate max-w-[120px] sm:max-w-[200px]">{att.filename}</span>
                           {INLINE_MIMES.has(att.mime_type) && onPreviewAttachment && (
@@ -144,14 +144,14 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                         </span>
                       ))
                     ) : (
-                      <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs">
+                      <span className="bg-cream-200/80 dark:bg-vault-700/60 text-gray-600 dark:text-vault-200 px-1.5 py-0.5 rounded text-xs border border-cream-300/60 dark:border-vault-600/40">
                         {tSearch('foundInAttachment')}
                       </span>
                     )}
                   </div>
                 )}
                 {matchInBookmark && (
-                  <div className="flex items-start gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-start gap-1 text-xs text-gray-500 dark:text-vault-400">
                     <GlobeIcon />
                     {matchingBookmarks && matchingBookmarks.length > 0 ? (
                       <span className="flex flex-wrap gap-1">
@@ -162,14 +162,14 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-gray-100 dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 hover:underline px-1.5 py-0.5 rounded truncate max-w-[200px]"
+                            className="bg-cream-200/80 dark:bg-vault-700/60 text-violet-600 dark:text-violet-400 hover:underline px-1.5 py-0.5 rounded truncate max-w-[200px] border border-cream-300/60 dark:border-vault-600/40"
                           >
                             {bm.title || bm.url}
                           </a>
                         ))}
                       </span>
                     ) : (
-                      <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
+                      <span className="bg-cream-200/80 dark:bg-vault-700/60 text-gray-600 dark:text-vault-200 px-1.5 py-0.5 rounded border border-cream-300/60 dark:border-vault-600/40">
                         {tSearch('foundInBookmark')}
                       </span>
                     )}
@@ -263,7 +263,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                 size="sm"
                 title={note.is_pinned ? t('unpin') : t('pin')}
                 onClick={handlePin}
-                className={note.is_pinned ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'}
+                className={note.is_pinned ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400 dark:text-vault-500'}
               >
                 <PinIcon filled={note.is_pinned} />
               </Button>
@@ -274,7 +274,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                 size="sm"
                 title={note.is_archived ? t('unarchive') : t('archive')}
                 onClick={handleArchive}
-                className={note.is_archived ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}
+                className={note.is_archived ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-vault-500'}
               >
                 <ArchiveIcon />
               </Button>

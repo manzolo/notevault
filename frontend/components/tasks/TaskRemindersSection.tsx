@@ -89,7 +89,7 @@ const TaskRemindersSection = forwardRef<TaskRemindersSectionHandle, Props>(funct
   ];
 
   return (
-    <div className="ml-6 mr-1 mt-1 mb-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40 overflow-hidden text-xs">
+    <div className="ml-6 mt-1 mb-2 w-fit max-w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40 overflow-hidden text-xs">
       {/* Header */}
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
         <BellIcon className="h-3.5 w-3.5 text-indigo-500" /> {t("title")}

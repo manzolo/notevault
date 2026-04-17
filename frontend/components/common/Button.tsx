@@ -8,10 +8,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants = {
-  primary:       'bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700 focus:ring-indigo-500',
-  secondary:     'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-400 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600',
+  primary:       'bg-gradient-to-r from-violet-600 to-indigo-500 text-white hover:from-violet-700 hover:to-indigo-600 shadow-sm hover:shadow-glow-sm focus:ring-violet-500 dark:focus:ring-offset-vault-900',
+  secondary:     'border border-cream-300 dark:border-vault-600 bg-white dark:bg-vault-700/40 text-gray-700 dark:text-vault-100 hover:border-violet-400 dark:hover:border-violet-500 hover:text-violet-700 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-500/10 focus:ring-violet-400 dark:focus:ring-offset-vault-900',
   danger:        'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-  ghost:         'bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-400 dark:text-gray-300 dark:hover:bg-gray-700',
+  ghost:         'bg-transparent text-gray-500 hover:bg-cream-200/70 focus:ring-gray-400 dark:text-vault-300 dark:hover:bg-vault-700/50 dark:focus:ring-vault-500',
   'ghost-danger':'bg-transparent text-red-400 hover:text-red-600 hover:bg-red-50 focus:ring-red-300 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20',
 };
 

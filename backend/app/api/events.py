@@ -45,7 +45,7 @@ async def _get_note_owned(note_id: int, user: User, db: AsyncSession) -> Note:
 async def _get_event_owned(event_id: int, user: User, db: AsyncSession) -> Event:
     result = await db.execute(
         select(Event)
-        .options(selectinload(Event.attachments))
+        .options(selectinload(Event.attachments), selectinload(Event.reminders))
         .where(Event.id == event_id, Event.user_id == user.id)
     )
     event = result.scalar_one_or_none()
@@ -106,7 +106,7 @@ async def list_events(
     await _get_note_owned(note_id, current_user, db)
     q = (
         select(Event)
-        .options(selectinload(Event.attachments))
+        .options(selectinload(Event.attachments), selectinload(Event.reminders))
         .where(Event.note_id == note_id, Event.user_id == current_user.id)
     )
     if archived_only:
@@ -140,7 +140,7 @@ async def create_event(
     await db.refresh(event)
     # reload with attachments
     result = await db.execute(
-        select(Event).options(selectinload(Event.attachments)).where(Event.id == event.id)
+        select(Event).options(selectinload(Event.attachments), selectinload(Event.reminders)).where(Event.id == event.id)
     )
     return result.scalar_one()
 
@@ -163,7 +163,7 @@ async def update_event(
     await db.flush()
     await db.refresh(event)
     result = await db.execute(
-        select(Event).options(selectinload(Event.attachments)).where(Event.id == event.id)
+        select(Event).options(selectinload(Event.attachments), selectinload(Event.reminders)).where(Event.id == event.id)
     )
     return result.scalar_one()
 
@@ -199,7 +199,7 @@ async def get_event(
 ):
     result = await db.execute(
         select(Event)
-        .options(selectinload(Event.attachments), selectinload(Event.note))
+        .options(selectinload(Event.attachments), selectinload(Event.reminders), selectinload(Event.note))
         .where(Event.id == event_id, Event.user_id == current_user.id)
     )
     event = result.scalar_one_or_none()
@@ -228,7 +228,7 @@ async def list_all_events(
         from sqlalchemy import func as sqlfunc
         non_recurring_q = (
             select(Event)
-            .options(selectinload(Event.attachments), selectinload(Event.note))
+            .options(selectinload(Event.attachments), selectinload(Event.reminders), selectinload(Event.note))
             .where(
                 Event.user_id == current_user.id,
                 Event.recurrence_rule.is_(None),
@@ -241,7 +241,7 @@ async def list_all_events(
         # Fetch all recurring events (need to check occurrences in window)
         recurring_q = (
             select(Event)
-            .options(selectinload(Event.attachments), selectinload(Event.note))
+            .options(selectinload(Event.attachments), selectinload(Event.reminders), selectinload(Event.note))
             .where(
                 Event.user_id == current_user.id,
                 Event.recurrence_rule.isnot(None),
@@ -270,7 +270,7 @@ async def list_all_events(
     # No month filter — return all non-archived events
     query = (
         select(Event)
-        .options(selectinload(Event.attachments), selectinload(Event.note))
+        .options(selectinload(Event.attachments), selectinload(Event.reminders), selectinload(Event.note))
         .where(
             Event.user_id == current_user.id,
             Event.is_archived == False,  # noqa: E712

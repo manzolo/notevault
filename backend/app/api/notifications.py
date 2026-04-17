@@ -111,7 +111,7 @@ async def snooze_notification(
     result = await db.execute(
         update(Notification)
         .where(Notification.id == notification_id, Notification.user_id == current_user.id)
-        .values(snoozed_until=snoozed_until, is_read=False)
+        .values(snoozed_until=snoozed_until, is_read=False, snooze_dispatched=False)
         .returning(Notification.id)
     )
     if result.scalar_one_or_none() is None:

@@ -25,6 +25,8 @@ function timeAgo(iso: string): string {
 }
 
 const SNOOZE_PRESETS: Array<{ key: string; minutes: number }> = [
+  { key: "snooze1m",  minutes: 1 },
+  { key: "snooze5m",  minutes: 5 },
   { key: "snooze10m", minutes: 10 },
   { key: "snooze30m", minutes: 30 },
   { key: "snooze1h", minutes: 60 },

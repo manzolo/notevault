@@ -5,16 +5,32 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --nv-bg-base: #f8f5ee;
+  }
+
+  .dark {
+    --nv-bg-base: #08091a;
+  }
+
   html {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
     max-width: 100%;
     overflow-x: hidden;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+    @apply text-gray-900 dark:text-vault-50;
+    background-color: var(--nv-bg-base);
     max-width: 100%;
     overflow-x: hidden;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(ellipse at 18% 0%, rgba(139, 92, 246, 0.07) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 95%, rgba(245, 158, 11, 0.04) 0%, transparent 45%);
   }
 }
 
@@ -24,10 +40,11 @@
   }
 }
 
-/* TipTap / ProseMirror editor styles */
+/* ── TipTap / ProseMirror editor ─────────────────────────────── */
 .ProseMirror {
   outline: none;
   min-height: 18rem;
+  font-family: 'Outfit', system-ui, sans-serif;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
@@ -38,7 +55,7 @@
   height: 0;
 }
 
-/* Task list (checkboxes) */
+/* Task list */
 .ProseMirror ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0.25rem;
@@ -58,7 +75,7 @@
 
 .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
   cursor: pointer;
-  accent-color: #6366f1;
+  accent-color: #8b5cf6;
 }
 
 .ProseMirror ul[data-type="taskList"] li > div {
@@ -72,21 +89,23 @@
 
 /* Code blocks */
 .ProseMirror pre {
-  background: #1e293b;
-  color: #e2e8f0;
-  border-radius: 0.375rem;
-  padding: 0.75rem 1rem;
-  font-family: ui-monospace, monospace;
+  background: #0f1225;
+  color: #cdd3e4;
+  border-radius: 0.5rem;
+  padding: 0.875rem 1.125rem;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.8125rem;
   overflow-x: auto;
+  border: 1px solid #282d54;
 }
 
 .ProseMirror code {
-  background: #f1f5f9;
+  background: #f0ebe0;
   color: #be185d;
   border-radius: 0.25rem;
-  padding: 0.125rem 0.25rem;
+  padding: 0.125rem 0.3rem;
   font-size: 0.85em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 .ProseMirror pre code {
@@ -96,38 +115,39 @@
 }
 
 .dark .ProseMirror code {
-  background: #374151;
+  background: #1d2040;
   color: #f9a8d4;
 }
 
 /* Blockquote */
 .ProseMirror blockquote {
-  border-left: 3px solid #6366f1;
+  border-left: 3px solid #8b5cf6;
   padding-left: 1rem;
   color: #6b7280;
   margin-left: 0;
   font-style: italic;
+  font-family: 'Playfair Display', Georgia, serif;
 }
 
 .dark .ProseMirror blockquote {
-  border-left-color: #818cf8;
-  color: #9ca3af;
+  border-left-color: #a78bfa;
+  color: #9faabf;
 }
 
 /* Horizontal rule */
 .ProseMirror hr {
   border: none;
-  border-top: 2px solid #e5e7eb;
-  margin: 1rem 0;
+  border-top: 1px solid #e5ddd0;
+  margin: 1.5rem 0;
 }
 
 .dark .ProseMirror hr {
-  border-top-color: #374151;
+  border-top-color: #282d54;
 }
 
 /* Wiki-links [[title]] */
 .wiki-link {
-  color: #6366f1;
+  color: #7c3aed;
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
@@ -135,17 +155,17 @@
 }
 
 .wiki-link:hover {
-  color: #4f46e5;
-  background-color: #eef2ff;
+  color: #6d28d9;
+  background-color: #f3f0ff;
 }
 
 .dark .wiki-link {
-  color: #818cf8;
+  color: #a78bfa;
 }
 
 .dark .wiki-link:hover {
-  color: #a5b4fc;
-  background-color: rgba(99, 102, 241, 0.1);
+  color: #bfadff;
+  background-color: rgba(139, 92, 246, 0.12);
 }
 
 /* ── react-datepicker NoteVault theme ─────────────────────────── */
@@ -154,23 +174,23 @@
 }
 
 .nv-dp .react-datepicker {
-  font-family: inherit;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 25px -5px rgba(0,0,0,.12), 0 4px 10px -4px rgba(0,0,0,.08);
+  font-family: 'Outfit', inherit;
+  border: 1px solid #e5ddd0;
+  border-radius: 0.875rem;
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,.14), 0 4px 12px -4px rgba(0,0,0,.10);
   overflow: hidden;
   font-size: 0.8125rem;
 }
 
 .nv-dp .react-datepicker__header {
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: #f8f5ee;
+  border-bottom: 1px solid #e5ddd0;
   padding-top: 0.6rem;
 }
 
 .nv-dp .react-datepicker__current-month,
 .nv-dp .react-datepicker__day-name {
-  color: #374151;
+  color: #1a1730;
 }
 
 .nv-dp .react-datepicker__day {
@@ -179,20 +199,20 @@
 }
 
 .nv-dp .react-datepicker__day:hover {
-  background: #eef2ff;
+  background: #ebe5ff;
   border-radius: 50% !important;
 }
 
 .nv-dp .react-datepicker__day--selected,
 .nv-dp .react-datepicker__day--keyboard-selected {
-  background: #6366f1 !important;
+  background: #7c3aed !important;
   color: #fff !important;
   border-radius: 50% !important;
 }
 
 .nv-dp .react-datepicker__day--today {
   font-weight: 700;
-  color: #6366f1;
+  color: #7c3aed;
 }
 
 .nv-dp .react-datepicker__day--today.react-datepicker__day--selected {
@@ -204,7 +224,7 @@
 }
 
 .nv-dp .react-datepicker__time-container {
-  border-left: 1px solid #e5e7eb;
+  border-left: 1px solid #e5ddd0;
 }
 
 .nv-dp .react-datepicker__time-list-item {
@@ -215,22 +235,21 @@
 }
 
 .nv-dp .react-datepicker__time-list-item:hover {
-  background: #eef2ff !important;
-  color: #6366f1 !important;
+  background: #ebe5ff !important;
+  color: #7c3aed !important;
 }
 
 .nv-dp .react-datepicker__time-list-item--selected {
-  background: #6366f1 !important;
+  background: #7c3aed !important;
   color: #fff !important;
   font-weight: 600;
 }
 
-/* Time input row (showTimeInput) */
 .nv-dp .react-datepicker__input-time-container {
   display: flex;
   align-items: center;
   padding: 6px 12px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #e5ddd0;
   margin: 0;
   gap: 6px;
 }
@@ -244,93 +263,93 @@
   outline: none;
   background: #fff;
   color-scheme: light;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .nv-dp .react-datepicker-time__input input[type="time"]:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99,102,241,.15);
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px rgba(124,58,237,.18);
 }
 
-/* ── Dark mode ───────────────────────────────────────────────── */
+/* ── Dark mode datepicker ──────────────────────────────────────── */
 .dark .nv-dp .react-datepicker {
-  background: #1f2937;
-  border-color: #374151;
-  box-shadow: 0 10px 25px -5px rgba(0,0,0,.5);
+  background: #13162e;
+  border-color: #282d54;
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,.55);
 }
 
 .dark .nv-dp .react-datepicker__header {
-  background: #111827;
-  border-bottom-color: #374151;
+  background: #0f1125;
+  border-bottom-color: #282d54;
 }
 
 .dark .nv-dp .react-datepicker__current-month,
 .dark .nv-dp .react-datepicker__day-name {
-  color: #e5e7eb;
+  color: #eceef7;
 }
 
 .dark .nv-dp .react-datepicker__day {
-  color: #d1d5db;
+  color: #cdd3e4;
 }
 
 .dark .nv-dp .react-datepicker__day:hover {
-  background: #374151;
-  color: #f9fafb;
+  background: #282d54;
+  color: #f3f0ff;
 }
 
 .dark .nv-dp .react-datepicker__day--selected,
 .dark .nv-dp .react-datepicker__day--keyboard-selected {
-  background: #6366f1 !important;
+  background: #7c3aed !important;
   color: #fff !important;
 }
 
 .dark .nv-dp .react-datepicker__day--today {
-  color: #818cf8;
+  color: #a78bfa;
 }
 
 .dark .nv-dp .react-datepicker__day--outside-month {
-  color: #4b5563;
+  color: #434d80;
 }
 
 .dark .nv-dp .react-datepicker__navigation-icon::before {
-  border-color: #6b7280;
+  border-color: #7480a8;
 }
 
 .dark .nv-dp .react-datepicker__time-container {
-  border-left-color: #374151;
+  border-left-color: #282d54;
 }
 
 .dark .nv-dp .react-datepicker__time-box,
 .dark .nv-dp .react-datepicker__time {
-  background: #1f2937 !important;
+  background: #13162e !important;
 }
 
 .dark .nv-dp .react-datepicker__time-list-item {
-  color: #d1d5db;
+  color: #cdd3e4;
 }
 
 .dark .nv-dp .react-datepicker__time-list-item:hover {
-  background: #374151 !important;
-  color: #f9fafb !important;
+  background: #282d54 !important;
+  color: #f3f0ff !important;
 }
 
 .dark .nv-dp .react-datepicker__time-list-item--selected {
-  background: #6366f1 !important;
+  background: #7c3aed !important;
   color: #fff !important;
 }
 
-/* Dark — time input */
 .dark .nv-dp .react-datepicker__input-time-container {
-  border-top-color: #374151;
+  border-top-color: #282d54;
 }
 
 .dark .nv-dp .react-datepicker-time__input input[type="time"] {
-  background: #111827;
-  border-color: #4b5563;
-  color: #e5e7eb;
+  background: #0f1125;
+  border-color: #434d80;
+  color: #eceef7;
   color-scheme: dark;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .dark .nv-dp .react-datepicker-time__input input[type="time"]:focus {
-  border-color: #818cf8;
+  border-color: #a78bfa;
 }
-

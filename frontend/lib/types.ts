@@ -372,6 +372,7 @@ export interface CalendarEvent {
   created_at: string;
   updated_at: string;
   attachments: EventAttachment[];
+  reminders?: EventReminder[];
 }
 
 export interface CalendarEventWithNote extends CalendarEvent {

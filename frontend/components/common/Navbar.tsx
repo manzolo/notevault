@@ -65,30 +65,23 @@ export default function Navbar() {
 
   const isActive = (segment: string) => pathname.includes(`/${segment}`);
 
-  const navLinkClass = (segment: string) =>
-    `flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-md transition-colors font-medium whitespace-nowrap ${
-      isActive(segment)
-        ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30'
-        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700/60'
-    }`;
+  const active = 'text-violet-700 dark:text-violet-300 font-semibold bg-violet-50 dark:bg-violet-500/10';
 
-  const mobileNavLinkClass = (segment: string) =>
-    `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
-      isActive(segment)
-        ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30'
-        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60'
-    }`;
+  const navLinkClass = (segment: string, mobile = false) =>
+    mobile
+      ? `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${isActive(segment) ? active : 'text-gray-600 dark:text-vault-200 hover:bg-cream-200/70 dark:hover:bg-vault-700/50'}`
+      : `flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all duration-150 ${isActive(segment) ? active : 'text-gray-500 dark:text-vault-300 hover:text-gray-900 dark:hover:text-vault-50 hover:bg-cream-200/70 dark:hover:bg-vault-700/50'}`;
 
   return (
     <>
-      <nav className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-700/80 shadow-sm sticky top-0 z-50">
+      <nav className="bg-cream-50/95 dark:bg-vault-900/95 backdrop-blur-md border-b border-cream-300/70 dark:border-vault-700/60 shadow-nav sticky top-0 z-50">
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="flex items-center justify-between h-14 gap-4">
 
             {/* Logo */}
             <Link
               href={`/${locale}/dashboard`}
-              className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent shrink-0"
+              className="font-display italic text-xl font-bold bg-gradient-to-r from-violet-600 to-indigo-500 dark:from-violet-300 dark:to-indigo-300 bg-clip-text text-transparent shrink-0 tracking-tight"
               onClick={closeMenu}
             >
               {t('brand')}
@@ -101,7 +94,7 @@ export default function Navbar() {
               <div className="flex items-center gap-1 mr-2">
                 <button
                   onClick={toggleTheme}
-                  className="p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="p-1.5 rounded-md text-gray-400 dark:text-vault-300 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-cream-200/70 dark:hover:bg-vault-700/50 transition-all duration-150"
                   aria-label="Toggle theme"
                 >
                   {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
@@ -111,7 +104,7 @@ export default function Navbar() {
               </div>
 
               {/* Separator */}
-              <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
+              <div className="w-px h-5 bg-cream-300 dark:bg-vault-600 mx-1" />
 
               {/* Nav links */}
               {user && (
@@ -138,17 +131,17 @@ export default function Navbar() {
                   </Link>
 
                   {/* Separator */}
-                  <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
+                  <div className="w-px h-5 bg-cream-300 dark:bg-vault-600 mx-1" />
 
                   {/* User + logout */}
                   <div className="flex items-center gap-1">
-                    <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/60 px-2.5 py-1.5 rounded-md font-medium whitespace-nowrap">
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-vault-300 bg-cream-200/80 dark:bg-vault-700/60 px-2.5 py-1.5 rounded-md font-medium whitespace-nowrap border border-cream-300/60 dark:border-vault-600/60">
                       <UserIcon className="w-3.5 h-3.5" />
                       {user.username}
                     </span>
                     <button
                       onClick={logout}
-                      className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium"
+                      className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-md text-gray-400 dark:text-vault-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-150 font-medium"
                       title={t('logout')}
                     >
                       <LogoutIcon className="w-3.5 h-3.5" />
@@ -170,7 +163,7 @@ export default function Navbar() {
 
             {/* Mobile hamburger */}
             <button
-              className="md:hidden p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="md:hidden p-1.5 rounded-md text-gray-500 dark:text-vault-300 hover:bg-cream-200/70 dark:hover:bg-vault-700/50 transition-all duration-150"
               onClick={() => setMenuOpen(v => !v)}
               aria-label="Toggle menu"
             >
@@ -182,14 +175,14 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden fixed top-14 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-lg z-[60] overflow-y-auto max-h-[calc(100vh-3.5rem)]">
+        <div className="md:hidden fixed top-14 left-0 right-0 bg-cream-50 dark:bg-vault-900 border-b border-cream-300/70 dark:border-vault-700/60 shadow-lg z-[60] overflow-y-auto max-h-[calc(100vh-56px)]">
           <div className="px-3 py-3 flex flex-col gap-1">
 
             {/* Controls row */}
             <div className="flex items-center gap-2 px-3 py-2 mb-1">
               <button
                 onClick={toggleTheme}
-                className="p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-1.5 rounded-md text-gray-400 dark:text-vault-300 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-cream-200/70 dark:hover:bg-vault-700/50 transition-all duration-150"
                 aria-label="Toggle theme"
               >
                 {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
@@ -198,35 +191,35 @@ export default function Navbar() {
               {user && <div className="ml-auto"><NotificationBell /></div>}
             </div>
 
-            <div className="h-px bg-gray-100 dark:bg-gray-800 mx-1 mb-1" />
+            <div className="h-px bg-cream-200 dark:bg-vault-700/60 mx-1 mb-1" />
 
             {user ? (
               <>
-                <Link href={`/${locale}/dashboard`} className={mobileNavLinkClass('dashboard')} onClick={closeMenu}>
+                <Link href={`/${locale}/dashboard`} className={navLinkClass('dashboard', true)} onClick={closeMenu}>
                   <HomeIcon className="w-4 h-4 shrink-0" />
                   {t('dashboard')}
                 </Link>
-                <Link href={`/${locale}/notes/new`} className={mobileNavLinkClass('notes/new')} onClick={closeMenu}>
+                <Link href={`/${locale}/notes/new`} className={navLinkClass('notes/new', true)} onClick={closeMenu}>
                   <PlusIcon className="w-4 h-4 shrink-0" />
                   {t('newNote')}
                 </Link>
-                <Link href={`/${locale}/tasks`} className={mobileNavLinkClass('tasks')} onClick={closeMenu}>
+                <Link href={`/${locale}/tasks`} className={navLinkClass('tasks', true)} onClick={closeMenu}>
                   <CheckSquareIcon className="w-4 h-4 shrink-0" />
                   {t('tasks')}
                 </Link>
-                <Link href={`/${locale}/calendar`} className={mobileNavLinkClass('calendar')} onClick={closeMenu}>
+                <Link href={`/${locale}/calendar`} className={navLinkClass('calendar', true)} onClick={closeMenu}>
                   <CalendarIcon className="w-4 h-4 shrink-0" />
                   {t('calendar')}
                 </Link>
-                <Link href={`/${locale}/settings`} className={mobileNavLinkClass('settings')} onClick={closeMenu}>
+                <Link href={`/${locale}/settings`} className={navLinkClass('settings', true)} onClick={closeMenu}>
                   <CogIcon className="w-4 h-4 shrink-0" />
                   {t('settings')}
                 </Link>
 
-                <div className="h-px bg-gray-100 dark:bg-gray-800 mx-1 my-1" />
+                <div className="h-px bg-cream-200 dark:bg-vault-700/60 mx-1 my-1" />
 
                 <div className="flex items-center justify-between px-3 py-2">
-                  <span className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center gap-2 text-sm text-gray-500 dark:text-vault-300">
                     <UserIcon className="w-4 h-4" />
                     {user.username}
                   </span>
@@ -241,7 +234,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link href={`/${locale}/login`} className={mobileNavLinkClass('login')} onClick={closeMenu}>Login</Link>
+                <Link href={`/${locale}/login`} className={navLinkClass('login', true)} onClick={closeMenu}>Login</Link>
                 <Link href={`/${locale}/register`} className="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400" onClick={closeMenu}>Register</Link>
               </>
             )}

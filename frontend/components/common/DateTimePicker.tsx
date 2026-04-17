@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import { CalendarIcon } from './Icons';
 
@@ -11,6 +11,7 @@ interface Props {
   triggerClassName?: string;
   /** Show just a calendar icon when no date is set (task-row style) */
   iconOnly?: boolean;
+  disabled?: boolean;
 }
 
 interface TriggerProps {
@@ -20,10 +21,11 @@ interface TriggerProps {
   iconOnly?: boolean;
   placeholder?: string;
   hasValue?: boolean;
+  disabled?: boolean;
 }
 
 const Trigger = forwardRef<HTMLButtonElement, TriggerProps>(
-  ({ value, onClick, triggerClassName, iconOnly, placeholder, hasValue }, ref) => {
+  ({ value, onClick, triggerClassName, iconOnly, placeholder, hasValue, disabled }, ref) => {
     if (!hasValue && iconOnly) {
       return (
         <button
@@ -32,6 +34,7 @@ const Trigger = forwardRef<HTMLButtonElement, TriggerProps>(
           onClick={onClick}
           title={placeholder}
           className={triggerClassName}
+          disabled={disabled}
         >
           <CalendarIcon className="h-3.5 w-3.5" />
         </button>
@@ -43,6 +46,7 @@ const Trigger = forwardRef<HTMLButtonElement, TriggerProps>(
         type="button"
         onClick={onClick}
         className={triggerClassName}
+        disabled={disabled}
       >
         {value || <span className="opacity-60">{placeholder ?? 'Seleziona data…'}</span>}
       </button>
@@ -55,18 +59,38 @@ Trigger.displayName = 'DateTimePickerTrigger';
 // hour→minute focus progression natively, avoiding the focus-jump bug in the
 // default react-datepicker time input.
 const NativeTimeInput = forwardRef<HTMLInputElement, { value?: string; onChange?: (v: string) => void }>(
-  ({ value, onChange }, ref) => (
-    <input
-      ref={ref}
-      type="time"
-      value={value ?? ''}
-      onChange={(e) => onChange?.(e.target.value)}
-      onKeyDown={(e) => e.stopPropagation()}
-      onKeyUp={(e) => e.stopPropagation()}
-      onKeyPress={(e) => e.stopPropagation()}
-      className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-    />
-  ),
+  ({ value, onChange }, ref) => {
+    const [localValue, setLocalValue] = useState(value ?? '');
+
+    useEffect(() => {
+      setLocalValue(value ?? '');
+    }, [value]);
+
+    const commitChange = (newVal: string) => {
+      if (newVal !== (value ?? '')) {
+        onChange?.(newVal);
+      }
+    };
+
+    return (
+      <input
+        ref={ref}
+        type="time"
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={(e) => commitChange(e.target.value)}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter') {
+            commitChange(e.currentTarget.value);
+          }
+        }}
+        onKeyUp={(e) => e.stopPropagation()}
+        onKeyPress={(e) => e.stopPropagation()}
+        className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+      />
+    );
+  }
 );
 NativeTimeInput.displayName = 'NativeTimeInput';
 
@@ -76,6 +100,7 @@ export default function DateTimePicker({
   placeholder,
   triggerClassName,
   iconOnly = false,
+  disabled = false,
 }: Props) {
   const selected = value ? new Date(value) : null;
 
@@ -97,10 +122,12 @@ export default function DateTimePicker({
             iconOnly={iconOnly}
             placeholder={placeholder}
             hasValue={!!selected}
+            disabled={disabled}
           />
         }
+        disabled={disabled}
       />
-      {selected && (
+      {selected && !disabled && (
         <button
           type="button"
           onClick={() => onChange(null)}

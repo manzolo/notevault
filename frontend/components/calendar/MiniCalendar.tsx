@@ -105,7 +105,7 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
       if (e.note_title) lines.push(`   📝 ${e.note_title}`);
     }
     for (const task of dayTasks) {
-      lines.push(`☐ ${task.title}`);
+      lines.push(`◆ ${task.title}`);
       if (task.note_title) lines.push(`   📝 ${task.note_title}`);
     }
     for (const fd of dayFieldDates) {

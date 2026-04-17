@@ -6,7 +6,13 @@ from sqlalchemy.orm import selectinload
 
 from app.database.connection import AsyncSessionLocal
 from app.models.database import Event, EventReminder, Notification, Task, TaskReminder, User
-from app.services.notifications import dispatch_reminder, dispatch_task_reminder
+from app.services.notifications import (
+    dispatch_reminder, dispatch_task_reminder, send_telegram, send_email,
+    _build_telegram_text, _build_task_telegram_text,
+    _build_event_email_body, _build_task_email_body,
+    _build_email_subject, _format_dt_local, _anticipation_label,
+    _escape_mdv2,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +164,84 @@ async def check_reminders() -> None:
                     smtp_cfg=smtp_cfg,
                 )
                 tr.notified_at = now
+
+            # ── Re-dispatch snoozed notifications ───────────────────────────
+            # When a notification is snoozed, snooze_dispatched is set to False.
+            # After snoozed_until expires we re-send via Telegram/Email so
+            # those channels also get the reminder again.
+            snoozed_result = await db.execute(
+                select(Notification).where(
+                    Notification.snooze_dispatched == False,  # noqa: E711
+                    Notification.snoozed_until != None,       # noqa: E711
+                    Notification.snoozed_until <= now,
+                ).options(
+                    selectinload(Notification.user),
+                    selectinload(Notification.event).selectinload(Event.note),
+                    selectinload(Notification.task).selectinload(Task.note),
+                )
+            )
+            snoozed_notifications = snoozed_result.scalars().all()
+
+            for notif in snoozed_notifications:
+                user = notif.user
+                tz_name = settings.timezone
+
+                try:
+                    if notif.notify_telegram and user.telegram_chat_id:
+                        if notif.event_id and notif.event:
+                            ev = notif.event
+                            note_title = ev.note.title if ev.note else None
+                            # Approximate occurrence from notification body context
+                            tg_text = f"🔔 *NoteVault* \\— Promemoria posticipato\n\n📅 *{_escape_mdv2(ev.title)}*"
+                            if note_title:
+                                tg_text += f"\n📓 {_escape_mdv2(note_title)}"
+                            await send_telegram(user.telegram_chat_id, settings.telegram_bot_token, tg_text)
+                        elif notif.task_id and notif.task:
+                            tk = notif.task
+                            note_title = tk.note.title if tk.note else None
+                            tg_text = f"🔔 *NoteVault* \\— Promemoria posticipato\n\n✅ *{_escape_mdv2(tk.title)}*"
+                            if note_title:
+                                tg_text += f"\n📓 {_escape_mdv2(note_title)}"
+                            await send_telegram(user.telegram_chat_id, settings.telegram_bot_token, tg_text)
+
+                    if notif.notify_email:
+                        email_to = user.notification_email or user.email
+                        if notif.event_id and notif.event:
+                            ev = notif.event
+                            note_title = ev.note.title if ev.note else None
+                            subject = f"[NoteVault] Promemoria posticipato — {ev.title}"
+                            body_lines = [
+                                "NoteVault — Promemoria posticipato",
+                                "",
+                                f"📅 Evento: {ev.title}",
+                            ]
+                            if note_title:
+                                body_lines.append(f"📓 Nota:   {note_title}")
+                            await send_email(
+                                to=email_to, subject=subject,
+                                body="\n".join(body_lines), **smtp_cfg,
+                            )
+                        elif notif.task_id and notif.task:
+                            tk = notif.task
+                            note_title = tk.note.title if tk.note else None
+                            subject = f"[NoteVault] Promemoria posticipato — {tk.title}"
+                            body_lines = [
+                                "NoteVault — Promemoria posticipato",
+                                "",
+                                f"✅ Task: {tk.title}",
+                            ]
+                            if note_title:
+                                body_lines.append(f"📓 Nota:   {note_title}")
+                            if tk.due_date:
+                                body_lines.append(f"⏰ Scadenza: {_format_dt_local(tk.due_date, tz_name)}")
+                            await send_email(
+                                to=email_to, subject=subject,
+                                body="\n".join(body_lines), **smtp_cfg,
+                            )
+                except Exception:
+                    logger.exception("Error re-dispatching snoozed notification %d", notif.id)
+
+                notif.snooze_dispatched = True
 
             # Purge read notifications older than 30 days
             cutoff = now - timedelta(days=30)

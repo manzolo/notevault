@@ -309,10 +309,11 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
         onChange={handleDateChange}
         placeholder={t('setDueDate')}
         iconOnly={!task.due_date}
+        disabled={task.is_done}
         triggerClassName={
           task.due_date
-            ? `text-xs whitespace-nowrap transition-colors ${isPastDue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400'}`
-            : 'opacity-0 group-hover:opacity-100 text-gray-300 hover:text-indigo-400 dark:text-gray-600 dark:hover:text-indigo-400 transition-opacity'
+            ? `text-xs whitespace-nowrap transition-colors disabled:cursor-default ${isPastDue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400'}`
+            : 'opacity-0 group-hover:opacity-100 text-gray-300 hover:text-indigo-400 dark:text-gray-600 dark:hover:text-indigo-400 transition-opacity disabled:cursor-default'
         }
       />
 
@@ -326,7 +327,7 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
           <ArchiveIcon className="h-3.5 w-3.5" />
         </button>
       )}
-      {task.id && (
+      {task.id && !task.is_done && (
         <button
           type="button"
           onClick={() => {
@@ -341,13 +342,15 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
           <BellIcon className="h-3.5 w-3.5" />
         </button>
       )}
-      <button
-        type="button"
-        onClick={() => onDelete(task.id)}
-        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
-      >
-        <TrashIcon className="h-3.5 w-3.5" />
-      </button>
+      {!task.is_done && (
+        <button
+          type="button"
+          onClick={() => onDelete(task.id)}
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+        >
+          <TrashIcon className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
     {showReminders && task.id && (
       <TaskRemindersSection ref={reminderRef} taskId={task.id} hasDueDate={!!task.due_date} />

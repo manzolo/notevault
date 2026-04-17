@@ -18,6 +18,8 @@ async def send_in_app(
     body: Optional[str],
     event_id: Optional[int] = None,
     task_id: Optional[int] = None,
+    notify_telegram: bool = False,
+    notify_email: bool = False,
 ) -> None:
     notif = Notification(
         user_id=user_id,
@@ -25,6 +27,9 @@ async def send_in_app(
         body=body,
         event_id=event_id,
         task_id=task_id,
+        notify_telegram=notify_telegram,
+        notify_email=notify_email,
+        snooze_dispatched=True,  # default: no snooze yet
     )
     db.add(notif)
 
@@ -224,7 +229,11 @@ async def dispatch_reminder(
     inapp_body = _build_inapp_body(occurrence_dt, tz_name, note_title, desc, reminder.minutes_before)
 
     if reminder.notify_in_app:
-        await send_in_app(db, user.id, inapp_title, inapp_body, event_id=event.id)
+        await send_in_app(
+            db, user.id, inapp_title, inapp_body, event_id=event.id,
+            notify_telegram=reminder.notify_telegram,
+            notify_email=reminder.notify_email,
+        )
 
     if reminder.notify_telegram and user.telegram_chat_id:
         tg_text = _build_telegram_text(event.title, note_title, desc, occurrence_dt, reminder.minutes_before, tz_name)
@@ -286,7 +295,11 @@ async def dispatch_task_reminder(
     inapp_body = _build_task_inapp_body(task.due_date, tz_name, note_title, reminder.minutes_before)
 
     if reminder.notify_in_app:
-        await send_in_app(db, user.id, inapp_title, inapp_body, task_id=task.id)
+        await send_in_app(
+            db, user.id, inapp_title, inapp_body, task_id=task.id,
+            notify_telegram=reminder.notify_telegram,
+            notify_email=reminder.notify_email,
+        )
 
     if reminder.notify_telegram and user.telegram_chat_id:
         tg_text = _build_task_telegram_text(task.title, note_title, task.due_date, reminder.minutes_before, tz_name)

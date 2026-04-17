@@ -352,6 +352,10 @@ class Notification(Base):
     task_id = Column(Integer, ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)
     is_read = Column(Boolean, default=False, nullable=False)
     snoozed_until = Column(DateTime(timezone=True), nullable=True)
+    notify_telegram = Column(Boolean, default=False, nullable=False)
+    notify_email = Column(Boolean, default=False, nullable=False)
+    # Set to False when a new snooze is applied; set to True after re-dispatch.
+    snooze_dispatched = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="notifications")

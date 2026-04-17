@@ -445,6 +445,8 @@
     "loading": "Caricamento...",
     "empty": "Nessuna notifica.",
     "snooze": "Posticipa",
+    "snooze1m": "1 min",
+    "snooze5m": "5 min",
     "snooze10m": "10 min",
     "snooze30m": "30 min",
     "snooze1h": "1 ora",

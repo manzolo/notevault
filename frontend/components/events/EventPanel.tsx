@@ -5,8 +5,9 @@ import { useTranslations } from "next-intl";
 import { CalendarEvent, CalendarEventCreate } from "@/lib/types";
 import { useEvents } from "@/hooks/useEvents";
 import { useConfirm } from "@/hooks/useConfirm";
-import { ArchiveIcon, RestoreIcon, TrashIcon } from "@/components/common/Icons";
+import { ArchiveIcon, RestoreIcon, TrashIcon, BellIcon } from "@/components/common/Icons";
 import EventFormModal from "./EventFormModal";
+import { minutesLabel } from "@/components/events/RemindersSection";
 import Button from "@/components/common/Button";
 import api from "@/lib/api";
 
@@ -80,9 +81,41 @@ function nextOccurrence(rrule: string, startIso: string): Date | null {
   return candidate;
 }
 
+/** Format RRULE to a human readable localized text */
+function formatRruleText(rrule: string, t: (key: string) => string): string {
+  const params: Record<string, string> = {};
+  rrule.split(";").forEach((part) => {
+    const idx = part.indexOf("=");
+    if (idx !== -1) params[part.slice(0, idx)] = part.slice(idx + 1);
+  });
+
+  const freq = params["FREQ"];
+  const interval = parseInt(params["INTERVAL"] ?? "1", 10);
+
+  let base = "";
+  if (freq === "DAILY") base = interval === 1 ? t("recurrenceDaily") : `${t("recurrenceEvery")} ${interval} ${t("recurrenceUnitDays")}`;
+  else if (freq === "WEEKLY") base = interval === 1 ? t("recurrenceWeekly") : `${t("recurrenceEvery")} ${interval} ${t("recurrenceUnitWeeks")}`;
+  else if (freq === "MONTHLY") base = interval === 1 ? (params["BYDAY"] ? t("recurrenceMonthlyWeekday") : t("recurrenceMonthlyDay")) : `${t("recurrenceEvery")} ${interval} ${t("recurrenceUnitMonths")}`;
+  else if (freq === "YEARLY") base = interval === 1 ? t("recurrenceYearly") : `${t("recurrenceEvery")} ${interval} ${t("recurrenceUnitYears")}`;
+
+  if (!base) return rrule;
+
+  let endText = "";
+  if (params["UNTIL"]) {
+    const u = params["UNTIL"];
+    const d = new Date(parseInt(u.slice(0, 4)), parseInt(u.slice(4, 6)) - 1, parseInt(u.slice(6, 8)));
+    endText = ` (${t("recurrenceEndsOn")} ${d.toLocaleDateString()})`;
+  } else if (params["COUNT"]) {
+    endText = ` (${t("recurrenceEndsAfter")} ${params["COUNT"]} ${t("recurrenceEndsAfterUnit")})`;
+  }
+
+  return base + endText;
+}
+
 export default function EventPanel({ noteId, onCountChange, onEventsChange, onAdd }: Props) {
   const t = useTranslations("events");
   const tc = useTranslations("common");
+  const tr = useTranslations("reminders");
   const { events, loading, fetchEvents, createEvent, updateEvent, deleteEvent, archiveEvent, restoreEvent, fetchArchivedEvents } = useEvents(noteId);
   const { confirm, confirmInput, dialog: confirmDialog } = useConfirm();
   const [archivedEvents, setArchivedEvents] = useState<CalendarEvent[]>([]);
@@ -219,8 +252,13 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
           <p className="font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5">
               {ev.title}
               {ev.recurrence_rule && (
-                <span title={ev.recurrence_rule} className="inline-flex items-center gap-0.5 text-xs font-normal text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-full shrink-0">
+                <span title={formatRruleText(ev.recurrence_rule, t)} className="inline-flex items-center gap-0.5 text-xs font-normal text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-full shrink-0">
                   ↻ {t("recurring")}
+                </span>
+              )}
+              {ev.reminders && ev.reminders.length > 0 && (
+                <span title={ev.reminders.map(r => minutesLabel(r.minutes_before, tr)).join("\n")} className="inline-flex items-center text-indigo-400 dark:text-indigo-500 shrink-0 cursor-help">
+                  <BellIcon className="h-3.5 w-3.5" />
                 </span>
               )}
             </p>

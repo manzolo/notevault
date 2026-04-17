@@ -37,13 +37,13 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-modal w-full max-w-md overflow-hidden">
-          <div className="border-t-4 border-t-indigo-500 px-6 py-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative bg-white dark:bg-vault-800 rounded-xl shadow-modal w-full max-w-md overflow-hidden border border-cream-300/60 dark:border-vault-600/60">
+          <div className="border-t-[3px] border-t-violet-500 dark:border-t-violet-400 px-6 py-4 flex items-center justify-between border-b border-cream-200 dark:border-vault-700/80 bg-gradient-to-br from-violet-50/60 to-white dark:from-vault-700/30 dark:to-vault-800">
+            <h3 className="font-display text-lg font-semibold text-gray-900 dark:text-vault-50 tracking-tight">{title}</h3>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 dark:text-vault-300 hover:text-gray-700 dark:hover:text-vault-50 transition-colors rounded-md p-0.5 hover:bg-cream-200/60 dark:hover:bg-vault-700/60"
               aria-label={t('close')}
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
