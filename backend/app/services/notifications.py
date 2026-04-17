@@ -52,6 +52,7 @@ async def send_email(
     use_tls: bool,
 ) -> None:
     if not smtp_host or not to:
+        logger.warning("Email skipped: smtp_host=%r to=%r", smtp_host, to)
         return
     try:
         import aiosmtplib
@@ -62,6 +63,7 @@ async def send_email(
         msg["From"] = smtp_from or smtp_user
         msg["To"] = to
 
+        logger.info("Sending email to=%s via %s:%s tls=%s", to, smtp_host, smtp_port, use_tls)
         await aiosmtplib.send(
             msg,
             hostname=smtp_host,
@@ -70,6 +72,7 @@ async def send_email(
             password=smtp_password or None,
             start_tls=use_tls,
         )
+        logger.info("Email sent OK to=%s", to)
     except Exception as exc:
         logger.warning("Email send failed to %s: %s", to, exc)
 
