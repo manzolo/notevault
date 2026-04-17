@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, KeyboardEvent } from 'react';
+import { useRef, useState, KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { Task } from '@/lib/types';
 import { ArchiveIcon, BellIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
@@ -8,7 +8,7 @@ import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DateTimePicker from '@/components/common/DateTimePicker';
 import { useConfirm } from '@/hooks/useConfirm';
-import TaskRemindersSection from '@/components/tasks/TaskRemindersSection';
+import TaskRemindersSection, { TaskRemindersSectionHandle } from '@/components/tasks/TaskRemindersSection';
 import {
   DndContext,
   closestCenter,
@@ -249,6 +249,7 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
   const { confirmInput, dialog: archiveDialog } = useConfirm();
   const [toggling, setToggling] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
+  const reminderRef = useRef<TaskRemindersSectionHandle>(null);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   const handleToggle = async () => {
@@ -328,7 +329,10 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
       {task.id && (
         <button
           type="button"
-          onClick={() => setShowReminders((v) => !v)}
+          onClick={() => {
+            if (showReminders) reminderRef.current?.getAndFlush();
+            setShowReminders((v) => !v);
+          }}
           title={t('reminders')}
           className={`transition-opacity text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 ${
             showReminders ? 'opacity-100 text-indigo-500 dark:text-indigo-400' : 'opacity-0 group-hover:opacity-100'
@@ -346,7 +350,7 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
       </button>
     </div>
     {showReminders && task.id && (
-      <TaskRemindersSection taskId={task.id} hasDueDate={!!task.due_date} />
+      <TaskRemindersSection ref={reminderRef} taskId={task.id} hasDueDate={!!task.due_date} />
     )}
     </>
   );

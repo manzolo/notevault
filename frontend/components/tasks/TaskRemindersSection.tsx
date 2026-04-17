@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useTaskReminders } from "@/hooks/useTaskReminders";
 import { minutesLabel } from "@/components/events/RemindersSection";
 import { BellIcon, TelegramIcon, MailIcon } from "@/components/common/Icons";
 
 const PRESETS = [10, 30, 60, 120, 1440, 10080];
+
+export interface TaskRemindersSectionHandle {
+  getAndFlush: () => void;
+}
 
 interface Props {
   taskId: number;
@@ -23,7 +27,7 @@ function ChannelIcons({ inApp, telegram, email }: { inApp: boolean; telegram: bo
   );
 }
 
-export default function TaskRemindersSection({ taskId, hasDueDate }: Props) {
+const TaskRemindersSection = forwardRef<TaskRemindersSectionHandle, Props>(function TaskRemindersSection({ taskId, hasDueDate }, ref) {
   const t = useTranslations("reminders");
   const tTask = useTranslations("tasks");
   const { reminders, loading, fetchReminders, createReminder, deleteReminder } = useTaskReminders(taskId);
@@ -38,6 +42,13 @@ export default function TaskRemindersSection({ taskId, hasDueDate }: Props) {
   const [error, setError] = useState<string | null>(null);
   const didFetch = useRef(false);
   const addFormRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    getAndFlush: () => {
+      const val = parseInt(customValue, 10);
+      if (val > 0) handleCustomSubmit();
+    },
+  }));
 
   useEffect(() => {
     if (!didFetch.current) {
@@ -154,4 +165,6 @@ export default function TaskRemindersSection({ taskId, hasDueDate }: Props) {
       ))}
     </div>
   );
-}
+});
+
+export default TaskRemindersSection;
