@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.13.9] - 2026-04-18
+### Fixed
+- CI: added `REGISTRATION_ENABLED=true` to both backend and e2e jobs in the GitHub Actions workflow — `conftest.py` registers a test user and was getting 403 because `REGISTRATION_ENABLED` defaults to `false`
+- Rate limiter IP fallback now reads `X-Forwarded-For` so per-IP limits work correctly behind Nginx Proxy Manager or any reverse proxy
+
 ## [0.13.8] - 2026-04-18
 ### Fixed
 - `make create-user`, `delete-user`, `change-password`: use `$(origin VAR)` instead of `[ -n "$(VAR)" ]` to detect command-line arguments; prevents collision with the `$USERNAME` shell environment variable (always set to the current system user on Linux)
