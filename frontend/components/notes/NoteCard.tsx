@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, MatchingTask, Note } from '@/lib/types';
 import { formatRelative, stripMarkdown, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
-import { ArchiveIcon, CalendarIcon, CheckSquareIcon, EyeIcon, FolderIcon, LockClosedIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, CalendarIcon, CheckSquareIcon, EyeIcon, FolderIcon, GripIcon, LockClosedIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
@@ -61,6 +62,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
   const tSearch = useTranslations('search');
   const tAtt = useTranslations('attachments');
   const { confirm, dialog } = useConfirm();
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const handleDelete = async () => {
     if (await confirm(t('deleteConfirm'))) onDelete(note.id);
@@ -77,28 +79,37 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', note.id.toString());
     e.dataTransfer.effectAllowed = 'move';
+    if (cardRef.current) {
+      e.dataTransfer.setDragImage(cardRef.current, 20, 20);
+    }
   };
+
+  const noteHref = `/${locale}/notes/${note.id}`;
 
   return (
     <>
       {dialog}
-      <div
-        draggable
-        onDragStart={handleDragStart}
-        className="group bg-white dark:bg-vault-800 rounded-xl shadow-card hover:shadow-card-hover transition-[box-shadow,border-color] duration-200 border border-cream-300/60 dark:border-vault-600/50 border-l-2 border-l-violet-400/50 dark:border-l-violet-500/60 hover:border-l-violet-500 dark:hover:border-l-violet-400 p-4 cursor-grab active:cursor-grabbing select-none"
-      >
-        <div className="flex items-start justify-between gap-2">
+      <div ref={cardRef} className="group bg-white dark:bg-vault-800 rounded-xl shadow-card hover:shadow-card-hover transition-[box-shadow,border-color] duration-200 border border-cream-300/60 dark:border-vault-600/50 border-l-2 border-l-violet-400/50 dark:border-l-violet-500/60 hover:border-l-violet-500 dark:hover:border-l-violet-400 flex">
+        {/* Drag handle — only this element is draggable */}
+        <div
+          draggable
+          onDragStart={handleDragStart}
+          className="flex items-center px-2 text-gray-300 dark:text-vault-600 opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-grab active:cursor-grabbing select-none shrink-0"
+          title="Drag to folder"
+        >
+          <GripIcon className="h-4 w-4" />
+        </div>
+
+        {/* Clickable content area — draggable=false prevents browser from dragging the link href */}
+        <Link href={noteHref} draggable={false} className="flex-1 min-w-0 p-4 pr-2 block">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 min-w-0">
               {note.is_archived && (
                 <span className="bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0 border border-amber-200/60 dark:border-amber-500/20">{t('archived')}</span>
               )}
-              <Link
-                href={`/${locale}/notes/${note.id}`}
-                className="font-display text-gray-900 dark:text-vault-50 font-semibold hover:text-violet-700 dark:hover:text-violet-300 truncate min-w-0 tracking-tight transition-colors duration-150"
-              >
+              <span className="font-display text-gray-900 dark:text-vault-50 font-semibold group-hover:text-violet-700 dark:group-hover:text-violet-300 truncate min-w-0 tracking-tight transition-colors duration-150">
                 {note.title}
-              </Link>
+              </span>
             </div>
             <p className="text-sm text-gray-500 dark:text-vault-300 mb-2 leading-relaxed">{truncate(stripMarkdown(note.content), 120)}</p>
             <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
@@ -277,34 +288,35 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
               </div>
             )}
           </div>
+        </Link>
 
-          <div className="flex items-center gap-1">
-            {onPin && (
-              <Button
-                variant="ghost"
-                size="sm"
-                title={note.is_pinned ? t('unpin') : t('pin')}
-                onClick={handlePin}
-                className={note.is_pinned ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400 dark:text-vault-500'}
-              >
-                <PinIcon filled={note.is_pinned} />
-              </Button>
-            )}
-            {onArchive && (
-              <Button
-                variant="ghost"
-                size="sm"
-                title={note.is_archived ? t('unarchive') : t('archive')}
-                onClick={handleArchive}
-                className={note.is_archived ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-vault-500'}
-              >
-                <ArchiveIcon />
-              </Button>
-            )}
-            <Button variant="ghost-danger" size="sm" title={t('delete')} onClick={handleDelete}>
-              <TrashIcon />
+        {/* Action buttons — outside Link so clicks don't navigate */}
+        <div className="flex items-start pt-3 pr-3 gap-1 shrink-0">
+          {onPin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              title={note.is_pinned ? t('unpin') : t('pin')}
+              onClick={handlePin}
+              className={note.is_pinned ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400 dark:text-vault-500'}
+            >
+              <PinIcon filled={note.is_pinned} />
             </Button>
-          </div>
+          )}
+          {onArchive && (
+            <Button
+              variant="ghost"
+              size="sm"
+              title={note.is_archived ? t('unarchive') : t('archive')}
+              onClick={handleArchive}
+              className={note.is_archived ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-vault-500'}
+            >
+              <ArchiveIcon />
+            </Button>
+          )}
+          <Button variant="ghost-danger" size="sm" title={t('delete')} onClick={handleDelete}>
+            <TrashIcon />
+          </Button>
         </div>
       </div>
     </>

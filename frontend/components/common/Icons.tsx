@@ -316,3 +316,16 @@ export function MailIcon({ className = base }: IconProps) {
     </svg>
   );
 }
+
+export function GripIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 20 20">
+      <circle cx="7" cy="5"  r="1.5" />
+      <circle cx="13" cy="5"  r="1.5" />
+      <circle cx="7" cy="10" r="1.5" />
+      <circle cx="13" cy="10" r="1.5" />
+      <circle cx="7" cy="15" r="1.5" />
+      <circle cx="13" cy="15" r="1.5" />
+    </svg>
+  );
+}
