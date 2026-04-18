@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.13.3] - 2026-04-18
+### Fixed
+- "Include subfolders" toggle in the filters panel now uses the same CSS pill switch as the folder tree sidebar (was inconsistently a plain checkbox)
+
 ## [0.13.2] - 2026-04-18
 ### Fixed
 - `pytest-asyncio` bumped from 0.23.3 → 0.23.8 to fix CI INTERNALERROR with `pytest 8.3.5` (`'Package' object has no attribute 'obj'`)
