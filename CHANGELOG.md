@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.1] - 2026-04-18
+### Added
+- Telegram reminder messages now include a clickable "Apri nota" link to the note, consistent with email reminders (uses `APP_BASE_URL`)
+- `test_config.py`: three new tests covering `check_insecure_defaults()` — raises on `SECRET_KEY=changeme`, raises on `MASTER_KEY=changeme`, passes with valid keys
+
+### Fixed
+- CI e2e job: `MASTER_KEY=changeme` caused the backend startup check to raise `RuntimeError`, silently exiting the container and timing out the "Wait for backend to be ready" step; replaced with valid base64 keys
+
 ## [0.14.0] - 2026-04-18
 ### Added
 - NoteCard drag handle: a grip icon (⠿) appears on hover at the left edge and is the only draggable zone; the rest of the card is now a full-width `Link` so clicking anywhere on the card opens the note
