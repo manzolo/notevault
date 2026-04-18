@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.13.6] - 2026-04-18
+### Added
+- `make create-user` command: creates a NoteVault user directly in the DB, supports interactive and non-interactive (`USERNAME= EMAIL= PASSWORD=`) modes
+- `REGISTRATION_ENABLED` setting (default `false`): backend returns 403 when disabled; frontend hides the register link and shows a "disabled" message on the register page
+- Security headers middleware: `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy`, `Strict-Transport-Security` (HTTPS only)
+- `CORS_ALLOWED_METHODS` and `CORS_ALLOWED_HEADERS` env vars to restrict CORS beyond just origins
+- Startup check: backend refuses to start if `SECRET_KEY` or `MASTER_KEY` is set to the default `changeme`
+- README (EN + IT): User Management section, all new env vars documented
+
+### Changed
+- Rate-limit login (10/min per IP), register (5/hr per IP), and TOTP verify (5/min per IP)
+- `UserCreate` schema now enforces `password` min length of 8 characters
+- CORS `allow_methods` and `allow_headers` restricted from `["*"]` to sensible defaults
+
 ## [0.13.5] - 2026-04-18
 ### Fixed
 - Attachment list on mobile: filename no longer breaks letter-by-letter; action buttons move below the filename on small screens
