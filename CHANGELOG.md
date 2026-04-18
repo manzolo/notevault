@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.7] - 2026-04-18
+### Added
+- `make delete-user` command: deletes a user and all their data; interactive with confirmation prompt, or non-interactive via `USERNAME=`
+- `make change-password` command: resets a user's password; interactive or non-interactive via `USERNAME= PASSWORD=`
+- `docs/DEPLOYMENT.md` §4.6: User Management section with command table, non-interactive examples, and production SSH instructions
+- New env vars `CORS_ALLOWED_METHODS`, `CORS_ALLOWED_HEADERS`, `REGISTRATION_ENABLED` documented in all READMEs and DEPLOYMENT.md
+
 ## [0.13.6] - 2026-04-18
 ### Added
 - `make create-user` command: creates a NoteVault user directly in the DB, supports interactive and non-interactive (`USERNAME= EMAIL= PASSWORD=`) modes
