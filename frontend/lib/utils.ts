@@ -1,13 +1,17 @@
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, type Locale } from 'date-fns';
+import { it as itLocale } from 'date-fns/locale';
+
+const DATE_FNS_LOCALES: Record<string, Locale> = { it: itLocale };
 
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return format(date, 'MMM d, yyyy');
 }
 
-export function formatRelative(dateString: string): string {
+export function formatRelative(dateString: string, locale?: string): string {
   const date = new Date(dateString);
-  return formatDistanceToNow(date, { addSuffix: true });
+  const dateFnsLocale = locale ? DATE_FNS_LOCALES[locale] : undefined;
+  return formatDistanceToNow(date, { addSuffix: true, locale: dateFnsLocale });
 }
 
 export function truncate(str: string, maxLength: number): string {

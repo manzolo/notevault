@@ -116,7 +116,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                   {categoryName}
                 </span>
               )}
-              <span className="font-mono text-xs text-gray-400 dark:text-vault-400 tabular-nums">{formatRelative(note.updated_at)}</span>
+              <span className="font-mono text-xs text-gray-400 dark:text-vault-400 tabular-nums">{formatRelative(note.updated_at, locale)}</span>
               <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
             </div>
 
