@@ -612,14 +612,17 @@ export default function FolderTree({
 
       {/* Recursive toggle (shown when a folder is selected) */}
       {selectedCategoryId !== null && (
-        <label className="flex items-center gap-1.5 mt-2 px-1 cursor-pointer">
+        <label className="flex items-center gap-2 mt-2 px-1 py-1 cursor-pointer group">
           <input
             type="checkbox"
             checked={recursive}
             onChange={onRecursiveToggle}
-            className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 w-3 h-3"
+            className="sr-only peer"
           />
-          <span className="text-[10px] text-gray-500 dark:text-gray-400">{tn('includeSubfolders')}</span>
+          <span className="relative inline-flex h-3.5 w-6 shrink-0 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 transition-colors duration-200 peer-checked:bg-indigo-500 peer-checked:border-indigo-500 after:absolute after:top-0.5 after:left-0.5 after:h-2 after:w-2 after:rounded-full after:bg-white after:shadow after:transition-transform after:duration-200 peer-checked:after:translate-x-2.5" />
+          <span className="text-[10px] text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors select-none">
+            {tn('includeSubfolders')}
+          </span>
         </label>
       )}
 
