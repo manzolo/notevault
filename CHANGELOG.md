@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.14.3] - 2026-04-18
+### Added
+- Tests: `test_snooze_redispatch_sends_telegram` and `test_snooze_redispatch_skips_telegram_when_false` verify that the scheduler correctly re-sends (or skips) Telegram when a snoozed notification expires, based on the `notify_telegram` flag on the Notification row
+
 ## [0.14.2] - 2026-04-18
 ### Fixed
 - `DateTimePicker`: time field now calls `onChange` on every keystroke so the value is captured before the popup closes — previously the time was lost if the user didn't press Enter
