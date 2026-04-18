@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.0] - 2026-04-18
+### Added
+- NoteCard drag handle: a grip icon (⠿) appears on hover at the left edge and is the only draggable zone; the rest of the card is now a full-width `Link` so clicking anywhere on the card opens the note
+- `GripIcon` added to `Icons.tsx`
+
+### Fixed
+- Dragging a NoteCard from the body/link area no longer silently breaks the folder-drop: `draggable={false}` on the `<Link>` prevents the browser from hijacking the drag with the link href
+- Drag preview now shows the full card (via `setDragImage`) instead of the tiny grip icon
+- Drag handle tooltip corrected from "Drag to reorder" to "Drag to folder"
+
 ## [0.13.9] - 2026-04-18
 ### Fixed
 - CI: added `REGISTRATION_ENABLED=true` to both backend and e2e jobs in the GitHub Actions workflow — `conftest.py` registers a test user and was getting 403 because `REGISTRATION_ENABLED` defaults to `false`
