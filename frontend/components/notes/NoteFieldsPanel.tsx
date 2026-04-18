@@ -559,12 +559,19 @@ export default function NoteFieldsPanel({ noteId }: NoteFieldsPanelProps) {
   const t = useTranslations('fields');
   const { fields, loading, fetchFields, createField, updateField, deleteField, reorderFields } = useNoteFields(noteId);
   const { confirm, dialog: confirmDialog } = useConfirm();
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const fetchedRef = useRef(false);
+  const prevLoadingRef = useRef(false);
 
   useEffect(() => {
     if (!fetchedRef.current) { fetchedRef.current = true; fetchFields(); }
   }, [fetchFields]);
+
+  // Auto-expand when the initial fetch transitions loading: true → false and fields exist
+  useEffect(() => {
+    if (prevLoadingRef.current && !loading && fields.length > 0) setExpanded(true);
+    prevLoadingRef.current = loading;
+  }, [loading, fields.length]);
 
   const groups = useMemo(() => groupFields(fields), [fields]);
   const totalFields = fields.length;
