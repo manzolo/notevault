@@ -6,7 +6,7 @@
  * afterAll deletes all test data via the API.
  */
 import { test, expect } from '@playwright/test';
-import { TEST_USER, ensureUser, cleanupUserData, loginViaUI } from './helpers';
+import { ensureUser, cleanupUserData, loginViaToken } from './helpers';
 
 test.describe('Notes', () => {
   let token: string;
@@ -20,7 +20,7 @@ test.describe('Notes', () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    await loginViaUI(page, 'it');
+    await loginViaToken(page, token, 'it');
   });
 
   // ── Create note ───────────────────────────────────────────────────────────

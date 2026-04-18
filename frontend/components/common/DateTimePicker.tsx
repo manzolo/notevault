@@ -66,24 +66,24 @@ const NativeTimeInput = forwardRef<HTMLInputElement, { value?: string; onChange?
       setLocalValue(value ?? '');
     }, [value]);
 
-    const commitChange = (newVal: string) => {
-      if (newVal !== (value ?? '')) {
-        onChange?.(newVal);
-      }
-    };
-
     return (
       <input
         ref={ref}
         type="time"
         value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={(e) => commitChange(e.target.value)}
+        onChange={(e) => {
+          const newVal = e.target.value;
+          setLocalValue(newVal);
+          // Propagate immediately so the time is captured before the popup closes
+          onChange?.(newVal);
+        }}
+        onBlur={(e) => {
+          // Safety net: in case onChange was not called (some browsers)
+          if (e.target.value !== (value ?? '')) onChange?.(e.target.value);
+        }}
         onKeyDown={(e) => {
           e.stopPropagation();
-          if (e.key === 'Enter') {
-            commitChange(e.currentTarget.value);
-          }
+          if (e.key === 'Enter') onChange?.(e.currentTarget.value);
         }}
         onKeyUp={(e) => e.stopPropagation()}
         onKeyPress={(e) => e.stopPropagation()}

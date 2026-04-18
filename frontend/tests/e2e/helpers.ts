@@ -37,12 +37,24 @@ export async function cleanupUserData(request: APIRequestContext, token: string)
   }
 }
 
-/** Log in the test user via the UI. */
+/** Log in the test user via the UI (use only in auth-specific tests). */
 export async function loginViaUI(page: Page, locale = 'it'): Promise<void> {
   await page.goto(`/${locale}/login`);
   await page.fill('input[autocomplete="username"]', TEST_USER.username);
   await page.fill('input[type="password"]', TEST_USER.password);
   await page.click('button[type="submit"]');
   // Wait until we land on dashboard
+  await page.waitForURL(`**/${locale}/dashboard`, { timeout: 15_000 });
+}
+
+/**
+ * Inject a JWT token directly into localStorage, bypassing the login UI.
+ * Use this in non-auth tests (notes, secrets, etc.) to avoid hitting the
+ * login rate limit when many test specs run within a short window.
+ */
+export async function loginViaToken(page: Page, token: string, locale = 'it'): Promise<void> {
+  await page.goto(`/${locale}/login`);
+  await page.evaluate((t) => localStorage.setItem('access_token', t), token);
+  await page.goto(`/${locale}/dashboard`);
   await page.waitForURL(`**/${locale}/dashboard`, { timeout: 15_000 });
 }

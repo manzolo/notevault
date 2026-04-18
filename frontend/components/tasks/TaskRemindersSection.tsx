@@ -79,6 +79,7 @@ const TaskRemindersSection = forwardRef<TaskRemindersSectionHandle, Props>(funct
     try {
       await createReminder({ minutes_before: minutes, notify_in_app: notifyInApp, notify_telegram: notifyTelegram, notify_email: notifyEmail });
       setCustomValue("");
+      await fetchReminders();
     } catch (e: any) {
       setError(e?.response?.data?.detail ?? "Failed to add reminder.");
     } finally {

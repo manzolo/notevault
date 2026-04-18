@@ -7,7 +7,7 @@
  *      or any other invisible combination) in BOTH light and dark mode.
  */
 import { test, expect } from '@playwright/test';
-import { ensureUser, cleanupUserData, loginViaUI } from './helpers';
+import { ensureUser, cleanupUserData, loginViaToken } from './helpers';
 
 const API = 'http://localhost:8000';
 
@@ -36,7 +36,7 @@ test.describe('Secrets visibility', () => {
   });
 
   async function goToNote(page: import('@playwright/test').Page) {
-    await loginViaUI(page, 'it');
+    await loginViaToken(page, token, 'it');
     await page.goto(`/it/notes/${noteId}`);
   }
 
