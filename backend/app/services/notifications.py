@@ -40,7 +40,18 @@ async def send_telegram(chat_id: str, bot_token: str, text: str) -> None:
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            await client.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "MarkdownV2"})
+            resp = await client.post(
+                url,
+                json={"chat_id": chat_id, "text": text, "parse_mode": "MarkdownV2"},
+            )
+            if resp.is_success:
+                return
+            # MarkdownV2 formatting error → retry as plain text
+            logger.warning("Telegram MarkdownV2 rejected (%s %s), retrying as plain text", resp.status_code, resp.text)
+            plain = text.replace("\\", "").replace("*", "").replace("_", "").replace("`", "")
+            resp2 = await client.post(url, json={"chat_id": chat_id, "text": plain})
+            if not resp2.is_success:
+                logger.warning("Telegram plain-text send also failed: %s %s", resp2.status_code, resp2.text)
     except Exception as exc:
         logger.warning("Telegram send failed: %s", exc)
 
