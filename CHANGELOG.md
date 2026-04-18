@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.13.5] - 2026-04-18
+### Fixed
+- Attachment list on mobile: filename no longer breaks letter-by-letter; action buttons move below the filename on small screens
+
 ## [0.13.4] - 2026-04-18
 ### Fixed
 - Removed redundant "Pinned" badge from NoteCard title row — the pin button on the right already turns violet when a note is pinned
