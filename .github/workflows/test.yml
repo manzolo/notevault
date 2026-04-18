@@ -43,8 +43,8 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://notevault:testpass@localhost:5432/notevault_test
       TEST_DATABASE_URL: postgresql+asyncpg://notevault:testpass@localhost:5432/notevault_test
       REDIS_URL: redis://localhost:6379/0
-      SECRET_KEY: ci-secret-key-for-notevault-testing
-      MASTER_KEY: changeme
+      SECRET_KEY: Y2ktc2VjcmV0LWtleS1mb3Itbm90ZXZhdWx0LXRlc3Rpbmch
+      MASTER_KEY: Y2ktbWFzdGVyLWtleS1mb3Itbm90ZXZhdWx0LXRlc3Rpbmch
       CORS_ORIGINS: http://localhost:3000
       REGISTRATION_ENABLED: "true"
 
@@ -83,8 +83,8 @@ jobs:
         run: |
           cat > .env << 'EOF'
           DB_PASSWORD=testpass
-          SECRET_KEY=ci-e2e-secret-key-12345678901234567890
-          MASTER_KEY=changeme
+          SECRET_KEY=Y2ktZTJlLXNlY3JldC1rZXktZm9yLW5vdGV2YXVsdC10ZXN0aW5n
+          MASTER_KEY=Y2ktbWFzdGVyLWtleS1mb3Itbm90ZXZhdWx0LXRlc3Rpbmch
           CORS_ORIGINS=http://localhost:3000
           REDIS_URL=redis://redis:6379/0
           DATABASE_URL=postgresql+asyncpg://notevault:testpass@db:5432/notevault
