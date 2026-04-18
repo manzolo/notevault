@@ -33,12 +33,19 @@ export default function DashboardPage() {
   const { categories, fetchCategories, createCategory, updateCategory, deleteCategory } = useCategories();
   const [page, setPage] = useState(1);
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const v = sessionStorage.getItem('dashboard_categoryId');
+    return v !== null ? (v === 'null' ? null : Number(v)) : null;
+  });
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const [archivedOnly, setArchivedOnly] = useState(false);
-  const [recursive, setRecursive] = useState(false);
+  const [recursive, setRecursive] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem('dashboard_recursive') === 'true';
+  });
   // When true, skip the category filter entirely (show notes from all folders)
   const [bypassCategoryFilter, setBypassCategoryFilter] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
@@ -79,6 +86,14 @@ export default function DashboardPage() {
       fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive).then(() => {});
     }
   }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly, archivedOnly, recursive, bypassCategoryFilter]);
+
+  useEffect(() => {
+    sessionStorage.setItem('dashboard_categoryId', String(selectedCategoryId));
+  }, [selectedCategoryId]);
+
+  useEffect(() => {
+    sessionStorage.setItem('dashboard_recursive', String(recursive));
+  }, [recursive]);
 
   const handleTagSelect = (tagId: number | null) => {
     setSelectedTagId(tagId);
