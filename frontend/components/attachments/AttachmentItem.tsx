@@ -176,8 +176,8 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-all leading-snug">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words leading-snug min-w-0">
               {attachment.filename}
               {emlAttachmentCount > 0 && (
                 <span className="inline-block ml-1 text-gray-400 dark:text-gray-500 align-middle" title={t('emlHasAttachments')}>
