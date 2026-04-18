@@ -308,6 +308,8 @@ All day-to-day operations are available as Make targets. Run `make help` to see 
 | `shell-db` | Open a psql session inside the database container |
 | `keygen` | Generate `SECRET_KEY` and `MASTER_KEY` values |
 | `create-user` | Create a new user interactively (or `USERNAME= EMAIL= PASSWORD= make create-user`) |
+| `delete-user` | Delete a user and all their data (or `USERNAME= make delete-user`) |
+| `change-password` | Change a user's password (or `USERNAME= PASSWORD= make change-password`) |
 | `clean` | Remove containers, volumes, and orphaned services |
 
 ### Release & Deployment (Docker Hub)
@@ -334,6 +336,14 @@ make create-user
 
 # Non-interactive (useful for scripts)
 make create-user USERNAME=alice EMAIL=alice@example.com PASSWORD=s3cr3tPass!
+
+# Change a user's password
+make change-password                                      # interactive
+make change-password USERNAME=alice PASSWORD=newPass123!  # non-interactive
+
+# Delete a user and all their data (irreversible)
+make delete-user                    # interactive, asks for confirmation
+make delete-user USERNAME=alice     # non-interactive, still asks to confirm
 ```
 
 To allow self-registration temporarily (e.g. during initial setup on intranet), set `REGISTRATION_ENABLED=true` in `.env`, restart the backend, then disable it again once accounts are created.

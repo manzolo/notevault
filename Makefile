@@ -1,5 +1,5 @@
 .PHONY: up down restart build migrate migrate-down test test-backend test-reset test-frontend \
-        test-e2e logs logs-backend shell-backend shell-db keygen create-user \
+        test-e2e logs logs-backend shell-backend shell-db keygen create-user delete-user change-password \
         tag publish deploy deploy-update clean help
 
 # ---------------------------------------------------------------------------
@@ -139,6 +139,22 @@ create-user:
 		docker compose exec backend python scripts/create_user.py "$(USERNAME)" "$(EMAIL)" "$(PASSWORD)"; \
 	else \
 		docker compose exec -it backend python scripts/create_user.py; \
+	fi
+
+## delete-user: Delete a NoteVault user and all their data (interactive, or USERNAME= --confirm for scripting)
+delete-user:
+	@if [ -n "$(USERNAME)" ]; then \
+		docker compose exec backend python scripts/delete_user.py "$(USERNAME)" --confirm; \
+	else \
+		docker compose exec -it backend python scripts/delete_user.py; \
+	fi
+
+## change-password: Change a user's password (interactive, or USERNAME= PASSWORD= for scripting)
+change-password:
+	@if [ -n "$(USERNAME)" ] && [ -n "$(PASSWORD)" ]; then \
+		docker compose exec backend python scripts/change_password.py "$(USERNAME)" "$(PASSWORD)"; \
+	else \
+		docker compose exec -it backend python scripts/change_password.py; \
 	fi
 
 # ---------------------------------------------------------------------------

@@ -309,6 +309,8 @@ Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make h
 | `shell-db` | Apre una sessione psql nel container del database |
 | `keygen` | Genera i valori `SECRET_KEY` e `MASTER_KEY` |
 | `create-user` | Crea un nuovo utente in modo interattivo (oppure `USERNAME= EMAIL= PASSWORD= make create-user`) |
+| `delete-user` | Elimina un utente e tutti i suoi dati (oppure `USERNAME= make delete-user`) |
+| `change-password` | Cambia la password di un utente (oppure `USERNAME= PASSWORD= make change-password`) |
 | `clean` | Rimuove container, volumi e servizi orfani |
 
 ### Release & Deploy (Docker Hub)
@@ -335,6 +337,14 @@ make create-user
 
 # Non interattivo (utile per script)
 make create-user USERNAME=alice EMAIL=alice@example.com PASSWORD=s3cr3tPass!
+
+# Cambia la password di un utente
+make change-password                                      # interattivo
+make change-password USERNAME=alice PASSWORD=newPass123!  # non interattivo
+
+# Elimina un utente e tutti i suoi dati (irreversibile)
+make delete-user                    # interattivo, chiede conferma
+make delete-user USERNAME=alice     # non interattivo, chiede comunque conferma
 ```
 
 Per consentire la registrazione temporaneamente (es. durante la configurazione iniziale su intranet), imposta `REGISTRATION_ENABLED=true` nel file `.env`, riavvia il backend, poi disabilitala di nuovo una volta creati gli account.
