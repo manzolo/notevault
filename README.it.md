@@ -308,6 +308,7 @@ Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make h
 | `shell-backend` | Apre una shell bash nel container del backend |
 | `shell-db` | Apre una sessione psql nel container del database |
 | `keygen` | Genera i valori `SECRET_KEY` e `MASTER_KEY` |
+| `create-user` | Crea un nuovo utente in modo interattivo (oppure `USERNAME= EMAIL= PASSWORD= make create-user`) |
 | `clean` | Rimuove container, volumi e servizi orfani |
 
 ### Release & Deploy (Docker Hub)
@@ -321,6 +322,22 @@ Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make h
 | `deploy-update` | **Aggiornamento**: scarica la nuova versione e riavvia — `make deploy-update APP_VERSION=1.2.3` |
 
 > Le variabili di deploy (`DEPLOY_HOST`, `DEPLOY_PATH`) vengono lette da `.env.deploy` (gitignored). Vedi [Deploy in Produzione](#deploy-in-produzione).
+
+---
+
+## Gestione Utenti
+
+La registrazione è **disabilitata per impostazione predefinita** (`REGISTRATION_ENABLED=false`). È la configurazione consigliata per le installazioni esposte su internet. Usa `make create-user` per creare account:
+
+```bash
+# Interattivo — chiede username, email, password
+make create-user
+
+# Non interattivo (utile per script)
+make create-user USERNAME=alice EMAIL=alice@example.com PASSWORD=s3cr3tPass!
+```
+
+Per consentire la registrazione temporaneamente (es. durante la configurazione iniziale su intranet), imposta `REGISTRATION_ENABLED=true` nel file `.env`, riavvia il backend, poi disabilitala di nuovo una volta creati gli account.
 
 ---
 
@@ -423,9 +440,12 @@ Copia `.env.example` in `.env` e compila i valori prima di avviare lo stack.
 | `DATABASE_URL` | no | impostata da compose | Stringa di connessione SQLAlchemy asincrona. Sovrascritta da Docker Compose. |
 | `REDIS_URL` | no | `redis://redis:6379/0` | URL di connessione Redis. |
 | `CORS_ORIGINS` | no | `http://localhost:3000` | Origini CORS consentite, separate da virgola. In produzione impostare al proprio dominio. |
+| `CORS_ALLOWED_METHODS` | no | `GET,POST,PUT,PATCH,DELETE,OPTIONS` | Metodi HTTP consentiti da CORS, separati da virgola. |
+| `CORS_ALLOWED_HEADERS` | no | `Content-Type,Authorization` | Header delle richieste consentiti da CORS, separati da virgola. |
 | `NEXT_PUBLIC_API_URL` | no | `/api` | **Incorporato nel bundle frontend a build time.** Solo per configurazioni cross-origin. |
 | `DEBUG` | no | `false` | Attiva la modalità debug di FastAPI e Swagger UI. Non usare in produzione. |
 | `TOTP_REQUIRED` | no | `false` | Impone il 2FA TOTP a tutti gli utenti al login. |
+| `REGISTRATION_ENABLED` | no | `false` | Consente la registrazione autonoma di nuovi utenti. Lasciare `false` in produzione; usare `make create-user` per creare account manualmente. |
 
 ### Configurazione deploy (`.env.deploy`, gitignored)
 

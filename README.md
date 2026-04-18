@@ -307,6 +307,7 @@ All day-to-day operations are available as Make targets. Run `make help` to see 
 | `shell-backend` | Open a bash shell inside the backend container |
 | `shell-db` | Open a psql session inside the database container |
 | `keygen` | Generate `SECRET_KEY` and `MASTER_KEY` values |
+| `create-user` | Create a new user interactively (or `USERNAME= EMAIL= PASSWORD= make create-user`) |
 | `clean` | Remove containers, volumes, and orphaned services |
 
 ### Release & Deployment (Docker Hub)
@@ -320,6 +321,22 @@ All day-to-day operations are available as Make targets. Run `make help` to see 
 | `deploy-update` | **Rolling update**: pull new image version and restart — `make deploy-update APP_VERSION=1.2.3` |
 
 > Deploy variables (`DEPLOY_HOST`, `DEPLOY_PATH`) are loaded from `.env.deploy` (gitignored). See [Production Deploy](#production-deploy).
+
+---
+
+## User Management
+
+Registration is **disabled by default** (`REGISTRATION_ENABLED=false`). This is the recommended setting for internet-facing deployments. Use `make create-user` to provision accounts:
+
+```bash
+# Interactive — prompts for username, email, password
+make create-user
+
+# Non-interactive (useful for scripts)
+make create-user USERNAME=alice EMAIL=alice@example.com PASSWORD=s3cr3tPass!
+```
+
+To allow self-registration temporarily (e.g. during initial setup on intranet), set `REGISTRATION_ENABLED=true` in `.env`, restart the backend, then disable it again once accounts are created.
 
 ---
 
@@ -422,9 +439,12 @@ Copy `.env.example` to `.env` and populate before starting the stack.
 | `DATABASE_URL` | no | set by compose | Full async SQLAlchemy connection string. Set automatically by Docker Compose. |
 | `REDIS_URL` | no | `redis://redis:6379/0` | Redis connection URL. |
 | `CORS_ORIGINS` | no | `http://localhost:3000` | Comma-separated allowed CORS origins. In production set to your public domain. |
+| `CORS_ALLOWED_METHODS` | no | `GET,POST,PUT,PATCH,DELETE,OPTIONS` | Comma-separated HTTP methods allowed by CORS. |
+| `CORS_ALLOWED_HEADERS` | no | `Content-Type,Authorization` | Comma-separated request headers allowed by CORS. |
 | `NEXT_PUBLIC_API_URL` | no | `/api` | **Baked into the frontend bundle at build time.** Defaults to `/api` (domain-agnostic). Only set for cross-origin setups. |
 | `DEBUG` | no | `false` | Enable FastAPI debug mode and Swagger UI. Must be `false` in production. |
 | `TOTP_REQUIRED` | no | `false` | Require TOTP 2FA for all users at login. |
+| `REGISTRATION_ENABLED` | no | `false` | Allow new users to self-register. Set to `true` only when public sign-up is desired; leave `false` and use `make create-user` to provision accounts manually. |
 
 ### Deploy configuration (`.env.deploy`, gitignored)
 

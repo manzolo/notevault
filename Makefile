@@ -1,5 +1,5 @@
 .PHONY: up down restart build migrate migrate-down test test-backend test-reset test-frontend \
-        test-e2e logs logs-backend shell-backend shell-db keygen \
+        test-e2e logs logs-backend shell-backend shell-db keygen create-user \
         tag publish deploy deploy-update clean help
 
 # ---------------------------------------------------------------------------
@@ -132,6 +132,14 @@ keygen:
 	@python3 -c "import secrets,base64; \
 		print('SECRET_KEY='  + base64.b64encode(secrets.token_bytes(32)).decode()); \
 		print('MASTER_KEY='  + base64.b64encode(secrets.token_bytes(32)).decode())"
+
+## create-user: Create a new NoteVault user (interactive, or USERNAME= EMAIL= PASSWORD= for scripting)
+create-user:
+	@if [ -n "$(USERNAME)" ] && [ -n "$(EMAIL)" ] && [ -n "$(PASSWORD)" ]; then \
+		docker compose exec backend python scripts/create_user.py "$(USERNAME)" "$(EMAIL)" "$(PASSWORD)"; \
+	else \
+		docker compose exec -it backend python scripts/create_user.py; \
+	fi
 
 # ---------------------------------------------------------------------------
 # Release / Docker Hub
