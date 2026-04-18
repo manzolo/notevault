@@ -3,7 +3,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Backend: FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg)
 ![Frontend: Next.js 14](https://img.shields.io/badge/Frontend-Next.js%2014-black.svg)
-![Database: PostgreSQL 15](https://img.shields.io/badge/Database-PostgreSQL%2015-336791.svg)
+![Database: PostgreSQL 17](https://img.shields.io/badge/Database-PostgreSQL%2017-336791.svg)
 ![Encryption: AES-256-GCM](https://img.shields.io/badge/Encryption-AES--256--GCM-critical.svg)
 ![Docker Hub](https://img.shields.io/badge/Docker%20Hub-manzolo%2Fnotevault-blue.svg)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow.svg)](https://buymeacoffee.com/manzolo)
@@ -21,8 +21,11 @@ NoteVault is a **self-hosted, multi-user knowledge base** that combines a WYSIWY
   - [Folders & Organisation](#folders--organisation)
   - [Full-Text Search](#full-text-search)
   - [Attachments](#attachments)
-  - [Tasks](#tasks)
+  - [Tasks & Reminders](#tasks--reminders)
   - [Calendar & Events](#calendar--events)
+  - [Bookmarks](#bookmarks)
+  - [Technical Fields](#technical-fields)
+  - [Notifications](#notifications)
   - [Wiki-links](#wiki-links)
   - [Note Sharing](#note-sharing)
   - [Encrypted Secrets Vault](#encrypted-secrets-vault)
@@ -44,10 +47,13 @@ NoteVault is a **self-hosted, multi-user knowledge base** that combines a WYSIWY
 | Area | Highlights |
 |---|---|
 | **Notes** | WYSIWYG editor (TipTap), Markdown storage, tags, folders, pin, archive |
-| **Search** | PostgreSQL full-text search across notes, attachments, bookmarks |
+| **Search** | PostgreSQL full-text search across notes, attachments, bookmarks, tasks |
 | **Attachments** | Drag & drop, paste (Ctrl+V), ZIP (incl. password-protected), EML, inline preview |
-| **Tasks** | Inline checklist per note + global tasks page |
-| **Calendar** | Events with date/time, multi-day, attached files; monthly calendar view |
+| **Tasks** | Inline checklist per note + global tasks page, due dates, drag-to-reorder, reminders |
+| **Calendar** | Events with recurrence rules, multi-day, attached files, reminders; monthly calendar view |
+| **Bookmarks** | Per-note URL bookmarks with title/description, archive, drag-to-reorder; virtual bookmarks from secrets/events |
+| **Technical Fields** | Structured key→value fields grouped by category; sub-fields: date, link, price, note, image |
+| **Notifications** | In-app bell for task/event reminders; snooze with preset or custom duration |
 | **Filters** | Tag, date range, folder recursive, pinned-only, archived-only |
 | **Wiki-links** | `[[Note title]]` bidirectional links with autocomplete |
 | **Sharing** | Public or user-restricted share links, per-section granularity |
@@ -145,11 +151,13 @@ Attachments are grouped by type (images, PDFs, documents, spreadsheets, archives
 
 ---
 
-### Tasks
+### Tasks & Reminders
 
 ![Tasks](docs/screenshots/tasks.png)
 
 Each note has an **inline task list**: add items, check them off, reorder by drag, set optional due dates. A dedicated **global Tasks page** aggregates all tasks across all notes with a Todo / Done / All filter.
+
+Tasks support **reminders**: set one or more alerts before the due date, delivered via in-app notification, Telegram, or email. Each task can have up to 5 reminders with preset intervals (15 min, 1 h, 1 day, 1 week) or a fully custom duration.
 
 ---
 
@@ -160,6 +168,30 @@ Each note has an **inline task list**: add items, check them off, reorder by dra
 Notes can have **events** with a start datetime, optional end datetime, URL (Google Meet, Zoom…), and attached files. All events appear on a **monthly calendar view** alongside tasks that have due dates. Multi-day events span across days.
 
 The date filter on the dashboard matches notes whose events overlap the selected date range — not just the note creation date.
+
+Events also support **recurrence rules** (daily, weekly, monthly, yearly with optional UNTIL/COUNT limits) and **reminders** with the same multi-channel delivery as tasks.
+
+---
+
+### Bookmarks
+
+Each note has a **bookmarks panel** for saving related URLs with an optional title and description. Bookmarks support drag-to-reorder, archive, and full-text indexing.
+
+**Virtual bookmarks** are automatically derived from secrets and events that contain a URL — they appear as read-only entries in the bookmarks panel with a source badge (amber for secrets, blue for events), keeping all relevant links in one place without duplication.
+
+---
+
+### Technical Fields
+
+Each note can have **structured technical fields** — key → value pairs grouped into named categories. Each field supports optional sub-fields: a date, a URL link, a price, a note, and an image (paste from clipboard or browse). Fields are great for storing structured data like product specs, configuration parameters, or research metadata.
+
+---
+
+### Notifications
+
+A **bell icon** in the top navigation shows unread in-app notifications for task and event reminders. Clicking a notification navigates directly to the relevant note.
+
+Notifications can be **snoozed** — choose a preset (10 min, 30 min, 1 h, 3 h, 8 h, 1 day, 1 week) and the notification disappears until the snooze expires.
 
 ---
 
@@ -299,19 +331,20 @@ All day-to-day operations are available as Make targets. Run `make help` to see 
 └───────────────────────────┬─────────────────────────────┘
                             │ HTTP (via reverse proxy)
 ┌───────────────────────────▼─────────────────────────────┐
-│          Frontend  ·  Next.js 14  ·  :3000              │
+│          Frontend  ·  Next.js 14  ·  Node 22  ·  :3000  │
 │          App Router · TypeScript · Tailwind CSS         │
 │          next-intl (en / it) · /api/* rewrite → backend │
 └───────────────────────────┬─────────────────────────────┘
                             │ REST API (internal)
 ┌───────────────────────────▼─────────────────────────────┐
-│          Backend  ·  FastAPI  ·  :8000                  │
+│          Backend  ·  FastAPI  ·  Python 3.12  ·  :8000  │
 │          SQLAlchemy async · Alembic migrations          │
 │          AES-256-GCM encryption · bcrypt 12 rounds      │
+│          APScheduler (reminder delivery)                │
 └────────────┬──────────────────────────┬─────────────────┘
              │                          │
 ┌────────────▼───────────┐  ┌──────────▼──────────────────┐
-│  PostgreSQL 15  :5432  │  │  Redis 7        :6379        │
+│  PostgreSQL 17  :5432  │  │  Redis 7        :6379        │
 │  tsvector + GIN index  │  │  Rate limiting · sessions    │
 └────────────────────────┘  └─────────────────────────────┘
 ```
@@ -354,16 +387,21 @@ The REST API is served by FastAPI at `http://localhost:8000`. Interactive docume
 
 | Endpoint group | Base path | Description |
 |---|---|---|
-| Authentication | `/api/auth` | Register, login, TOTP verify |
+| Authentication | `/api/auth` | Register, login, TOTP verify, 2FA setup |
 | Notes | `/api/notes` | CRUD, pin, archive, wiki-link resolve, backlinks |
 | Tags | `/api/tags` | Create, list, assign tags |
 | Categories | `/api/categories` | Folder CRUD |
-| Search | `/api/search` | Full-text search with pagination |
+| Search | `/api/search` | Full-text search across notes, attachments, bookmarks, tasks |
 | Attachments | `/api/notes/{id}/attachments` | Upload, stream, ZIP/EML preview, delete |
-| Bookmarks | `/api/notes/{id}/bookmarks` | CRUD for URL bookmarks |
-| Secrets | `/api/secrets` | CRUD, reveal, TOTP seeds |
-| Tasks | `/api/tasks` | Per-note tasks + global task list |
-| Events | `/api/notes/{id}/events` | CRUD for calendar events |
+| Bookmarks | `/api/notes/{id}/bookmarks` | CRUD, archive, restore, reorder |
+| Secrets | `/api/secrets` | CRUD, reveal, copy-silent, TOTP seeds |
+| Tasks | `/api/tasks` | Per-note tasks + global task list, reorder, archive |
+| Task reminders | `/api/tasks/{id}/reminders` | CRUD for per-task reminder schedules |
+| Events | `/api/notes/{id}/events` | CRUD for calendar events with recurrence |
+| Event reminders | `/api/events/{id}/reminders` | CRUD for per-event reminder schedules |
+| Technical fields | `/api/notes/{id}/fields` | CRUD, reorder for structured key→value fields |
+| Field dates | `/api/field-dates` | Calendar aggregation of date-type fields |
+| Notifications | `/api/notifications` | List, mark-read, snooze |
 | Share | `/api/notes/{id}/share` | Create/revoke share tokens; public share view |
 
 All protected endpoints require an `Authorization: Bearer <token>` header.

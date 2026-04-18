@@ -3,7 +3,7 @@
 ![Licenza: MIT](https://img.shields.io/badge/Licenza-MIT-blue.svg)
 ![Backend: FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg)
 ![Frontend: Next.js 14](https://img.shields.io/badge/Frontend-Next.js%2014-black.svg)
-![Database: PostgreSQL 15](https://img.shields.io/badge/Database-PostgreSQL%2015-336791.svg)
+![Database: PostgreSQL 17](https://img.shields.io/badge/Database-PostgreSQL%2017-336791.svg)
 ![Cifratura: AES-256-GCM](https://img.shields.io/badge/Cifratura-AES--256--GCM-critical.svg)
 ![Docker Hub](https://img.shields.io/badge/Docker%20Hub-manzolo%2Fnotevault-blue.svg)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-yellow.svg)](https://buymeacoffee.com/manzolo)
@@ -21,8 +21,11 @@ NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un edi
   - [Cartelle e Organizzazione](#cartelle-e-organizzazione)
   - [Ricerca Full-Text](#ricerca-full-text)
   - [Allegati](#allegati)
-  - [Task](#task)
+  - [Task e Promemoria](#task-e-promemoria)
   - [Calendario ed Eventi](#calendario-ed-eventi)
+  - [Segnalibri](#segnalibri)
+  - [Campi Tecnici](#campi-tecnici)
+  - [Notifiche](#notifiche)
   - [Wiki-link](#wiki-link)
   - [Condivisione Note](#condivisione-note)
   - [Cassaforte Segreti Cifrata](#cassaforte-segreti-cifrata)
@@ -44,10 +47,13 @@ NoteVault è una **knowledge base self-hosted e multi-utente** che unisce un edi
 | Area | Punti salienti |
 |---|---|
 | **Note** | Editor WYSIWYG (TipTap), salvataggio in Markdown, tag, cartelle, pin, archiviazione |
-| **Ricerca** | Full-text PostgreSQL su note, allegati e segnalibri |
+| **Ricerca** | Full-text PostgreSQL su note, allegati, segnalibri e task |
 | **Allegati** | Drag & drop, incolla (Ctrl+V), ZIP (anche protetti da password), EML, anteprima inline |
-| **Task** | Checklist inline per nota + pagina task globale |
-| **Calendario** | Eventi con data/ora, multi-giorno, file allegati; vista calendario mensile |
+| **Task** | Checklist inline per nota + pagina task globale, scadenze, riordinamento drag, promemoria |
+| **Calendario** | Eventi con regole di ricorrenza, multi-giorno, file allegati, promemoria; vista calendario mensile |
+| **Segnalibri** | Segnalibri URL per nota con titolo/descrizione, archivio, drag-to-reorder; segnalibri virtuali da segreti/eventi |
+| **Campi Tecnici** | Campi strutturati chiave→valore raggruppati per categoria; sotto-campi: data, link, prezzo, nota, immagine |
+| **Notifiche** | Campanella in-app per promemoria task/eventi; posticipa con durata preimpostata o personalizzata |
 | **Filtri** | Tag, intervallo date, ricorsivo nelle sottocartelle, solo in evidenza, solo archiviate |
 | **Wiki-link** | Link bidirezionali `[[Titolo nota]]` con autocompletamento |
 | **Condivisione** | Link pubblici o ristretti per utente, granularità per sezione |
@@ -113,6 +119,7 @@ La barra di ricerca interroga simultaneamente tutti i contenuti tramite **Postgr
 - Titoli e testo del corpo delle note
 - Testo estratto dagli allegati (PDF, testo, Markdown…)
 - Titoli, URL e descrizioni dei segnalibri
+- Testo dei task
 
 Quando una corrispondenza è trovata **all'interno di un allegato**, il nome del file appare come chip cliccabile nella card del risultato. Cliccandolo si apre il file inline senza lasciare la pagina di ricerca.
 
@@ -145,11 +152,13 @@ Gli allegati sono raggruppati per tipo (immagini, PDF, documenti, fogli di calco
 
 ---
 
-### Task
+### Task e Promemoria
 
 ![Task](docs/screenshots/tasks.png)
 
 Ogni nota ha una **lista task inline**: aggiungi voci, spuntale, riordina trascinando, imposta scadenze opzionali. Una **pagina Task globale** raccoglie tutte le attività di tutte le note con filtro Da fare / Completate / Tutte.
+
+I task supportano i **promemoria**: imposta uno o più avvisi prima della scadenza, recapitati tramite notifica in-app, Telegram o email. Ogni task può avere fino a 5 promemoria con intervalli preimpostati (15 min, 1 h, 1 giorno, 1 settimana) o una durata completamente personalizzata.
 
 ---
 
@@ -160,6 +169,30 @@ Ogni nota ha una **lista task inline**: aggiungi voci, spuntale, riordina trasci
 Le note possono avere **eventi** con data/ora di inizio, fine opzionale, URL (Google Meet, Zoom…) e file allegati. Tutti gli eventi appaiono in una **vista calendario mensile** insieme ai task con scadenza. Gli eventi multi-giorno si estendono su più colonne.
 
 Il filtro date della dashboard trova le note i cui eventi ricadono nell'intervallo selezionato — non solo la data di creazione della nota.
+
+Gli eventi supportano anche **regole di ricorrenza** (giornaliera, settimanale, mensile, annuale con limiti UNTIL/COUNT opzionali) e **promemoria** con la stessa consegna multicanale dei task.
+
+---
+
+### Segnalibri
+
+Ogni nota ha un **pannello segnalibri** per salvare URL correlati con titolo e descrizione opzionali. I segnalibri supportano drag-to-reorder, archiviazione e indicizzazione full-text.
+
+I **segnalibri virtuali** vengono derivati automaticamente dai segreti e dagli eventi che contengono un URL — appaiono come voci di sola lettura nel pannello segnalibri con un badge sorgente (ambra per i segreti, blu per gli eventi), mantenendo tutti i link rilevanti in un unico posto senza duplicazioni.
+
+---
+
+### Campi Tecnici
+
+Ogni nota può avere **campi tecnici strutturati** — coppie chiave → valore raggruppate in categorie con nome. Ogni campo supporta sotto-campi opzionali: una data, un link URL, un prezzo, una nota e un'immagine (incolla dagli appunti o sfoglia). I campi sono ideali per memorizzare dati strutturati come specifiche di prodotto, parametri di configurazione o metadati di ricerca.
+
+---
+
+### Notifiche
+
+Un'**icona campanella** nella navigazione superiore mostra le notifiche in-app non lette per i promemoria di task ed eventi. Cliccando una notifica si naviga direttamente alla nota pertinente.
+
+Le notifiche possono essere **posticipate** — scegli un preset (10 min, 30 min, 1 h, 3 h, 8 h, 1 giorno, 1 settimana) e la notifica scompare fino alla scadenza del posticipo.
 
 ---
 
@@ -299,19 +332,20 @@ Tutte le operazioni quotidiane sono disponibili come target Make. Esegui `make h
 └───────────────────────────┬─────────────────────────────┘
                             │ HTTP (via reverse proxy)
 ┌───────────────────────────▼─────────────────────────────┐
-│          Frontend  ·  Next.js 14  ·  :3000              │
+│          Frontend  ·  Next.js 14  ·  Node 22  ·  :3000  │
 │          App Router · TypeScript · Tailwind CSS         │
 │          next-intl (en / it) · rewrite /api/* → backend │
 └───────────────────────────┬─────────────────────────────┘
                             │ REST API (interna)
 ┌───────────────────────────▼─────────────────────────────┐
-│          Backend  ·  FastAPI  ·  :8000                  │
+│          Backend  ·  FastAPI  ·  Python 3.12  ·  :8000  │
 │          SQLAlchemy async · Migrazioni Alembic          │
 │          Cifratura AES-256-GCM · bcrypt 12 iterazioni   │
+│          APScheduler (consegna promemoria)              │
 └────────────┬──────────────────────────┬─────────────────┘
              │                          │
 ┌────────────▼───────────┐  ┌──────────▼──────────────────┐
-│  PostgreSQL 15  :5432  │  │  Redis 7        :6379        │
+│  PostgreSQL 17  :5432  │  │  Redis 7        :6379        │
 │  tsvector + indice GIN │  │  Rate limiting · sessioni    │
 └────────────────────────┘  └─────────────────────────────┘
 ```
@@ -354,16 +388,21 @@ L'API REST è servita da FastAPI su `http://localhost:8000`. La documentazione i
 
 | Gruppo endpoint | Percorso base | Descrizione |
 |---|---|---|
-| Autenticazione | `/api/auth` | Registrazione, accesso, verifica TOTP |
+| Autenticazione | `/api/auth` | Registrazione, accesso, verifica TOTP, configurazione 2FA |
 | Note | `/api/notes` | CRUD, pin, archivio, resolve wiki-link, backlink |
 | Tag | `/api/tags` | Creazione, elenco, assegnazione tag |
 | Categorie | `/api/categories` | CRUD cartelle |
-| Ricerca | `/api/search` | Ricerca full-text con paginazione |
+| Ricerca | `/api/search` | Ricerca full-text su note, allegati, segnalibri, task |
 | Allegati | `/api/notes/{id}/attachments` | Upload, stream, anteprima ZIP/EML, eliminazione |
-| Segnalibri | `/api/notes/{id}/bookmarks` | CRUD segnalibri URL |
-| Segreti | `/api/secrets` | CRUD, rivelazione, seed TOTP |
-| Task | `/api/tasks` | Task per nota + lista task globale |
-| Eventi | `/api/notes/{id}/events` | CRUD eventi calendario |
+| Segnalibri | `/api/notes/{id}/bookmarks` | CRUD, archivio, ripristino, riordinamento |
+| Segreti | `/api/secrets` | CRUD, rivelazione, copia silenziosa, seed TOTP |
+| Task | `/api/tasks` | Task per nota + lista task globale, riordinamento, archivio |
+| Promemoria task | `/api/tasks/{id}/reminders` | CRUD per i promemoria del singolo task |
+| Eventi | `/api/notes/{id}/events` | CRUD eventi calendario con ricorrenza |
+| Promemoria eventi | `/api/events/{id}/reminders` | CRUD per i promemoria del singolo evento |
+| Campi tecnici | `/api/notes/{id}/fields` | CRUD, riordinamento per campi chiave→valore strutturati |
+| Date campi | `/api/field-dates` | Aggregazione calendario dei campi di tipo data |
+| Notifiche | `/api/notifications` | Elenco, segna come letto, posticipa |
 | Condivisione | `/api/notes/{id}/share` | Creazione/revoca token; vista pubblica |
 
 Tutti gli endpoint protetti richiedono un'intestazione `Authorization: Bearer <token>`.
