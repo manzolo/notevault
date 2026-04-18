@@ -90,9 +90,6 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 min-w-0">
-              {note.is_pinned && (
-                <span className="text-violet-600 dark:text-violet-400 text-xs font-semibold shrink-0 font-mono tracking-wide">⬆ {t('pinned')}</span>
-              )}
               {note.is_archived && (
                 <span className="bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0 border border-amber-200/60 dark:border-amber-500/20">{t('archived')}</span>
               )}
