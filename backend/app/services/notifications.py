@@ -107,7 +107,8 @@ def _anticipation_label(minutes: int) -> str:
 
 def _build_telegram_text(event_title: str, note_title: Optional[str],
                           event_description: Optional[str],
-                          occurrence_dt: datetime, minutes_before: int, tz_name: str) -> str:
+                          occurrence_dt: datetime, minutes_before: int, tz_name: str,
+                          note_id: Optional[int] = None, base_url: str = "") -> str:
     local_time = _format_dt_local(occurrence_dt, tz_name)
     safe_title = _escape_mdv2(event_title)
     safe_time = _escape_mdv2(local_time)
@@ -121,6 +122,9 @@ def _build_telegram_text(event_title: str, note_title: Optional[str],
         if len(event_description) > 120:
             snippet += "…"
         text += f"\n_{_escape_mdv2(snippet)}_\n"
+    url = _note_url(base_url, note_id)
+    if url:
+        text += f"\n🔗 [Apri nota]({url})\n"
     return text
 
 
@@ -236,7 +240,7 @@ async def dispatch_reminder(
         )
 
     if reminder.notify_telegram and user.telegram_chat_id:
-        tg_text = _build_telegram_text(event.title, note_title, desc, occurrence_dt, reminder.minutes_before, tz_name)
+        tg_text = _build_telegram_text(event.title, note_title, desc, occurrence_dt, reminder.minutes_before, tz_name, note_id=note_id, base_url=settings.app_base_url)
         await send_telegram(user.telegram_chat_id, bot_token, tg_text)
 
     if reminder.notify_email:
@@ -256,7 +260,8 @@ async def dispatch_reminder(
 
 
 def _build_task_telegram_text(task_title: str, note_title: Optional[str],
-                               due_dt: datetime, minutes_before: int, tz_name: str) -> str:
+                               due_dt: datetime, minutes_before: int, tz_name: str,
+                               note_id: Optional[int] = None, base_url: str = "") -> str:
     local_time = _format_dt_local(due_dt, tz_name)
     safe_title = _escape_mdv2(task_title)
     safe_time = _escape_mdv2(local_time)
@@ -265,6 +270,9 @@ def _build_task_telegram_text(task_title: str, note_title: Optional[str],
     if note_title:
         text += f"📓 {_escape_mdv2(note_title)}\n"
     text += f"✅ *{safe_title}*\n⏰ {safe_time}\n"
+    url = _note_url(base_url, note_id)
+    if url:
+        text += f"\n🔗 [Apri nota]({url})\n"
     return text
 
 
@@ -302,7 +310,7 @@ async def dispatch_task_reminder(
         )
 
     if reminder.notify_telegram and user.telegram_chat_id:
-        tg_text = _build_task_telegram_text(task.title, note_title, task.due_date, reminder.minutes_before, tz_name)
+        tg_text = _build_task_telegram_text(task.title, note_title, task.due_date, reminder.minutes_before, tz_name, note_id=note_id, base_url=settings.app_base_url)
         await send_telegram(user.telegram_chat_id, bot_token, tg_text)
 
     if reminder.notify_email:
