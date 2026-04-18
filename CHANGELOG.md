@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.13.4] - 2026-04-18
+### Fixed
+- Removed redundant "Pinned" badge from NoteCard title row — the pin button on the right already turns violet when a note is pinned
+
 ## [0.13.3] - 2026-04-18
 ### Fixed
 - "Include subfolders" toggle in the filters panel now uses the same CSS pill switch as the folder tree sidebar (was inconsistently a plain checkbox)
