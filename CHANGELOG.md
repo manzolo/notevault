@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.1] - 2026-04-18
+### Changed
+- Python upgraded from 3.11 to 3.12 in backend Docker image
+- JWT library replaced: `python-jose` (abandoned) → `PyJWT==2.9.0`
+- `datetime.utcnow()` replaced with `datetime.now(timezone.utc)` (deprecated in Python 3.12)
+
 ## [0.13.0] - 2026-04-18
 ### Changed
 - **PostgreSQL upgraded from 15 to 17** — requires manual data migration (see below)
