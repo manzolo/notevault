@@ -4,11 +4,13 @@ import api from '@/lib/api';
 interface ServerConfig {
   max_upload_bytes: number;
   favicon_fetch_enabled: boolean;
+  registration_enabled: boolean;
 }
 
 const FALLBACK: ServerConfig = {
   max_upload_bytes: 10 * 1024 * 1024,
   favicon_fetch_enabled: false,
+  registration_enabled: false,
 };
 
 // Module-level cache: fetched once per page load, shared across all instances.

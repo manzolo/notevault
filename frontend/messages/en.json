@@ -17,6 +17,7 @@
     "confirmPassword": "Confirm Password",
     "loginFailed": "Login failed. Check your credentials.",
     "registerFailed": "Registration failed. Please try again.",
+    "registrationDisabled": "Registration is currently disabled. Contact the administrator to create an account.",
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "loggingIn": "Logging in...",

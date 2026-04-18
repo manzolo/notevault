@@ -21,6 +21,11 @@ class Settings(BaseSettings):
 
     # CORS — stored as str to avoid pydantic-settings JSON-parsing list fields from env
     cors_origins: str = "http://localhost:3000"
+    cors_allowed_methods: str = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    cors_allowed_headers: str = "Content-Type,Authorization"
+
+    # Registration — set to true only when you want to allow new sign-ups
+    registration_enabled: bool = False
 
     # Uploads
     upload_dir: str = "/app/data/uploads"
@@ -54,6 +59,27 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def cors_allowed_methods_list(self) -> List[str]:
+        return [m.strip() for m in self.cors_allowed_methods.split(",") if m.strip()]
+
+    @property
+    def cors_allowed_headers_list(self) -> List[str]:
+        return [h.strip() for h in self.cors_allowed_headers.split(",") if h.strip()]
+
+    def check_insecure_defaults(self) -> None:
+        """Refuse to start with known-insecure default values."""
+        if self.secret_key == "changeme":
+            raise RuntimeError(
+                "SECRET_KEY is set to the insecure default 'changeme'. "
+                "Generate a secure value with: make keygen"
+            )
+        if self.master_key == "changeme":
+            raise RuntimeError(
+                "MASTER_KEY is set to the insecure default 'changeme'. "
+                "Generate a secure value with: make keygen"
+            )
 
     @property
     def master_key_bytes(self) -> bytes:

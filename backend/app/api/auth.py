@@ -1,5 +1,5 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database.connection import get_db
@@ -12,6 +12,7 @@ from app.schemas.user import (
 )
 from app.security.auth import hash_password, verify_password, create_access_token, verify_token
 from app.security.dependencies import get_current_user
+from app.security.rate_limit import limiter
 from app.security.totp import (
     generate_totp_secret, get_totp_uri,
     verify_totp_code, encrypt_totp_secret, decrypt_totp_secret,
@@ -25,7 +26,10 @@ _PARTIAL_TOKEN_TTL = timedelta(minutes=5)
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/hour")
+async def register(request: Request, user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+    if not settings.registration_enabled:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Registration is disabled")
     # Check username
     result = await db.execute(select(User).where(User.username == user_data.username))
     if result.scalar_one_or_none():
@@ -50,7 +54,8 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def login(request: Request, credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     # Accept username or email in the username field
     result = await db.execute(select(User).where(User.username == credentials.username))
     user = result.scalar_one_or_none()
@@ -77,7 +82,8 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/totp/verify", response_model=TokenResponse)
-async def totp_verify(data: TotpVerifyRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def totp_verify(request: Request, data: TotpVerifyRequest, db: AsyncSession = Depends(get_db)):
     """Exchange a partial token + TOTP code for a full JWT."""
     payload = verify_token(data.partial_token)
     if payload is None or not payload.get("partial"):

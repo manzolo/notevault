@@ -1,10 +1,12 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
 from app.config import get_settings
 from app.middleware.logging import AuditLoggingMiddleware
 from app.security.rate_limit import limiter
@@ -18,11 +20,24 @@ logging.basicConfig(
 settings = get_settings()
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        if request.url.scheme == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import os
     scheduler = None
     if not os.environ.get("PYTEST_CURRENT_TEST"):
+        settings.check_insecure_defaults()
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
         from app.services.scheduler import check_reminders
 
@@ -47,9 +62,12 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=settings.cors_allowed_methods_list,
+    allow_headers=settings.cors_allowed_headers_list,
 )
+
+# Security headers
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Audit logging middleware
 app.add_middleware(AuditLoggingMiddleware)
@@ -88,4 +106,5 @@ async def public_config():
     return {
         "max_upload_bytes": settings.max_upload_bytes,
         "favicon_fetch_enabled": settings.favicon_fetch_enabled,
+        "registration_enabled": settings.registration_enabled,
     }

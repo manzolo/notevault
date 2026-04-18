@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { login, verifyTotp } from '@/lib/auth';
 import { useAuth } from '@/hooks/useAuth';
+import { useServerConfig } from '@/hooks/useServerConfig';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { refresh } = useAuth();
 
+  const { registration_enabled } = useServerConfig();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [totpCode, setTotpCode] = useState('');
@@ -83,12 +85,14 @@ export default function LoginPage() {
                 {loading ? t('loggingIn') : t('login')}
               </Button>
             </form>
-            <p className="mt-4 text-center text-sm text-gray-500">
-              {t('noAccount')}{' '}
-              <Link href={`/${locale}/register`} className="text-blue-600 hover:underline font-medium">
-                {t('register')}
-              </Link>
-            </p>
+            {registration_enabled && (
+              <p className="mt-4 text-center text-sm text-gray-500">
+                {t('noAccount')}{' '}
+                <Link href={`/${locale}/register`} className="text-blue-600 hover:underline font-medium">
+                  {t('register')}
+                </Link>
+              </p>
+            )}
           </>
         ) : (
           <>

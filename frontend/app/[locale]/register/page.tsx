@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { register } from '@/lib/auth';
 import { useAuth } from '@/hooks/useAuth';
+import { useServerConfig } from '@/hooks/useServerConfig';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 
@@ -15,6 +16,7 @@ export default function RegisterPage() {
   const locale = useLocale();
   const router = useRouter();
   const { refresh } = useAuth();
+  const { registration_enabled } = useServerConfig();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,34 +42,39 @@ export default function RegisterPage() {
         <h1 className="text-2xl font-bold text-center mb-2">{t('createAccount')}</h1>
         <p className="text-center text-gray-500 text-sm mb-6">NoteVault</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label={t('username')}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            autoComplete="username"
-          />
-          <Input
-            label={t('email')}
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-          <Input
-            label={t('password')}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="new-password"
-          />
-          <Button type="submit" loading={loading} className="w-full">
-            {loading ? t('registering') : t('register')}
-          </Button>
-        </form>
+        {registration_enabled ? (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label={t('username')}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              autoComplete="username"
+            />
+            <Input
+              label={t('email')}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+            <Input
+              label={t('password')}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+            <Button type="submit" loading={loading} className="w-full">
+              {loading ? t('registering') : t('register')}
+            </Button>
+          </form>
+        ) : (
+          <p className="text-center text-sm text-gray-500 py-4">{t('registrationDisabled')}</p>
+        )}
 
         <p className="mt-4 text-center text-sm text-gray-500">
           {t('hasAccount')}{' '}

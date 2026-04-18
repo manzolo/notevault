@@ -17,6 +17,7 @@
     "confirmPassword": "Conferma password",
     "loginFailed": "Accesso fallito. Controlla le credenziali.",
     "registerFailed": "Registrazione fallita. Riprova.",
+    "registrationDisabled": "La registrazione è attualmente disabilitata. Contatta l'amministratore per creare un account.",
     "noAccount": "Non hai un account?",
     "hasAccount": "Hai già un account?",
     "loggingIn": "Accesso in corso...",
