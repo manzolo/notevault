@@ -161,14 +161,17 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Mobile hamburger */}
-            <button
-              className="md:hidden p-1.5 rounded-md text-gray-500 dark:text-vault-300 hover:bg-cream-200/70 dark:hover:bg-vault-700/50 transition-all duration-150"
-              onClick={() => setMenuOpen(v => !v)}
-              aria-label="Toggle menu"
-            >
-              {menuOpen ? <XIcon /> : <HamburgerIcon />}
-            </button>
+            {/* Mobile: notification bell + hamburger always visible */}
+            <div className="md:hidden flex items-center gap-1">
+              {user && <NotificationBell />}
+              <button
+                className="p-1.5 rounded-md text-gray-500 dark:text-vault-300 hover:bg-cream-200/70 dark:hover:bg-vault-700/50 transition-all duration-150"
+                onClick={() => setMenuOpen(v => !v)}
+                aria-label="Toggle menu"
+              >
+                {menuOpen ? <XIcon /> : <HamburgerIcon />}
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -188,7 +191,6 @@ export default function Navbar() {
                 {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
               <LanguageSwitcher />
-              {user && <div className="ml-auto"><NotificationBell /></div>}
             </div>
 
             <div className="h-px bg-cream-200 dark:bg-vault-700/60 mx-1 mb-1" />

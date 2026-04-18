@@ -167,7 +167,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                           <span className="truncate max-w-[120px] sm:max-w-[200px]">{att.filename}</span>
                           {INLINE_MIMES.has(att.mime_type) && onPreviewAttachment && (
                             <button
-                              onClick={() => onPreviewAttachment(note.id, att)}
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPreviewAttachment(note.id, att); }}
                               className="inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap ml-0.5"
                             >
                               <EyeIcon className="h-3 w-3" />
