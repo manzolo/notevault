@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.5] - 2026-04-19
+### Fixed
+- Snooze re-dispatch: when the linked task or event was deleted after the reminder fired (FK set to NULL), the scheduler silently skipped Telegram re-send. Now falls back to the stored notification title/body so Telegram is always re-sent on snooze expiry when `notify_telegram=True`
+- Added test `test_snooze_redispatch_deleted_entity_uses_title` to cover this case
+
 ## [0.14.4] - 2026-04-18
 ### Fixed
 - `send_telegram`: now checks the HTTP response from the Telegram API and logs errors instead of silently discarding them; if MarkdownV2 is rejected (e.g. unescaped characters in title/note), automatically retries as plain text so the message is always delivered
