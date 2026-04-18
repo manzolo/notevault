@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.12.8] - 2026-04-18
+### Fixed
+- NoteFieldsPanel now starts collapsed when a note has no technical fields, and auto-expands after fetch when fields exist
+
 ## [0.12.7] - 2026-04-18
 ### Added
 - Content badge icons on NoteCards (attachments, tasks, events, secrets) with count and tooltip
