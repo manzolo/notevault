@@ -83,6 +83,9 @@ make migrate
 | `DATABASE_URL` | no | set by compose | Full async DSN. Overridden automatically by Docker Compose. |
 | `REDIS_URL` | no | `redis://redis:6379/0` | Redis connection URL. |
 | `CORS_ORIGINS` | no | `http://localhost:3000` | Comma-separated allowed CORS origins. In production set to your public domain. |
+| `CORS_ALLOWED_METHODS` | no | `GET,POST,PUT,PATCH,DELETE,OPTIONS` | Comma-separated HTTP methods allowed by CORS. |
+| `CORS_ALLOWED_HEADERS` | no | `Content-Type,Authorization` | Comma-separated request headers allowed by CORS. |
+| `REGISTRATION_ENABLED` | no | `false` | Allow new users to self-register via the UI. Leave `false` in production; use `make create-user` instead. |
 | `NEXT_PUBLIC_API_URL` | no | `/api` | **Baked into the frontend JS bundle at build time.** Defaults to `/api` (domain-agnostic). Only set for cross-origin setups (e.g. `http://notevault.lan`). |
 | `APP_VERSION` | no | `latest` | Docker Hub image tag to pull on the server. Set in `.env` on the production host. |
 | `DEBUG` | no | `false` | Enables FastAPI Swagger UI. Must be `false` in production. |
@@ -209,6 +212,43 @@ make deploy-update APP_VERSION=0.2.0
 ```
 
 This updates the compose file on the server, pulls the new image, restarts affected containers, and runs any new migrations.
+
+---
+
+## 4.6 User Management
+
+Registration is **disabled by default** (`REGISTRATION_ENABLED=false`). Use the following Make targets to manage users while the stack is running:
+
+| Target | Description |
+|--------|-------------|
+| `make create-user` | Create a new user (interactive prompt) |
+| `make delete-user` | Delete a user and all their data (interactive, asks for confirmation) |
+| `make change-password` | Change a user's password (interactive prompt) |
+
+All three targets also support a non-interactive mode for scripting:
+
+```bash
+# Create
+make create-user USERNAME=alice EMAIL=alice@example.com PASSWORD=s3cr3tPass!
+
+# Change password
+make change-password USERNAME=alice PASSWORD=newPass123!
+
+# Delete (--confirm skips the interactive confirmation prompt)
+make delete-user USERNAME=alice
+```
+
+> **Note:** `make delete-user` in non-interactive mode still asks for confirmation unless the `USERNAME=` variable is provided **and** you run the underlying script directly with `--confirm`. The Make target always prompts once to prevent accidental data loss.
+
+To run these on the **production server**, SSH in first and run from the server's `notevault` directory:
+
+```bash
+ssh root@your-server.lan
+cd /root/notevault
+docker compose exec -it backend python scripts/create_user.py
+docker compose exec -it backend python scripts/change_password.py
+docker compose exec -it backend python scripts/delete_user.py
+```
 
 ---
 
