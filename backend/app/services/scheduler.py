@@ -191,7 +191,6 @@ async def check_reminders() -> None:
                         if notif.event_id and notif.event:
                             ev = notif.event
                             note_title = ev.note.title if ev.note else None
-                            # Approximate occurrence from notification body context
                             tg_text = f"🔔 *NoteVault* — Promemoria posticipato\n\n📅 *{_escape_mdv2(ev.title)}*"
                             if note_title:
                                 tg_text += f"\n📓 {_escape_mdv2(note_title)}"
@@ -202,6 +201,15 @@ async def check_reminders() -> None:
                             tg_text = f"🔔 *NoteVault* — Promemoria posticipato\n\n✅ *{_escape_mdv2(tk.title)}*"
                             if note_title:
                                 tg_text += f"\n📓 {_escape_mdv2(note_title)}"
+                            await send_telegram(user.telegram_chat_id, settings.telegram_bot_token, tg_text)
+                        else:
+                            # linked entity was deleted (task_id/event_id set to NULL by FK cascade)
+                            # fall back to the stored notification title/body
+                            safe_title = _escape_mdv2(notif.title)
+                            tg_text = f"🔔 *NoteVault* — Promemoria posticipato\n\n{safe_title}"
+                            if notif.body:
+                                snippet = notif.body[:120].strip()
+                                tg_text += f"\n{_escape_mdv2(snippet)}"
                             await send_telegram(user.telegram_chat_id, settings.telegram_bot_token, tg_text)
 
                     if notif.notify_email:
@@ -234,6 +242,19 @@ async def check_reminders() -> None:
                                 body_lines.append(f"📓 Nota:   {note_title}")
                             if tk.due_date:
                                 body_lines.append(f"⏰ Scadenza: {_format_dt_local(tk.due_date, tz_name)}")
+                            await send_email(
+                                to=email_to, subject=subject,
+                                body="\n".join(body_lines), **smtp_cfg,
+                            )
+                        else:
+                            subject = f"[NoteVault] Promemoria posticipato — {notif.title}"
+                            body_lines = [
+                                "NoteVault — Promemoria posticipato",
+                                "",
+                                notif.title,
+                            ]
+                            if notif.body:
+                                body_lines += ["", notif.body[:500]]
                             await send_email(
                                 to=email_to, subject=subject,
                                 body="\n".join(body_lines), **smtp_cfg,

@@ -264,6 +264,67 @@ async def test_snooze_redispatch_skips_telegram_when_false():
 
 
 @pytest.mark.asyncio
+async def test_snooze_redispatch_deleted_entity_uses_title():
+    """When task/event was deleted (task_id=None, event_id=None) but notify_telegram=True,
+    Telegram is re-sent using the stored notification title."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from datetime import timedelta, timezone
+    import datetime as dt_module
+
+    past = dt_module.datetime.now(tz=timezone.utc) - timedelta(minutes=1)
+
+    notif = MagicMock()
+    notif.notify_telegram = True
+    notif.notify_email = False
+    notif.snoozed_until = past
+    notif.snooze_dispatched = False
+    notif.event_id = None
+    notif.task_id = None  # deleted — FK set to NULL
+    notif.task = None
+    notif.event = None
+    notif.title = "✅ Prova notifica"
+    notif.body = "test body"
+
+    user = MagicMock()
+    user.telegram_chat_id = "123456789"
+    user.notification_email = None
+    user.email = "user@example.com"
+    notif.user = user
+
+    with (
+        patch("app.services.scheduler.send_telegram", new_callable=AsyncMock) as mock_tg,
+        patch("app.services.scheduler.AsyncSessionLocal") as mock_session_cls,
+        patch("app.config.get_settings") as mock_settings,
+    ):
+        mock_settings.return_value = MagicMock(
+            telegram_bot_token="bot-token",
+            smtp_host="", smtp_port=587,
+            smtp_user="", smtp_password="", smtp_from="", smtp_tls=False,
+            timezone="UTC",
+        )
+        db = AsyncMock()
+        call_count = 0
+
+        async def fake_execute(stmt):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 3:
+                return MagicMock(scalars=lambda: MagicMock(all=lambda: [notif]))
+            return MagicMock(scalars=lambda: MagicMock(all=lambda: []))
+
+        db.execute = fake_execute
+        db.commit = AsyncMock()
+        mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=db)
+        mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        from app.services.scheduler import check_reminders
+        await check_reminders()
+
+        mock_tg.assert_awaited_once()
+        assert notif.snooze_dispatched is True
+
+
+@pytest.mark.asyncio
 async def test_skip_when_is_done():
     task = _make_task(due_date=_dt(-1), is_done=True)
     reminder = _make_reminder(minutes_before=60, notified_at=None)
