@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.14.2] - 2026-04-18
+### Fixed
+- `DateTimePicker`: time field now calls `onChange` on every keystroke so the value is captured before the popup closes — previously the time was lost if the user didn't press Enter
+- `TaskRemindersSection`: `fetchReminders()` is called after `createReminder()` so the new reminder appears immediately in the open panel without needing to close and reopen the bell
+- E2E tests: `notes.spec` and `secrets.spec` now use JWT token injection (`loginViaToken`) instead of UI login to avoid hitting the 10/min login rate limit when all specs run within the same CI minute; CI action is now fully green
+
 ## [0.14.1] - 2026-04-18
 ### Added
 - Telegram reminder messages now include a clickable "Apri nota" link to the note, consistent with email reminders (uses `APP_BASE_URL`)
