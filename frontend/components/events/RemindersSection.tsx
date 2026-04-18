@@ -72,7 +72,17 @@ const RemindersSection = forwardRef<RemindersSectionHandle, Props>(function Remi
   const [notifyInApp, setNotifyInApp] = useState(true);
   const [notifyTelegram, setNotifyTelegram] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState(false);
+  const channelDefaultsApplied = useRef(false);
   const addFormRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (channelDefaultsApplied.current) return;
+    if (availableChannels.telegram || availableChannels.email) {
+      channelDefaultsApplied.current = true;
+      setNotifyTelegram(availableChannels.telegram);
+      setNotifyEmail(availableChannels.email);
+    }
+  }, [availableChannels]);
 
   useImperativeHandle(ref, () => ({
     getAndFlush: () => {
