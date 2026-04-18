@@ -135,15 +135,15 @@ keygen:
 
 ## create-user: Create a new NoteVault user (interactive, or USERNAME= EMAIL= PASSWORD= for scripting)
 create-user:
-	@if [ -n "$(USERNAME)" ] && [ -n "$(EMAIL)" ] && [ -n "$(PASSWORD)" ]; then \
+	@if [ "$(origin USERNAME)" = "command line" ] && [ "$(origin EMAIL)" = "command line" ] && [ "$(origin PASSWORD)" = "command line" ]; then \
 		docker compose exec backend python scripts/create_user.py "$(USERNAME)" "$(EMAIL)" "$(PASSWORD)"; \
 	else \
 		docker compose exec -it backend python scripts/create_user.py; \
 	fi
 
-## delete-user: Delete a NoteVault user and all their data (interactive, or USERNAME= --confirm for scripting)
+## delete-user: Delete a NoteVault user and all their data (interactive, or USERNAME= for scripting)
 delete-user:
-	@if [ -n "$(USERNAME)" ]; then \
+	@if [ "$(origin USERNAME)" = "command line" ]; then \
 		docker compose exec backend python scripts/delete_user.py "$(USERNAME)" --confirm; \
 	else \
 		docker compose exec -it backend python scripts/delete_user.py; \
@@ -151,7 +151,7 @@ delete-user:
 
 ## change-password: Change a user's password (interactive, or USERNAME= PASSWORD= for scripting)
 change-password:
-	@if [ -n "$(USERNAME)" ] && [ -n "$(PASSWORD)" ]; then \
+	@if [ "$(origin USERNAME)" = "command line" ] && [ "$(origin PASSWORD)" = "command line" ]; then \
 		docker compose exec backend python scripts/change_password.py "$(USERNAME)" "$(PASSWORD)"; \
 	else \
 		docker compose exec -it backend python scripts/change_password.py; \
