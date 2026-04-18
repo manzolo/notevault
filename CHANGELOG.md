@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.14.4] - 2026-04-18
+### Fixed
+- `send_telegram`: now checks the HTTP response from the Telegram API and logs errors instead of silently discarding them; if MarkdownV2 is rejected (e.g. unescaped characters in title/note), automatically retries as plain text so the message is always delivered
+
 ## [0.14.3] - 2026-04-18
 ### Added
 - Tests: `test_snooze_redispatch_sends_telegram` and `test_snooze_redispatch_skips_telegram_when_false` verify that the scheduler correctly re-sends (or skips) Telegram when a snoozed notification expires, based on the `notify_telegram` flag on the Notification row
