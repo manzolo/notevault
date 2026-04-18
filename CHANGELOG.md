@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.2] - 2026-04-18
+### Fixed
+- `pytest-asyncio` bumped from 0.23.3 → 0.23.8 to fix CI INTERNALERROR with `pytest 8.3.5` (`'Package' object has no attribute 'obj'`)
+
+### Changed
+- README.md and README.it.md updated: PostgreSQL 17, Node 22, Python 3.12 badges; new sections for Bookmarks, Technical Fields, Notifications; Tasks → Tasks & Reminders; Calendar: recurrence and reminders; architecture diagram and API table updated
+- Updated dashboard and calendar screenshots
+
 ## [0.13.1] - 2026-04-18
 ### Changed
 - Python upgraded from 3.11 to 3.12 in backend Docker image
