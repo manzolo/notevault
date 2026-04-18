@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.6] - 2026-04-19
+### Fixed
+- Mobile navbar: notification bell is now always visible in the header bar next to the hamburger button (was hidden inside the mobile menu)
+- Search results: clicking the attachment preview button no longer navigates to the note (added `stopPropagation` + `preventDefault`)
+
 ## [0.14.5] - 2026-04-19
 ### Fixed
 - Snooze re-dispatch: when the linked task or event was deleted after the reminder fired (FK set to NULL), the scheduler silently skipped Telegram re-send. Now falls back to the stored notification title/body so Telegram is always re-sent on snooze expiry when `notify_telegram=True`
