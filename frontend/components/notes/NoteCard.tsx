@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, MatchingTask, Note } from '@/lib/types';
 import { formatRelative, stripMarkdown, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
-import { ArchiveIcon, EyeIcon, FolderIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, CalendarIcon, CheckSquareIcon, EyeIcon, FolderIcon, LockClosedIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 
@@ -119,6 +119,31 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
               <span className="font-mono text-xs text-gray-400 dark:text-vault-400 tabular-nums">{formatRelative(note.updated_at, locale)}</span>
               <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
             </div>
+
+            {/* Content badges */}
+            {(() => {
+              const badges = [
+                { count: note.attachment_count, icon: <PaperclipIcon />, label: (n: number) => t('badgeAttachments', { count: n }) },
+                { count: note.task_count,        icon: <CheckSquareIcon className="w-3 h-3" />, label: (n: number) => t('badgeTasks', { count: n }) },
+                { count: note.event_count,       icon: <CalendarIcon className="w-3 h-3" />,    label: (n: number) => t('badgeEvents', { count: n }) },
+                { count: note.secret_count,      icon: <LockClosedIcon className="w-3 h-3" />,  label: (n: number) => t('badgeSecrets', { count: n }) },
+              ].filter(b => (b.count ?? 0) > 0);
+              if (badges.length === 0) return null;
+              return (
+                <div className="flex items-center gap-3 mt-1.5">
+                  {badges.map(({ count, icon, label }, i) => (
+                    <span
+                      key={i}
+                      title={label(count!)}
+                      className="flex items-center gap-1 text-gray-400 dark:text-vault-500 hover:text-gray-600 dark:hover:text-vault-300 transition-colors cursor-default select-none"
+                    >
+                      {icon}
+                      <span className="text-[10px] tabular-nums">{count}</span>
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
 
             {(matchInAttachment || matchInBookmark || matchInFields || matchInEvent || matchInTask) && (
               <div className="mt-2 flex flex-col gap-1.5">

@@ -33,6 +33,10 @@ class NoteResponse(BaseModel):
     tags: List[TagResponse] = []
     created_at: datetime
     updated_at: datetime
+    attachment_count: int = 0
+    task_count: int = 0
+    event_count: int = 0
+    secret_count: int = 0
 
     class Config:
         from_attributes = True

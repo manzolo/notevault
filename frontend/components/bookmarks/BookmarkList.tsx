@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Bookmark, VirtualBookmark } from '@/lib/types';
 import BookmarkItem from './BookmarkItem';
 import VirtualBookmarkItem from './VirtualBookmarkItem';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { ArchiveIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, ChevronDownIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import {
   DndContext,
@@ -30,11 +30,12 @@ interface Props {
   onReorder: (items: { id: number; position: number }[]) => Promise<void>;
   setBookmarks: (bookmarks: Bookmark[]) => void;
   virtualBookmarks?: VirtualBookmark[];
+  onArchivedCountChange?: (count: number) => void;
 }
 
 export default function BookmarkList({
   bookmarks, loading, onEdit, onDelete, onArchive, onRestore, fetchArchivedBookmarks,
-  onReorder, setBookmarks, virtualBookmarks,
+  onReorder, setBookmarks, virtualBookmarks, onArchivedCountChange,
 }: Props) {
   const t = useTranslations('bookmarks');
   const tc = useTranslations('common');
@@ -42,6 +43,15 @@ export default function BookmarkList({
   const [archivedBookmarks, setArchivedBookmarks] = useState<Bookmark[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [archivedLoading, setArchivedLoading] = useState(false);
+
+  const setArchivedBookmarksAndNotify = (items: Bookmark[]) => {
+    setArchivedBookmarks(items);
+    onArchivedCountChange?.(items.length);
+  };
+
+  useEffect(() => {
+    fetchArchivedBookmarks().then(setArchivedBookmarksAndNotify).catch(() => onArchivedCountChange?.(0));
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -64,31 +74,20 @@ export default function BookmarkList({
     }
   };
 
-  const handleToggleArchived = async () => {
-    if (!showArchived && archivedBookmarks.length === 0) {
-      setArchivedLoading(true);
-      try {
-        const items = await fetchArchivedBookmarks();
-        setArchivedBookmarks(items);
-      } finally {
-        setArchivedLoading(false);
-      }
-    }
-    setShowArchived((v) => !v);
-  };
+  const handleToggleArchived = () => setShowArchived((v) => !v);
 
   const handleRestoreArchived = async (id: number) => {
     const ok = await confirm(tc('restoreConfirm'), { confirmLabel: tc('restore'), confirmVariant: 'secondary' });
     if (!ok) return;
     await onRestore(id);
-    setArchivedBookmarks((prev) => prev.filter((b) => b.id !== id));
+    setArchivedBookmarksAndNotify(archivedBookmarks.filter((b) => b.id !== id));
   };
 
   const handleDeleteArchived = async (id: number) => {
     const ok = await confirm(tc('deleteConfirm'));
     if (!ok) return;
     await onDelete(id);
-    setArchivedBookmarks((prev) => prev.filter((b) => b.id !== id));
+    setArchivedBookmarksAndNotify(archivedBookmarks.filter((b) => b.id !== id));
   };
 
   if (loading) return <LoadingSpinner />;
@@ -112,7 +111,7 @@ export default function BookmarkList({
                 onDelete={onDelete}
                 onArchive={async (id, note) => {
                   await onArchive(id, note);
-                  if (showArchived) setArchivedBookmarks((prev) => [...prev, { ...bm, is_archived: true, archive_note: note || null }]);
+                  setArchivedBookmarksAndNotify([...archivedBookmarks, { ...bm, is_archived: true, archive_note: note || null }]);
                 }}
               />
             ))}
@@ -129,16 +128,20 @@ export default function BookmarkList({
       )}
 
       {/* Archived section */}
-      <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
-        <button
-          type="button"
-          onClick={handleToggleArchived}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          <ArchiveIcon className="h-3.5 w-3.5" />
-          <span>{tc('archivedCount', { count: archivedBookmarks.length || '…' })}</span>
-          <span className="ml-0.5">{showArchived ? '▲' : '▼'}</span>
-        </button>
+      {archivedBookmarks.length > 0 && <div className="mt-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+          <button
+            type="button"
+            onClick={handleToggleArchived}
+            className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
+          >
+            <ArchiveIcon className="h-3 w-3" />
+            <span>{tc('archivedCount', { count: archivedBookmarks.length })}</span>
+            <ChevronDownIcon className={`h-3 w-3 transition-transform duration-200 ${showArchived ? 'rotate-180' : ''}`} />
+          </button>
+          <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+        </div>
 
         {showArchived && (
           <div className="mt-2 space-y-1">
@@ -172,7 +175,7 @@ export default function BookmarkList({
             ))}
           </div>
         )}
-      </div>
+      </div>}
     </>
   );
 }

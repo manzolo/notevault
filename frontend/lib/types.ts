@@ -75,6 +75,10 @@ export interface Note {
   tags: Tag[];
   created_at: string;
   updated_at: string;
+  attachment_count?: number;
+  task_count?: number;
+  event_count?: number;
+  secret_count?: number;
 }
 
 export interface NoteListResponse {

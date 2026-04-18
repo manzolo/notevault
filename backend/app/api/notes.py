@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, and_
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Note, Tag, NoteTag, Attachment, Event, Category, Task, NoteField
+from app.models.database import Note, Tag, NoteTag, Attachment, Event, Category, Task, NoteField, Secret
 from app.schemas.note import NoteCreate, NoteUpdate, NoteResponse, NoteListResponse
 from app.security.dependencies import get_current_user
 from app.models.database import User
@@ -172,7 +172,37 @@ async def list_notes(
     )
     notes = result.scalars().all()
     pages = (total + per_page - 1) // per_page if total > 0 else 1
-    return NoteListResponse(items=list(notes), total=total, page=page, per_page=per_page, pages=pages)
+
+    # Batch count queries for content badges
+    counts: dict = {}
+    note_ids = [n.id for n in notes]
+    if note_ids:
+        for model, key in [
+            (Attachment, "attachment_count"),
+            (Task, "task_count"),
+            (Event, "event_count"),
+            (Secret, "secret_count"),
+        ]:
+            rows = await db.execute(
+                select(model.note_id, func.count(model.id))
+                .where(model.note_id.in_(note_ids), model.is_archived == False)
+                .group_by(model.note_id)
+            )
+            for note_id, cnt in rows:
+                counts.setdefault(note_id, {})[key] = cnt
+
+    items = []
+    for note in notes:
+        extra = counts.get(note.id, {})
+        data = {
+            "id": note.id, "title": note.title, "content": note.content,
+            "is_pinned": note.is_pinned, "is_archived": note.is_archived,
+            "user_id": note.user_id, "category_id": note.category_id,
+            "tags": note.tags, "created_at": note.created_at, "updated_at": note.updated_at,
+            **extra,
+        }
+        items.append(NoteResponse.model_validate(data))
+    return NoteListResponse(items=items, total=total, page=page, per_page=per_page, pages=pages)
 
 
 @router.post("", response_model=NoteResponse, status_code=status.HTTP_201_CREATED)

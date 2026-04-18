@@ -121,7 +121,11 @@
     "dateFilterHint": "Also matches notes with events in this range",
     "resetFilters": "Reset all filters",
     "wikiLinks": "Linked notes",
-    "includeSubfolders": "Include subfolders"
+    "includeSubfolders": "Include subfolders",
+    "badgeAttachments": "{count, plural, one {# attachment} other {# attachments}}",
+    "badgeTasks": "{count, plural, one {# task} other {# tasks}}",
+    "badgeEvents": "{count, plural, one {# event} other {# events}}",
+    "badgeSecrets": "{count, plural, one {# secret} other {# secrets}}"
   },
   "secrets": {
     "secrets": "Secrets",
@@ -390,7 +394,7 @@
     "restore": "Restore",
     "archiveReason": "Reason (optional)",
     "deleteForever": "Delete permanently",
-    "archivedCount": "Archived ({count})",
+    "archivedCount": "Archived · {count}",
     "archiveConfirm": "Archive this item?",
     "restoreConfirm": "Restore this item?",
     "deleteConfirm": "Delete this item permanently?"

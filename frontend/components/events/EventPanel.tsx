@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { CalendarEvent, CalendarEventCreate } from "@/lib/types";
 import { useEvents } from "@/hooks/useEvents";
 import { useConfirm } from "@/hooks/useConfirm";
-import { ArchiveIcon, RestoreIcon, TrashIcon, BellIcon } from "@/components/common/Icons";
+import { ArchiveIcon, BellIcon, CalendarIcon, ChevronDownIcon, RestoreIcon, TrashIcon } from "@/components/common/Icons";
 import EventFormModal from "./EventFormModal";
 import { minutesLabel } from "@/components/events/RemindersSection";
 import Button from "@/components/common/Button";
@@ -16,6 +16,7 @@ interface Props {
   onCountChange?: (count: number) => void;
   onEventsChange?: (events: CalendarEvent[]) => void;
   onAdd?: React.MutableRefObject<(() => void) | null>;
+  onArchivedCountChange?: (count: number) => void;
 }
 
 function formatSize(bytes: number): string {
@@ -112,13 +113,14 @@ function formatRruleText(rrule: string, t: (key: string) => string): string {
   return base + endText;
 }
 
-export default function EventPanel({ noteId, onCountChange, onEventsChange, onAdd }: Props) {
+export default function EventPanel({ noteId, onCountChange, onEventsChange, onAdd, onArchivedCountChange }: Props) {
   const t = useTranslations("events");
   const tc = useTranslations("common");
   const tr = useTranslations("reminders");
   const { events, loading, fetchEvents, createEvent, updateEvent, deleteEvent, archiveEvent, restoreEvent, fetchArchivedEvents } = useEvents(noteId);
   const { confirm, confirmInput, dialog: confirmDialog } = useConfirm();
   const [archivedEvents, setArchivedEvents] = useState<CalendarEvent[]>([]);
+  const [showPast, setShowPast] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [archivedLoading, setArchivedLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -141,6 +143,15 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
       onAdd.current = () => { setEditingEvent(undefined); setShowModal(true); };
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setArchivedEventsAndNotify = (items: CalendarEvent[]) => {
+    setArchivedEvents(items);
+    onArchivedCountChange?.(items.length);
+  };
+
+  useEffect(() => {
+    fetchArchivedEvents().then(setArchivedEventsAndNotify).catch(() => onArchivedCountChange?.(0));
   }, []);
 
   const now = new Date();
@@ -184,34 +195,23 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
     });
     if (!confirmed) return;
     await archiveEvent(ev.id, value || undefined);
-    if (showArchived) setArchivedEvents((prev) => [...prev, { ...ev, is_archived: true, archive_note: value || null }]);
+    setArchivedEventsAndNotify([...archivedEvents, { ...ev, is_archived: true, archive_note: value || null }]);
   };
 
-  const handleToggleArchived = async () => {
-    if (!showArchived && archivedEvents.length === 0) {
-      setArchivedLoading(true);
-      try {
-        const items = await fetchArchivedEvents();
-        setArchivedEvents(items);
-      } finally {
-        setArchivedLoading(false);
-      }
-    }
-    setShowArchived((v) => !v);
-  };
+  const handleToggleArchived = () => setShowArchived((v) => !v);
 
   const handleRestoreArchived = async (ev: CalendarEvent) => {
     const ok = await confirm(tc("restoreConfirm"), { confirmLabel: tc("restore"), confirmVariant: "secondary" });
     if (!ok) return;
     await restoreEvent(ev.id);
-    setArchivedEvents((prev) => prev.filter((e) => e.id !== ev.id));
+    setArchivedEventsAndNotify(archivedEvents.filter((e) => e.id !== ev.id));
   };
 
   const handleDeleteArchived = async (ev: CalendarEvent) => {
     const ok = await confirm(tc("deleteConfirm"));
     if (!ok) return;
     await deleteEvent(ev.id);
-    setArchivedEvents((prev) => prev.filter((e) => e.id !== ev.id));
+    setArchivedEventsAndNotify(archivedEvents.filter((e) => e.id !== ev.id));
   };
 
   const handleUpload = async (eventId: number, file: File) => {
@@ -357,28 +357,44 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
           )}
           {upcoming.map(({ event, displayStart, displayEnd }) => renderEvent(event, displayStart, displayEnd))}
           {past.length > 0 && (
-            <details className="mt-2">
-              <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 select-none">
-                {t("pastEvents")} ({past.length})
-              </summary>
-              <div className="mt-2 space-y-2 opacity-70">
-                {past.map(({ event, displayStart, displayEnd }) => renderEvent(event, displayStart, displayEnd))}
+            <div className="mt-3">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+                <button
+                  type="button"
+                  onClick={() => setShowPast((v) => !v)}
+                  className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
+                >
+                  <CalendarIcon className="h-3 w-3" />
+                  <span>{t("pastEvents")} ({past.length})</span>
+                  <ChevronDownIcon className={`h-3 w-3 transition-transform duration-200 ${showPast ? "rotate-180" : ""}`} />
+                </button>
+                <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
               </div>
-            </details>
+              {showPast && (
+                <div className="mt-2 space-y-2 opacity-70">
+                  {past.map(({ event, displayStart, displayEnd }) => renderEvent(event, displayStart, displayEnd))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
       {/* Archived events section */}
-      <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
-        <button
-          type="button"
-          onClick={handleToggleArchived}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          <ArchiveIcon className="h-3.5 w-3.5" />
-          <span>{tc("archivedCount", { count: archivedEvents.length || "…" })}</span>
-          <span className="ml-0.5">{showArchived ? "▲" : "▼"}</span>
-        </button>
+      {archivedEvents.length > 0 && <div className="mt-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+          <button
+            type="button"
+            onClick={handleToggleArchived}
+            className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
+          >
+            <ArchiveIcon className="h-3 w-3" />
+            <span>{tc("archivedCount", { count: archivedEvents.length })}</span>
+            <ChevronDownIcon className={`h-3 w-3 transition-transform duration-200 ${showArchived ? "rotate-180" : ""}`} />
+          </button>
+          <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+        </div>
 
         {showArchived && (
           <div className="mt-2 space-y-1">
@@ -412,7 +428,7 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
       {showModal && (
         <EventFormModal

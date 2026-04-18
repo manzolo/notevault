@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Secret, SecretReveal } from '@/lib/types';
 import SecretViewer from './SecretViewer';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { ArchiveIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, ChevronDownIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import {
   DndContext,
@@ -32,11 +32,12 @@ interface SecretListProps {
   onReorder: (items: { id: number; position: number }[]) => Promise<void>;
   fetchArchivedSecrets: () => Promise<Secret[]>;
   setSecrets: (secrets: Secret[]) => void;
+  onArchivedCountChange?: (count: number) => void;
 }
 
 export default function SecretList({
   secrets, revealedSecrets, countdown, loading, onReveal, onHide, onDelete, onArchive, onRestore,
-  onCopyDirect, onReorder, fetchArchivedSecrets, setSecrets,
+  onCopyDirect, onReorder, fetchArchivedSecrets, setSecrets, onArchivedCountChange,
 }: SecretListProps) {
   const t = useTranslations('secrets');
   const tc = useTranslations('common');
@@ -44,6 +45,15 @@ export default function SecretList({
   const [archivedSecrets, setArchivedSecrets] = useState<Secret[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [archivedLoading, setArchivedLoading] = useState(false);
+
+  const setArchivedSecretsAndNotify = (items: Secret[]) => {
+    setArchivedSecrets(items);
+    onArchivedCountChange?.(items.length);
+  };
+
+  useEffect(() => {
+    fetchArchivedSecrets().then(setArchivedSecretsAndNotify).catch(() => onArchivedCountChange?.(0));
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -66,31 +76,20 @@ export default function SecretList({
     }
   };
 
-  const handleToggleArchived = async () => {
-    if (!showArchived && archivedSecrets.length === 0) {
-      setArchivedLoading(true);
-      try {
-        const items = await fetchArchivedSecrets();
-        setArchivedSecrets(items);
-      } finally {
-        setArchivedLoading(false);
-      }
-    }
-    setShowArchived((v) => !v);
-  };
+  const handleToggleArchived = () => setShowArchived((v) => !v);
 
   const handleRestoreArchived = async (id: number) => {
     const ok = await confirm(tc('restoreConfirm'), { confirmLabel: tc('restore'), confirmVariant: 'secondary' });
     if (!ok) return;
     await onRestore(id);
-    setArchivedSecrets((prev) => prev.filter((s) => s.id !== id));
+    setArchivedSecretsAndNotify(archivedSecrets.filter((s) => s.id !== id));
   };
 
   const handleDeleteArchived = async (id: number) => {
     const ok = await confirm(tc('deleteConfirm'));
     if (!ok) return;
     await onDelete(id);
-    setArchivedSecrets((prev) => prev.filter((s) => s.id !== id));
+    setArchivedSecretsAndNotify(archivedSecrets.filter((s) => s.id !== id));
   };
 
   if (loading) return <LoadingSpinner size="sm" />;
@@ -116,7 +115,7 @@ export default function SecretList({
                 onDelete={() => onDelete(secret.id)}
                 onArchive={async (note) => {
                   await onArchive(secret.id, note);
-                  if (showArchived) setArchivedSecrets((prev) => [...prev, { ...secret, is_archived: true, archive_note: note || null }]);
+                  setArchivedSecretsAndNotify([...archivedSecrets, { ...secret, is_archived: true, archive_note: note || null }]);
                 }}
                 onCopyDirect={onCopyDirect ? () => onCopyDirect(secret.id) : undefined}
               />
@@ -126,16 +125,20 @@ export default function SecretList({
       </DndContext>
 
       {/* Archived section */}
-      <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
-        <button
-          type="button"
-          onClick={handleToggleArchived}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          <ArchiveIcon className="h-3.5 w-3.5" />
-          <span>{tc('archivedCount', { count: archivedSecrets.length || '…' })}</span>
-          <span className="ml-0.5">{showArchived ? '▲' : '▼'}</span>
-        </button>
+      {archivedSecrets.length > 0 && <div className="mt-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+          <button
+            type="button"
+            onClick={handleToggleArchived}
+            className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
+          >
+            <ArchiveIcon className="h-3 w-3" />
+            <span>{tc('archivedCount', { count: archivedSecrets.length })}</span>
+            <ChevronDownIcon className={`h-3 w-3 transition-transform duration-200 ${showArchived ? 'rotate-180' : ''}`} />
+          </button>
+          <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+        </div>
 
         {showArchived && (
           <div className="mt-2 space-y-1">
@@ -169,7 +172,7 @@ export default function SecretList({
             ))}
           </div>
         )}
-      </div>
+      </div>}
     </>
   );
 }

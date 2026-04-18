@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef, useState, KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { Task } from '@/lib/types';
-import { ArchiveIcon, BellIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
+import { ArchiveIcon, BellIcon, ChevronDownIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DateTimePicker from '@/components/common/DateTimePicker';
@@ -33,10 +33,11 @@ interface TaskPanelProps {
   fetchArchivedTasks: () => Promise<Task[]>;
   onReorder: (items: { id: number; position: number }[]) => Promise<void>;
   setTasks: (tasks: Task[]) => void;
+  onArchivedCountChange?: (count: number) => void;
 }
 
 export default function TaskPanel({
-  tasks, loading, onCreate, onToggle, onDelete, onUpdate, onArchive, onRestore, fetchArchivedTasks, onReorder, setTasks,
+  tasks, loading, onCreate, onToggle, onDelete, onUpdate, onArchive, onRestore, fetchArchivedTasks, onReorder, setTasks, onArchivedCountChange,
 }: TaskPanelProps) {
   const t = useTranslations('tasks');
   const tc = useTranslations('common');
@@ -47,6 +48,15 @@ export default function TaskPanel({
   const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [archivedLoading, setArchivedLoading] = useState(false);
+
+  const setArchivedTasksAndNotify = (items: Task[]) => {
+    setArchivedTasks(items);
+    onArchivedCountChange?.(items.length);
+  };
+
+  useEffect(() => {
+    fetchArchivedTasks().then(setArchivedTasksAndNotify).catch(() => onArchivedCountChange?.(0));
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -93,31 +103,20 @@ export default function TaskPanel({
     }
   };
 
-  const handleToggleArchived = async () => {
-    if (!showArchived && archivedTasks.length === 0) {
-      setArchivedLoading(true);
-      try {
-        const items = await fetchArchivedTasks();
-        setArchivedTasks(items);
-      } finally {
-        setArchivedLoading(false);
-      }
-    }
-    setShowArchived((v) => !v);
-  };
+  const handleToggleArchived = () => setShowArchived((v) => !v);
 
   const handleRestoreArchived = async (id: number) => {
     const ok = await confirm(tc('restoreConfirm'), { confirmLabel: tc('restore'), confirmVariant: 'secondary' });
     if (!ok) return;
     await onRestore(id);
-    setArchivedTasks((prev) => prev.filter((t) => t.id !== id));
+    setArchivedTasksAndNotify(archivedTasks.filter((t) => t.id !== id));
   };
 
   const handleDeleteArchived = async (id: number) => {
     const ok = await confirm(tc('deleteConfirm'));
     if (!ok) return;
     await onDelete(id);
-    setArchivedTasks((prev) => prev.filter((t) => t.id !== id));
+    setArchivedTasksAndNotify(archivedTasks.filter((t) => t.id !== id));
   };
 
   if (loading) return <LoadingSpinner size="sm" />;
@@ -140,7 +139,7 @@ export default function TaskPanel({
             <TaskRow key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} onUpdate={onUpdate}
               onArchive={async (note) => {
                 await onArchive(task.id, note);
-                if (showArchived) setArchivedTasks((prev) => [...prev, { ...task, is_archived: true, archive_note: note || null }]);
+                setArchivedTasksAndNotify([...archivedTasks, { ...task, is_archived: true, archive_note: note || null }]);
               }} />
           ))}
         </SortableContext>
@@ -154,7 +153,7 @@ export default function TaskPanel({
             <TaskRow key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} onUpdate={onUpdate}
               onArchive={async (note) => {
                 await onArchive(task.id, note);
-                if (showArchived) setArchivedTasks((prev) => [...prev, { ...task, is_archived: true, archive_note: note || null }]);
+                setArchivedTasksAndNotify([...archivedTasks, { ...task, is_archived: true, archive_note: note || null }]);
               }} />
           ))}
         </div>
@@ -184,16 +183,20 @@ export default function TaskPanel({
       </div>
 
       {/* Archived section */}
-      <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
-        <button
-          type="button"
-          onClick={handleToggleArchived}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          <ArchiveIcon className="h-3.5 w-3.5" />
-          <span>{tc('archivedCount', { count: archivedTasks.length || '…' })}</span>
-          <span className="ml-0.5">{showArchived ? '▲' : '▼'}</span>
-        </button>
+      {archivedTasks.length > 0 && <div className="mt-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+          <button
+            type="button"
+            onClick={handleToggleArchived}
+            className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
+          >
+            <ArchiveIcon className="h-3 w-3" />
+            <span>{tc('archivedCount', { count: archivedTasks.length })}</span>
+            <ChevronDownIcon className={`h-3 w-3 transition-transform duration-200 ${showArchived ? 'rotate-180' : ''}`} />
+          </button>
+          <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+        </div>
 
         {showArchived && (
           <div className="mt-2 space-y-1">
@@ -231,7 +234,7 @@ export default function TaskPanel({
             ))}
           </div>
         )}
-      </div>
+      </div>}
     </div>
     </>
   );

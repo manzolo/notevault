@@ -32,7 +32,7 @@ import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CollapsedSection from '@/components/common/CollapsedSection';
-import { ArchiveIcon, ArrowDownTrayIcon, CalendarIcon, DocumentTextIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, RestoreIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
+import { ArchiveIcon, ArrowDownTrayIcon, CalendarIcon, ChevronDownIcon, DocumentTextIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, RestoreIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
 import ShareModal from '@/components/notes/ShareModal';
 import AttachmentPreviewModal from '@/components/attachments/AttachmentPreviewModal';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -97,16 +97,25 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [previewState, setPreviewState] = useState<{ attachment: Attachment; url: string } | null>(null);
   const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
   const [archivedAttachments, setArchivedAttachments] = useState<Attachment[]>([]);
+  const [archivedAttachmentsReady, setArchivedAttachmentsReady] = useState(false);
   const [showArchivedAttachments, setShowArchivedAttachments] = useState(false);
   const [archivedAttachmentsLoading, setArchivedAttachmentsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchArchivedAttachments().then((items) => { setArchivedAttachments(items); setArchivedAttachmentsReady(true); }).catch(() => { setArchivedAttachmentsReady(true); });
+  }, []);
 
   const [emlAttachmentsMap, setEmlAttachmentsMap] = useState<Record<number, number>>({});
 
   // Collapsed section state
   const [eventsCount, setEventsCount] = useState<number | null>(null);
+  const [archivedEventsCount, setArchivedEventsCount] = useState<number | null>(null);
   const [noteEvents, setNoteEvents] = useState<CalendarEvent[]>([]);
   const virtualBookmarks = useMemo(() => buildVirtualBookmarks(secrets, noteEvents), [secrets, noteEvents]);
   const [forceTasksExpanded, setForceTasksExpanded] = useState(false);
+  const [archivedTasksCount, setArchivedTasksCount] = useState<number | null>(null);
+  const [archivedSecretsCount, setArchivedSecretsCount] = useState<number | null>(null);
+  const [archivedBookmarksCount, setArchivedBookmarksCount] = useState<number | null>(null);
   const eventPanelAddRef = useRef<(() => void) | null>(null); // MutableRefObject by default
 
   // Paste-image state (images: quick modal with preview)
@@ -575,7 +584,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       )}
 
       {/* Secrets Section */}
-      {secretsLoading || secrets.length > 0 ? (
+      {secretsLoading || secrets.length > 0 || archivedSecretsCount !== 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">{tSecrets('secrets')}</h2>
@@ -598,6 +607,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             onCopyDirect={copySecret}
             onReorder={reorderSecrets}
             setSecrets={setSecrets}
+            onArchivedCountChange={setArchivedSecretsCount}
           />
         </div>
       ) : (
@@ -610,7 +620,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       )}
 
       {/* Attachments Section */}
-      {attachmentsLoading || attachments.length > 0 ? (
+      {attachmentsLoading || attachments.length > 0 || !archivedAttachmentsReady || archivedAttachments.length > 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <h2 className="text-lg font-semibold">{tAttachments('attachments')}</h2>
@@ -653,7 +663,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
               onArchive={async (id, note) => {
                 const att = attachments.find((a) => a.id === id);
                 await archiveAttachment(id, note);
-                if (showArchivedAttachments && att) setArchivedAttachments((prev) => [...prev, { ...att, is_archived: true, archive_note: note || null }]);
+                if (att) setArchivedAttachments((prev) => [...prev, { ...att, is_archived: true, archive_note: note || null }]);
               }}
               emlAttachmentsMap={emlAttachmentsMap}
               onReorder={reorderAttachments}
@@ -670,7 +680,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
               onArchive={async (id, note) => {
                 const att = attachments.find((a) => a.id === id);
                 await archiveAttachment(id, note);
-                if (showArchivedAttachments && att) setArchivedAttachments((prev) => [...prev, { ...att, is_archived: true, archive_note: note || null }]);
+                if (att) setArchivedAttachments((prev) => [...prev, { ...att, is_archived: true, archive_note: note || null }]);
               }}
               emlAttachmentsMap={emlAttachmentsMap}
               onReorder={reorderAttachments}
@@ -679,27 +689,20 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           )}
 
           {/* Archived attachments section */}
-          <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
-            <button
-              type="button"
-              onClick={async () => {
-                if (!showArchivedAttachments && archivedAttachments.length === 0) {
-                  setArchivedAttachmentsLoading(true);
-                  try {
-                    const items = await fetchArchivedAttachments();
-                    setArchivedAttachments(items);
-                  } finally {
-                    setArchivedAttachmentsLoading(false);
-                  }
-                }
-                setShowArchivedAttachments((v) => !v);
-              }}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              <ArchiveIcon className="h-3.5 w-3.5" />
-              <span>{tCommon('archivedCount', { count: archivedAttachments.length || '…' })}</span>
-              <span className="ml-0.5">{showArchivedAttachments ? '▲' : '▼'}</span>
-            </button>
+          {archivedAttachments.length > 0 && <div className="mt-3">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+              <button
+                type="button"
+                onClick={() => setShowArchivedAttachments((v) => !v)}
+                className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0"
+              >
+                <ArchiveIcon className="h-3 w-3" />
+                <span>{tCommon('archivedCount', { count: archivedAttachments.length })}</span>
+                <ChevronDownIcon className={`h-3 w-3 transition-transform duration-200 ${showArchivedAttachments ? 'rotate-180' : ''}`} />
+              </button>
+              <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+            </div>
             {showArchivedAttachments && (
               <div className="mt-2 space-y-1">
                 {archivedAttachmentsLoading && <p className="text-xs text-gray-400">Loading...</p>}
@@ -742,7 +745,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
                 ))}
               </div>
             )}
-          </div>
+          </div>}
         </div>
       ) : (
         <CollapsedSection
@@ -756,7 +759,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       )}
 
       {/* Bookmarks Section */}
-      {bookmarksLoading || bookmarks.length > 0 || virtualBookmarks.length > 0 ? (
+      {bookmarksLoading || bookmarks.length > 0 || virtualBookmarks.length > 0 || archivedBookmarksCount !== 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">{tBookmarks('bookmarks')}</h2>
@@ -776,6 +779,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             onReorder={reorderBookmarks}
             setBookmarks={setBookmarks}
             virtualBookmarks={virtualBookmarks}
+            onArchivedCountChange={setArchivedBookmarksCount}
           />
         </div>
       ) : (
@@ -787,11 +791,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         />
       )}
 
-      {/* Technical Fields Panel */}
-      <NoteFieldsPanel noteId={noteId} />
-
       {/* Tasks Section */}
-      {tasksLoading || tasks.length > 0 || forceTasksExpanded ? (
+      {tasksLoading || tasks.length > 0 || forceTasksExpanded || archivedTasksCount !== 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">{tTasks('tasks')}</h2>
@@ -808,6 +809,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             fetchArchivedTasks={fetchArchivedTasks}
             onReorder={reorderTasks}
             setTasks={setTasks}
+            onArchivedCountChange={setArchivedTasksCount}
           />
         </div>
       ) : (
@@ -825,7 +827,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       )}
 
       {/* Events Section */}
-      {eventsCount === 0 && (
+      {eventsCount === 0 && archivedEventsCount === 0 && archivedEventsCount !== null && (
         <CollapsedSection
           icon={<CalendarIcon />}
           label={tEvents('events')}
@@ -833,9 +835,12 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           addLabel={`+ ${tEvents('addEvent')}`}
         />
       )}
-      <div className={eventsCount === 0 ? 'h-0 overflow-hidden' : 'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6'}>
-        <EventPanel noteId={noteId} onCountChange={setEventsCount} onEventsChange={setNoteEvents} onAdd={eventPanelAddRef} />
+      <div className={eventsCount === 0 && archivedEventsCount === 0 && archivedEventsCount !== null ? 'h-0 overflow-hidden' : 'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6'}>
+        <EventPanel noteId={noteId} onCountChange={setEventsCount} onEventsChange={setNoteEvents} onAdd={eventPanelAddRef} onArchivedCountChange={setArchivedEventsCount} />
       </div>
+
+      {/* Technical Fields Panel */}
+      <NoteFieldsPanel noteId={noteId} />
 
       <Modal isOpen={showSecretModal} onClose={() => setShowSecretModal(false)} title={tSecrets('addSecret')}>
         <SecretForm onSubmit={handleCreateSecret} />
