@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.13.8] - 2026-04-18
+### Fixed
+- `make create-user`, `delete-user`, `change-password`: use `$(origin VAR)` instead of `[ -n "$(VAR)" ]` to detect command-line arguments; prevents collision with the `$USERNAME` shell environment variable (always set to the current system user on Linux)
+
 ## [0.13.7] - 2026-04-18
 ### Added
 - `make delete-user` command: deletes a user and all their data; interactive with confirmation prompt, or non-interactive via `USERNAME=`
