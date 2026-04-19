@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.15.3] - 2026-04-19
+### Fixed
+- DateInfoTooltip: popover now opens rightward (`left-0`) instead of leftward (`right-0`), preventing it from being clipped at the left edge of the screen
+
 ## [0.15.2] - 2026-04-19
 ### Changed
 - Mobile layout overhaul: card padding reduced to `p-4 sm:p-6`, vertical gap to `space-y-4 sm:space-y-6`
