@@ -447,13 +447,15 @@ function FieldRow({ field, isFirst, isLast, onUpdate, onDelete, onMoveUp, onMove
             className="text-xs text-gray-500 dark:text-gray-400 flex-1" />
         </div>
 
-        {/* Date | Link | Price | Image — metadata row */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+        {/* Date | Link | Price | Image — 2-column grid */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
           {/* Date */}
-          <EditableDate
-            value={field.field_date}
-            onSave={(v) => onUpdate(field.id, { field_date: v })}
-          />
+          <div className="flex items-center min-w-0">
+            <EditableDate
+              value={field.field_date}
+              onSave={(v) => onUpdate(field.id, { field_date: v })}
+            />
+          </div>
 
           {/* Link */}
           <div className="flex items-center gap-1 min-w-0">
@@ -461,9 +463,9 @@ function FieldRow({ field, isFirst, isLast, onUpdate, onDelete, onMoveUp, onMove
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
             {field.link ? (
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1 min-w-0">
                 <a href={field.link} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline truncate max-w-[160px]"
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline truncate"
                   onClick={(e) => e.stopPropagation()}>
                   {field.link.replace(/^https?:\/\//, '').split('/')[0]}
                 </a>
@@ -473,7 +475,7 @@ function FieldRow({ field, isFirst, isLast, onUpdate, onDelete, onMoveUp, onMove
             ) : (
               <EditableCell value="" placeholder={t('linkPlaceholder')}
                 onSave={(v) => onUpdate(field.id, { link: v || null })}
-                className="text-xs text-gray-400 dark:text-gray-500 max-w-[180px]" />
+                className="text-xs text-gray-400 dark:text-gray-500" />
             )}
           </div>
 
@@ -488,10 +490,12 @@ function FieldRow({ field, isFirst, isLast, onUpdate, onDelete, onMoveUp, onMove
           </div>
 
           {/* Image */}
-          <ImageFieldCell
-            value={field.field_image}
-            onSave={(v) => onUpdate(field.id, { field_image: v })}
-          />
+          <div className="flex items-center">
+            <ImageFieldCell
+              value={field.field_image}
+              onSave={(v) => onUpdate(field.id, { field_image: v })}
+            />
+          </div>
         </div>
       </div>
     </div>

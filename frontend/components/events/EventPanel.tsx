@@ -247,47 +247,31 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
 
   const renderEvent = (ev: CalendarEvent, displayStart?: Date, displayEnd?: Date | null) => (
     <div key={ev.id} className="border border-gray-200 dark:border-gray-700 border-l-2 border-l-violet-400/60 dark:border-l-violet-500/50 rounded-lg p-3 space-y-2 bg-gray-50/50 dark:bg-gray-700/20 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5">
-              {ev.title}
-              {ev.recurrence_rule && (
-                <span title={formatRruleText(ev.recurrence_rule, t)} className="inline-flex items-center gap-0.5 text-xs font-normal text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-full shrink-0">
-                  ↻ {t("recurring")}
-                </span>
-              )}
-              {ev.reminders && ev.reminders.length > 0 && (
-                <span title={ev.reminders.map(r => minutesLabel(r.minutes_before, tr)).join("\n")} className="inline-flex items-center text-indigo-400 dark:text-indigo-500 shrink-0 cursor-default">
-                  <BellIcon className="h-3.5 w-3.5" />
-                </span>
-              )}
-            </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {displayStart ? formatDate(displayStart) : formatDatetime(ev.start_datetime)}
-            {(displayEnd ?? (ev.end_datetime ? new Date(ev.end_datetime) : null)) && ` → ${formatDate(displayEnd ?? new Date(ev.end_datetime!))}`}
-          </p>
-          {ev.description && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{ev.description}</p>}
-          {ev.url && (
-            <a href={ev.url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline truncate block">
-              {ev.url}
-            </a>
+      {/* Content — full width */}
+      <div>
+        <p className="font-medium text-gray-900 dark:text-white flex items-center gap-1.5 flex-wrap">
+          {ev.title}
+          {ev.recurrence_rule && (
+            <span title={formatRruleText(ev.recurrence_rule, t)} className="inline-flex items-center gap-0.5 text-xs font-normal text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-full shrink-0">
+              ↻ {t("recurring")}
+            </span>
           )}
-        </div>
-        <div className="flex gap-1 shrink-0">
-          <Button variant="ghost" size="sm" onClick={() => { setEditingEvent(ev); setShowModal(true); }}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-            </svg>
-          </Button>
-          <Button variant="ghost" size="sm" title={tc("archive")} onClick={() => handleArchiveEvent(ev)}>
-            <ArchiveIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost-danger" size="sm" onClick={() => handleDeleteEvent(ev)}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-            </svg>
-          </Button>
-        </div>
+          {ev.reminders && ev.reminders.length > 0 && (
+            <span title={ev.reminders.map(r => minutesLabel(r.minutes_before, tr)).join("\n")} className="inline-flex items-center text-indigo-400 dark:text-indigo-500 shrink-0 cursor-default">
+              <BellIcon className="h-3.5 w-3.5" />
+            </span>
+          )}
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          {displayStart ? formatDate(displayStart) : formatDatetime(ev.start_datetime)}
+          {(displayEnd ?? (ev.end_datetime ? new Date(ev.end_datetime) : null)) && ` → ${formatDate(displayEnd ?? new Date(ev.end_datetime!))}`}
+        </p>
+        {ev.description && <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{ev.description}</p>}
+        {ev.url && (
+          <a href={ev.url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline truncate block mt-0.5">
+            {ev.url}
+          </a>
+        )}
       </div>
 
       {/* Attachments */}
@@ -318,23 +302,41 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
         </div>
       )}
 
-      <div>
-        <input
-          type="file"
-          className="hidden"
-          ref={(el) => { fileInputRefs.current[ev.id] = el; }}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleUpload(ev.id, file);
-            e.target.value = "";
-          }}
-        />
-        <button
-          onClick={() => fileInputRefs.current[ev.id]?.click()}
-          className="text-xs text-indigo-500 hover:text-indigo-700 dark:text-indigo-400"
-        >
-          + {t("addAttachment")}
-        </button>
+      {/* Bottom row: add attachment + action buttons */}
+      <div className="flex items-center justify-between gap-2 pt-0.5">
+        <div>
+          <input
+            type="file"
+            className="hidden"
+            ref={(el) => { fileInputRefs.current[ev.id] = el; }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleUpload(ev.id, file);
+              e.target.value = "";
+            }}
+          />
+          <button
+            onClick={() => fileInputRefs.current[ev.id]?.click()}
+            className="text-xs text-indigo-500 hover:text-indigo-700 dark:text-indigo-400"
+          >
+            + {t("addAttachment")}
+          </button>
+        </div>
+        <div className="flex gap-1 shrink-0">
+          <Button variant="ghost" size="sm" onClick={() => { setEditingEvent(ev); setShowModal(true); }}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+            </svg>
+          </Button>
+          <Button variant="ghost" size="sm" title={tc("archive")} onClick={() => handleArchiveEvent(ev)}>
+            <ArchiveIcon className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost-danger" size="sm" onClick={() => handleDeleteEvent(ev)}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+            </svg>
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -342,7 +344,7 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
   return (
     <div>
       {confirmDialog}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t("events")}</h2>
         <Button variant="secondary" size="sm" onClick={() => { setEditingEvent(undefined); setShowModal(true); }}>
           + {t("addEvent")}

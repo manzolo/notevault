@@ -121,7 +121,6 @@ export default function SecretViewer({
         style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
         className={`border border-gray-200 dark:border-gray-700 border-l-2 ${TYPE_BORDER_COLORS[secret.secret_type] ?? 'border-l-indigo-400 dark:border-l-indigo-500'} rounded-lg bg-white dark:bg-gray-800/60 hover:bg-gray-50/80 dark:hover:bg-gray-800/80 transition-colors`}
       >
-        {/* Header row */}
         <div className="flex items-start gap-2 px-3 pt-2.5 pb-2">
           {/* Drag handle */}
           <span
@@ -131,13 +130,15 @@ export default function SecretViewer({
             title="Drag to reorder"
           >⠿</span>
 
-          {/* Main content */}
+          {/* Main content — full width */}
           <div className="flex-1 min-w-0">
-            {/* Name + badges row */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
-                {secret.name}
-              </span>
+            {/* Name — full row */}
+            <p className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+              {secret.name}
+            </p>
+
+            {/* Badge + username + url */}
+            <div className="flex items-center gap-2 flex-wrap mt-0.5">
               <TypeBadge type={secret.secret_type} />
               {secret.username && (
                 <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
@@ -163,7 +164,6 @@ export default function SecretViewer({
                   <span className="truncate">{secret.url}</span>
                 </a>
               )}
-              <DateInfoTooltip createdAt={secret.created_at} updatedAt={secret.updated_at} />
             </div>
 
             {/* Public key (always visible for ssh_key) */}
@@ -215,45 +215,48 @@ export default function SecretViewer({
                 )}
               </div>
             )}
-          </div>
 
-          {/* Action buttons — always top-aligned */}
-          <div className="flex items-center gap-0.5 shrink-0">
-            {!revealed ? (
-              <>
-                {onCopyDirect ? (
-                  <Button size="sm" variant="ghost" title={copied ? t('copied') : t('copy')} onClick={handleCopyDirect}
-                    className={copied ? 'text-green-500 dark:text-green-400' : ''}>
-                    {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
-                  </Button>
+            {/* Bottom row: date info on left, action buttons on right */}
+            <div className="flex items-center justify-between gap-2 mt-1.5">
+              <DateInfoTooltip createdAt={secret.created_at} updatedAt={secret.updated_at} />
+              <div className="flex items-center gap-0.5 shrink-0">
+                {!revealed ? (
+                  <>
+                    {onCopyDirect ? (
+                      <Button size="sm" variant="ghost" title={copied ? t('copied') : t('copy')} onClick={handleCopyDirect}
+                        className={copied ? 'text-green-500 dark:text-green-400' : ''}>
+                        {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
+                      </Button>
+                    ) : (
+                      <span className="w-7" />
+                    )}
+                    <Button size="sm" variant="ghost" title={t('reveal')} onClick={onReveal}>
+                      <EyeIcon />
+                    </Button>
+                  </>
                 ) : (
-                  <span className="w-7" />
+                  <>
+                    <Button size="sm" variant="ghost" title={copied ? t('copied') : t('copy')}
+                      onClick={() => handleCopy(revealed.value)}
+                      className={copied ? 'text-green-500 dark:text-green-400' : ''}>
+                      {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
+                    </Button>
+                    <Button size="sm" variant="ghost" title={t('hide')} onClick={onHide}
+                      className="text-indigo-500 dark:text-indigo-400">
+                      <EyeOffIcon />
+                    </Button>
+                  </>
                 )}
-                <Button size="sm" variant="ghost" title={t('reveal')} onClick={onReveal}>
-                  <EyeIcon />
+                {onArchive && (
+                  <Button size="sm" variant="ghost" title={tc('archive')} onClick={handleArchive}>
+                    <ArchiveIcon />
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
+                  <TrashIcon />
                 </Button>
-              </>
-            ) : (
-              <>
-                <Button size="sm" variant="ghost" title={copied ? t('copied') : t('copy')}
-                  onClick={() => handleCopy(revealed.value)}
-                  className={copied ? 'text-green-500 dark:text-green-400' : ''}>
-                  {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
-                </Button>
-                <Button size="sm" variant="ghost" title={t('hide')} onClick={onHide}
-                  className="text-indigo-500 dark:text-indigo-400">
-                  <EyeOffIcon />
-                </Button>
-              </>
-            )}
-            {onArchive && (
-              <Button size="sm" variant="ghost" title={tc('archive')} onClick={handleArchive}>
-                <ArchiveIcon />
-              </Button>
-            )}
-            <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
-              <TrashIcon />
-            </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

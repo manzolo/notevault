@@ -129,28 +129,29 @@ export default function BookmarkItem({ bookmark, onEdit, onDelete, onArchive }: 
           {bookmark.description && (
             <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{bookmark.description}</p>
           )}
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            {bookmark.tags.map((tag) => (
-              <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-1.5 py-0.5 rounded-full">
-                {tag.name}
-              </span>
-            ))}
-            <DateInfoTooltip createdAt={bookmark.created_at} updatedAt={bookmark.updated_at} />
+          <div className="flex items-center justify-between gap-2 mt-1 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              {bookmark.tags.map((tag) => (
+                <span key={tag.id} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs px-1.5 py-0.5 rounded-full">
+                  {tag.name}
+                </span>
+              ))}
+              <DateInfoTooltip createdAt={bookmark.created_at} updatedAt={bookmark.updated_at} />
+            </div>
+            <div className="flex gap-1 shrink-0">
+              <Button size="sm" variant="ghost" title={t('edit')} onClick={() => onEdit(bookmark)}>
+                <PencilIcon />
+              </Button>
+              {onArchive && (
+                <Button size="sm" variant="ghost" title={tc('archive')} onClick={handleArchive}>
+                  <ArchiveIcon />
+                </Button>
+              )}
+              <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
+                <TrashIcon />
+              </Button>
+            </div>
           </div>
-        </div>
-
-        <div className="flex gap-1 shrink-0">
-          <Button size="sm" variant="ghost" title={t('edit')} onClick={() => onEdit(bookmark)}>
-            <PencilIcon />
-          </Button>
-          {onArchive && (
-            <Button size="sm" variant="ghost" title={tc('archive')} onClick={handleArchive}>
-              <ArchiveIcon />
-            </Button>
-          )}
-          <Button size="sm" variant="ghost-danger" title={t('delete')} onClick={handleDelete}>
-            <TrashIcon />
-          </Button>
         </div>
       </div>
     </>

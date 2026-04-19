@@ -313,7 +313,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   if (!note) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {confirmDialog}
       {showShareModal && <ShareModal noteId={noteId} onClose={() => setShowShareModal(false)} />}
 
@@ -368,9 +368,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         </div>
       )}
 
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-2 sm:gap-4">
         <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">{note.title}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">{note.title}</h1>
           <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -390,7 +390,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
 
       {editing ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           <NoteEditor
             initialTitle={note.title}
             initialContent={note.content}
@@ -405,27 +405,29 @@ export default function NotePage({ params }: { params: { id: string; locale: str
         </div>
       ) : (
         <>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-indigo-500 border border-gray-200 dark:border-gray-700 p-6 prose prose-sm max-w-none dark:prose-invert">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                a({ href, children }) {
-                  if (href?.startsWith('wiki-link:')) {
-                    return <span className="text-gray-700 dark:text-gray-300">{children}</span>;
+          {note.content && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-indigo-500 border border-gray-200 dark:border-gray-700 p-4 sm:p-6 prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a({ href, children }) {
+                    if (href?.startsWith('wiki-link:')) {
+                      return <span className="text-gray-700 dark:text-gray-300">{children}</span>;
+                    }
+                    return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+                  },
+                }}
+              >
+                {note.content.replace(
+                  /\[\[([^\]]+)\]\]/g,
+                  (_, title) => {
+                    const linked = wikiLinksMap.get(title);
+                    return linked ? `[${title}](wiki-link:${linked.id})` : `[[${title}]]`;
                   }
-                  return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
-                },
-              }}
-            >
-              {(note.content || '*No content*').replace(
-                /\[\[([^\]]+)\]\]/g,
-                (_, title) => {
-                  const linked = wikiLinksMap.get(title);
-                  return linked ? `[${title}](wiki-link:${linked.id})` : `[[${title}]]`;
-                }
-              )}
-            </ReactMarkdown>
-          </div>
+                )}
+              </ReactMarkdown>
+            </div>
+          )}
 
           {(wikiLinksMap.size > 0 || backlinks.length > 0) && (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
@@ -474,8 +476,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
       {/* Secrets Section */}
       {secretsLoading || secrets.length > 0 || archivedSecretsCount !== 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
             <h2 className="text-lg font-semibold">{tSecrets('secrets')}</h2>
             <Button size="sm" variant="secondary" onClick={() => setShowSecretModal(true)}>
               <KeyIcon />
@@ -510,7 +512,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
       {/* Attachments Section */}
       {attachmentsLoading || attachments.length > 0 || !archivedAttachmentsReady || archivedAttachments.length > 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
             <h2 className="text-lg font-semibold">{tAttachments('attachments')}</h2>
             <div className="flex items-center gap-2">
@@ -649,8 +651,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
       {/* Bookmarks Section */}
       {bookmarksLoading || bookmarks.length > 0 || virtualBookmarks.length > 0 || archivedBookmarksCount !== 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
             <h2 className="text-lg font-semibold">{tBookmarks('bookmarks')}</h2>
             <Button size="sm" variant="secondary" onClick={() => setShowBookmarkModal(true)}>
               <LinkIcon />
@@ -682,8 +684,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
       {/* Tasks Section */}
       {tasksLoading || tasks.length > 0 || forceTasksExpanded || archivedTasksCount !== 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
             <h2 className="text-lg font-semibold">{tTasks('tasks')}</h2>
           </div>
           <TaskPanel
@@ -724,7 +726,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           addLabel={`+ ${tEvents('addEvent')}`}
         />
       )}
-      <div className={eventsCount === 0 && archivedEventsCount === 0 && archivedEventsCount !== null ? 'h-0 overflow-hidden' : 'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6'}>
+      <div className={eventsCount === 0 && archivedEventsCount === 0 && archivedEventsCount !== null ? 'h-0 overflow-hidden' : 'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6'}>
         <EventPanel noteId={noteId} onCountChange={setEventsCount} onEventsChange={setNoteEvents} onAdd={eventPanelAddRef} onArchivedCountChange={setArchivedEventsCount} />
       </div>
 

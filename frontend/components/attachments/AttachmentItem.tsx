@@ -176,15 +176,32 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words leading-snug min-w-0">
-              {attachment.filename}
-              {emlAttachmentCount > 0 && (
-                <span className="inline-block ml-1 text-gray-400 dark:text-gray-500 align-middle" title={t('emlHasAttachments')}>
-                  <PaperclipIcon />
+          {/* Filename — full width */}
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words leading-snug">
+            {attachment.filename}
+            {emlAttachmentCount > 0 && (
+              <span className="inline-block ml-1 text-gray-400 dark:text-gray-500 align-middle" title={t('emlHasAttachments')}>
+                <PaperclipIcon />
+              </span>
+            )}
+          </p>
+
+          {/* Size + description */}
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{formatBytes(attachment.size_bytes)}</p>
+          {attachment.description && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{attachment.description}</p>
+          )}
+
+          {/* Bottom row: tags + date info on left, buttons on right */}
+          <div className="flex items-center justify-between gap-2 mt-1.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              {attachment.tags.map((tag) => (
+                <span key={tag.id} className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-1.5 py-0.5 rounded-full">
+                  {tag.name}
                 </span>
-              )}
-            </p>
+              ))}
+              <DateInfoTooltip createdAt={attachment.created_at} updatedAt={attachment.updated_at} extras={tooltipExtras} />
+            </div>
             <div className="flex gap-0.5 items-center shrink-0">
               {canPreview ? (
                 <Button size="sm" variant="secondary" title={t('preview')} onClick={() => onPreview(attachment)}>
@@ -208,18 +225,6 @@ export default function AttachmentItem({ attachment, onPreview, onDownload, onDe
                 <TrashIcon />
               </Button>
             </div>
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{formatBytes(attachment.size_bytes)}</p>
-          {attachment.description && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{attachment.description}</p>
-          )}
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            {attachment.tags.map((tag) => (
-              <span key={tag.id} className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-1.5 py-0.5 rounded-full">
-                {tag.name}
-              </span>
-            ))}
-            <DateInfoTooltip createdAt={attachment.created_at} updatedAt={attachment.updated_at} extras={tooltipExtras} />
           </div>
         </div>
       </div>
