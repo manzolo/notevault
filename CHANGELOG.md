@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.2] - 2026-04-19
+### Changed
+- Mobile layout overhaul: card padding reduced to `p-4 sm:p-6`, vertical gap to `space-y-4 sm:space-y-6`
+- Event, Bookmark, Attachment, Secret cards: action buttons moved to bottom row (content takes full width)
+- Task rows: 2-line layout (title on line 1, due date + actions on line 2); action buttons always visible on mobile (no hover-only opacity)
+- NoteFieldsPanel metadata row (date/link/price/image): replaced cramped flex-wrap with `grid-cols-2`
+- Note content card hidden when note has no content (no more "No content" placeholder card)
+- CollapsedSection: flex-wrap on button container prevents overflow on narrow screens
+
 ## [0.15.1] - 2026-04-19
 ### Fixed
 - Events: clearing end date/time (or description, URL, recurrence rule) and saving was silently ignored; optional fields now send `null` instead of `undefined` so the backend correctly resets them via `model_fields_set`
