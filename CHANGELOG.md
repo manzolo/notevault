@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0] - 2026-04-19
+### Changed
+- Backend: extracted shared `get_owned_note` FastAPI dependency (`deps.py`), eliminating duplicate note ownership checks from 5 routers (attachments, bookmarks, events, note_fields, secrets, tasks)
+- Frontend: introduced generic `useArchivable<T>` hook, replacing 4 copies of the archive/restore/fetchArchived pattern across useAttachments, useSecrets, useTasks, useBookmarks
+- Frontend: split `useAttachments.ts` (307 lines) into a facade + `useAttachmentParsers.ts` for ZIP/EML parser functions
+- Frontend: extracted paste/drag-and-drop state into `usePasteAndDrop` hook and all note-page modals into `NotePageModals` component (~906 → ~720 lines in note page)
+
 ## [0.14.8] - 2026-04-19
 ### Fixed
 - Removed `cursor-help` (arrow + question mark) from tooltip icons (DateInfoTooltip ℹ️, EventPanel reminder bell); replaced with `cursor-default`
