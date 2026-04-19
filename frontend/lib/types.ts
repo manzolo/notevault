@@ -385,20 +385,20 @@ export interface CalendarEventWithNote extends CalendarEvent {
 
 export interface CalendarEventCreate {
   title: string;
-  description?: string;
+  description?: string | null;
   start_datetime: string;
-  end_datetime?: string;
-  url?: string;
-  recurrence_rule?: string;
+  end_datetime?: string | null;
+  url?: string | null;
+  recurrence_rule?: string | null;
 }
 
 export interface CalendarEventUpdate {
   title?: string;
-  description?: string;
+  description?: string | null;
   start_datetime?: string;
-  end_datetime?: string;
-  url?: string;
-  recurrence_rule?: string;
+  end_datetime?: string | null;
+  url?: string | null;
+  recurrence_rule?: string | null;
   is_archived?: boolean;
   archive_note?: string | null;
 }

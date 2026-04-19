@@ -197,11 +197,11 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
 
       const data: CalendarEventCreate = {
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: description.trim() || null,
         start_datetime: new Date(`${startDate}T${startT}:00`).toISOString(),
-        end_datetime: endD && endT ? new Date(`${endD}T${endT}:00`).toISOString() : undefined,
-        url: url.trim() || undefined,
-        recurrence_rule: rrule,
+        end_datetime: endD && endT ? new Date(`${endD}T${endT}:00`).toISOString() : null,
+        url: url.trim() || null,
+        recurrence_rule: rrule ?? null,
       };
       const savedEvent = await onSave(data);
       const eid = savedEvent.id;
