@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.15.1] - 2026-04-19
+### Fixed
+- Events: clearing end date/time (or description, URL, recurrence rule) and saving was silently ignored; optional fields now send `null` instead of `undefined` so the backend correctly resets them via `model_fields_set`
+
 ## [0.15.0] - 2026-04-19
 ### Changed
 - Backend: extracted shared `get_owned_note` FastAPI dependency (`deps.py`), eliminating duplicate note ownership checks from 5 routers (attachments, bookmarks, events, note_fields, secrets, tasks)
