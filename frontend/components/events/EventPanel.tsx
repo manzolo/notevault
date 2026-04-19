@@ -257,7 +257,7 @@ export default function EventPanel({ noteId, onCountChange, onEventsChange, onAd
                 </span>
               )}
               {ev.reminders && ev.reminders.length > 0 && (
-                <span title={ev.reminders.map(r => minutesLabel(r.minutes_before, tr)).join("\n")} className="inline-flex items-center text-indigo-400 dark:text-indigo-500 shrink-0 cursor-help">
+                <span title={ev.reminders.map(r => minutesLabel(r.minutes_before, tr)).join("\n")} className="inline-flex items-center text-indigo-400 dark:text-indigo-500 shrink-0 cursor-default">
                   <BellIcon className="h-3.5 w-3.5" />
                 </span>
               )}

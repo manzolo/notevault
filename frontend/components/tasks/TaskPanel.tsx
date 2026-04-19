@@ -338,7 +338,7 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
             setShowReminders((v) => !v);
           }}
           title={t('reminders')}
-          className={`transition-opacity text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 ${
+          className={`transition-opacity cursor-pointer text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 ${
             showReminders ? 'opacity-100 text-indigo-500 dark:text-indigo-400' : 'opacity-0 group-hover:opacity-100'
           }`}
         >
