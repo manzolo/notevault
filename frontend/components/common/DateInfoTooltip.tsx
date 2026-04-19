@@ -17,7 +17,7 @@ export default function DateInfoTooltip({ createdAt, updatedAt, extras }: Props)
   return (
     <div className="relative group/dateinfo inline-flex items-center">
       <InfoIcon className="h-3.5 w-3.5 text-gray-400 cursor-default" />
-      <div className="absolute bottom-full right-0 mb-1.5 hidden group-hover/dateinfo:block z-20
+      <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover/dateinfo:block z-20
                       bg-gray-800 dark:bg-gray-900 text-white text-xs rounded-md px-2.5 py-1.5 whitespace-nowrap
                       shadow-lg pointer-events-none">
         <div className="flex gap-1.5">
@@ -37,7 +37,7 @@ export default function DateInfoTooltip({ createdAt, updatedAt, extras }: Props)
           </div>
         ))}
         {/* Arrow */}
-        <div className="absolute top-full right-2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-900" />
+        <div className="absolute top-full left-2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-900" />
       </div>
     </div>
   );
