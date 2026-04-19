@@ -12,13 +12,20 @@ import TotpLiveWidget from './TotpLiveWidget';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// Color per tipo segreto
 const TYPE_COLORS: Record<string, string> = {
   password: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
   token:    'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   ssh_key:  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  totp_seed:'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amberald-300',
+  totp_seed:'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
   keystore: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+};
+
+const TYPE_BORDER_COLORS: Record<string, string> = {
+  password: 'border-l-violet-400 dark:border-l-violet-500',
+  token:    'border-l-blue-400 dark:border-l-blue-500',
+  ssh_key:  'border-l-emerald-400 dark:border-l-emerald-500',
+  totp_seed:'border-l-amber-400 dark:border-l-amber-500',
+  keystore: 'border-l-gray-400 dark:border-l-gray-500',
 };
 
 function TypeBadge({ type }: { type: string }) {
@@ -112,7 +119,7 @@ export default function SecretViewer({
       <div
         ref={setNodeRef}
         style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-        className="border border-gray-200 dark:border-gray-700 border-l-2 border-l-indigo-400 dark:border-l-indigo-500 rounded-lg bg-white dark:bg-gray-800/60 hover:bg-gray-50/80 dark:hover:bg-gray-800/80 transition-colors"
+        className={`border border-gray-200 dark:border-gray-700 border-l-2 ${TYPE_BORDER_COLORS[secret.secret_type] ?? 'border-l-indigo-400 dark:border-l-indigo-500'} rounded-lg bg-white dark:bg-gray-800/60 hover:bg-gray-50/80 dark:hover:bg-gray-800/80 transition-colors`}
       >
         {/* Header row */}
         <div className="flex items-start gap-2 px-3 pt-2.5 pb-2">

@@ -336,8 +336,9 @@ function formatLocalDate(iso: string, locale: string): string {
   return new Date(y, m - 1, d).toLocaleDateString(locale, { day: 'numeric', month: '2-digit', year: 'numeric' });
 }
 
-function EditableDate({ value, placeholder = '📅', onSave }: EditableDateProps) {
+function EditableDate({ value, placeholder, onSave }: EditableDateProps) {
   const locale = useLocale();
+  const t = useTranslations('fields');
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? '');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -372,8 +373,10 @@ function EditableDate({ value, placeholder = '📅', onSave }: EditableDateProps
       onKeyDown={(e) => { if (e.key === 'Enter') { setDraft(value ?? ''); setEditing(true); } }}
       className={`cursor-text text-xs px-1.5 py-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1 ${value ? 'text-indigo-600 dark:text-indigo-400 font-medium' : 'text-gray-400 dark:text-gray-500 italic'}`}
     >
-      <span>📅</span>
-      <span>{value ? formatLocalDate(value, locale) : placeholder}</span>
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+      <span>{value ? formatLocalDate(value, locale) : (placeholder ?? t('datePlaceholder'))}</span>
     </span>
   );
 }
@@ -432,22 +435,23 @@ function FieldRow({ field, isFirst, isLast, onUpdate, onDelete, onMoveUp, onMove
         </div>
       </div>
 
-      {/* Sub-row: note (full width), then date | link | price */}
-      <div className="pl-2 mt-1 space-y-0.5">
+      {/* Sub-row: note + metadata */}
+      <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700/50 space-y-1 pl-1">
         {/* Note — full width */}
-        <div className="flex items-start gap-1">
-          <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">📝</span>
+        <div className="flex items-start gap-1.5">
+          <svg className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
           <EditableCell value={field.field_note ?? ''} placeholder={t('notePlaceholder')}
             onSave={(v) => onUpdate(field.id, { field_note: v || null })}
             className="text-xs text-gray-500 dark:text-gray-400 flex-1" />
         </div>
 
-        {/* Date | Link | Price — secondary row */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5">
+        {/* Date | Link | Price | Image — metadata row */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
           {/* Date */}
           <EditableDate
             value={field.field_date}
-            placeholder={t('datePlaceholder')}
             onSave={(v) => onUpdate(field.id, { field_date: v })}
           />
 
@@ -475,7 +479,9 @@ function FieldRow({ field, isFirst, isLast, onUpdate, onDelete, onMoveUp, onMove
 
           {/* Price */}
           <div className="flex items-center gap-1">
-            <span className="text-xs text-green-600 dark:text-green-500 flex-shrink-0">💰</span>
+            <svg className="w-3 h-3 text-green-600 dark:text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             <EditableCell value={field.price ?? ''} placeholder={t('pricePlaceholder')}
               onSave={(v) => onUpdate(field.id, { price: v || null })}
               className="text-xs text-green-700 dark:text-green-400 w-20" />
