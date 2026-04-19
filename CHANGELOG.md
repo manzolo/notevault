@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.8] - 2026-04-19
+### Fixed
+- Removed `cursor-help` (arrow + question mark) from tooltip icons (DateInfoTooltip ℹ️, EventPanel reminder bell); replaced with `cursor-default`
+- Added missing `cursor-pointer` to the task reminder bell button in TaskPanel
+
 ## [0.14.7] - 2026-04-19
 ### Changed
 - Technical Fields: replaced emoji icons (📝 📅 💰) with consistent SVG icons; added a subtle separator line between the key→value row and the metadata sub-row (note, date, link, price, image)
