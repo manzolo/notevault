@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.14.7] - 2026-04-19
+### Changed
+- Technical Fields: replaced emoji icons (📝 📅 💰) with consistent SVG icons; added a subtle separator line between the key→value row and the metadata sub-row (note, date, link, price, image)
+- Secrets: left border accent color now reflects the secret type (violet=password, blue=token, emerald=ssh_key, amber=totp_seed, gray=keystore) instead of always indigo
+
 ## [0.14.6] - 2026-04-19
 ### Fixed
 - Mobile navbar: notification bell is now always visible in the header bar next to the hamburger button (was hidden inside the mobile menu)
