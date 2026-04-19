@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import api from '@/lib/api';
 import { Task, TaskCreate, TaskUpdate, TaskWithNote } from '@/lib/types';
+import { useArchivable } from '@/hooks/useArchivable';
 
 export function useTasks(noteId: number) {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -39,27 +40,14 @@ export function useTasks(noteId: number) {
     await api.patch(`/api/notes/${noteId}/tasks/reorder`, items);
   }, [noteId]);
 
-  const archiveTask = useCallback(async (taskId: number, archiveNote?: string): Promise<void> => {
-    await api.put(`/api/notes/${noteId}/tasks/${taskId}`, {
-      is_archived: true,
-      archive_note: archiveNote || null,
-    });
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-  }, [noteId]);
-
-  const restoreTask = useCallback(async (taskId: number): Promise<Task> => {
-    const res = await api.put<Task>(`/api/notes/${noteId}/tasks/${taskId}`, {
-      is_archived: false,
-      archive_note: null,
-    });
-    setTasks((prev) => [...prev, res.data].sort((a, b) => a.position - b.position));
-    return res.data;
-  }, [noteId]);
-
-  const fetchArchivedTasks = useCallback(async (): Promise<Task[]> => {
-    const res = await api.get<Task[]>(`/api/notes/${noteId}/tasks`, { params: { archived_only: true } });
-    return res.data;
-  }, [noteId]);
+  const {
+    archiveItem: archiveTask,
+    restoreItem: restoreTask,
+    fetchArchived: fetchArchivedTasks,
+  } = useArchivable<Task>(
+    { basePath: `/api/notes/${noteId}/tasks`, archiveMethod: 'put' },
+    setTasks,
+  );
 
   return { tasks, setTasks, loading, fetchTasks, createTask, updateTask, deleteTask, reorderTasks, archiveTask, restoreTask, fetchArchivedTasks };
 }

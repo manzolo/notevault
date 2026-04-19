@@ -6,6 +6,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.api.deps import get_owned_note
 from app.database.connection import get_db
 from app.models.database import Bookmark, BookmarkTag, Note, Tag, User
 from app.schemas.bookmark import BookmarkCreate, BookmarkResponse, BookmarkUpdate
@@ -19,14 +20,6 @@ class ReorderItem(BaseModel):
 router = APIRouter(prefix="/api/notes", tags=["bookmarks"])
 
 
-async def _get_owned_note(note_id: int, user: User, db: AsyncSession) -> Note:
-    result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == user.id)
-    )
-    note = result.scalar_one_or_none()
-    if not note:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-    return note
 
 
 async def _get_bookmark(bookmark_id: int, note_id: int, db: AsyncSession) -> Bookmark:
@@ -49,10 +42,10 @@ async def _get_bookmark(bookmark_id: int, note_id: int, db: AsyncSession) -> Boo
 async def create_bookmark(
     note_id: int,
     body: BookmarkCreate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
 
     bookmark = Bookmark(
         note_id=note_id,
@@ -88,10 +81,10 @@ async def list_bookmarks(
     note_id: int,
     include_archived: bool = Query(False),
     archived_only: bool = Query(False),
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     q = (
         select(Bookmark)
         .options(selectinload(Bookmark.tags))
@@ -109,10 +102,10 @@ async def list_bookmarks(
 async def reorder_bookmarks(
     note_id: int,
     items: List[ReorderItem],
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     for item in items:
         await db.execute(
             update(Bookmark)
@@ -128,10 +121,10 @@ async def update_bookmark(
     note_id: int,
     bookmark_id: int,
     body: BookmarkUpdate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     bookmark = await _get_bookmark(bookmark_id, note_id, db)
 
     if body.url is not None:
@@ -178,9 +171,9 @@ async def update_bookmark(
 async def delete_bookmark(
     note_id: int,
     bookmark_id: int,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     bookmark = await _get_bookmark(bookmark_id, note_id, db)
     await db.delete(bookmark)

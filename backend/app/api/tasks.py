@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
+from app.api.deps import get_owned_note
 from app.database.connection import get_db
 from app.models.database import Task, Note, TaskReminder, User
 from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskWithNoteResponse
@@ -17,14 +18,6 @@ class ReorderItem(BaseModel):
 router = APIRouter(tags=["tasks"])
 
 
-async def _get_note_owned(note_id: int, user: User, db: AsyncSession) -> Note:
-    result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == user.id)
-    )
-    note = result.scalar_one_or_none()
-    if not note:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-    return note
 
 
 async def _get_task_owned(task_id: int, note_id: int, user: User, db: AsyncSession) -> Task:
@@ -42,10 +35,10 @@ async def list_tasks(
     note_id: int,
     include_archived: bool = Query(False),
     archived_only: bool = Query(False),
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_note_owned(note_id, current_user, db)
     q = select(Task).where(Task.note_id == note_id, Task.user_id == current_user.id)
     if archived_only:
         q = q.where(Task.is_archived == True)  # noqa: E712
@@ -59,10 +52,10 @@ async def list_tasks(
 async def create_task(
     note_id: int,
     data: TaskCreate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_note_owned(note_id, current_user, db)
     task = Task(
         note_id=note_id,
         user_id=current_user.id,
@@ -81,10 +74,10 @@ async def create_task(
 async def reorder_tasks(
     note_id: int,
     items: List[ReorderItem],
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_note_owned(note_id, current_user, db)
     for item in items:
         await db.execute(
             update(Task)
@@ -100,6 +93,7 @@ async def update_task(
     note_id: int,
     task_id: int,
     data: TaskUpdate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -136,6 +130,7 @@ async def update_task(
 async def delete_task(
     note_id: int,
     task_id: int,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

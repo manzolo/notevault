@@ -16,6 +16,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.api.deps import get_owned_note
 from app.config import get_settings
 from app.database.connection import get_db
 from app.models.database import Attachment, AttachmentTag, Note, Tag, User
@@ -40,14 +41,6 @@ _INLINE_MIMES = {
 }
 
 
-async def _get_owned_note(note_id: int, user: User, db: AsyncSession) -> Note:
-    result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == user.id)
-    )
-    note = result.scalar_one_or_none()
-    if not note:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-    return note
 
 
 async def _get_attachment(attachment_id: int, note_id: int, db: AsyncSession) -> Attachment:
@@ -73,10 +66,10 @@ async def upload_attachment(
     tag_ids: List[int] = Form(default=[]),
     description: Optional[str] = Form(default=None),
     file_modified_at: Optional[int] = Form(default=None),  # ms timestamp from JS file.lastModified
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
 
     # Stream-read to enforce size limit
     max_bytes = settings.max_upload_bytes
@@ -150,10 +143,10 @@ async def list_attachments(
     note_id: int,
     include_archived: bool = Query(False),
     archived_only: bool = Query(False),
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     q = (
         select(Attachment)
         .options(selectinload(Attachment.tags))
@@ -171,10 +164,10 @@ async def list_attachments(
 async def reorder_attachments(
     note_id: int,
     items: List[ReorderItem],
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     for item in items:
         await db.execute(
             update(Attachment)
@@ -189,10 +182,10 @@ async def reorder_attachments(
 async def get_attachment(
     note_id: int,
     attachment_id: int,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     return await _get_attachment(attachment_id, note_id, db)
 
 
@@ -200,10 +193,10 @@ async def get_attachment(
 async def stream_attachment(
     note_id: int,
     attachment_id: int,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     upload_dir = os.path.join(settings.upload_dir, str(current_user.id), str(note_id))
@@ -263,10 +256,10 @@ def _eml_file_path(settings, user_id: int, note_id: int, stored_filename: str) -
 async def parse_eml_attachment(
     note_id: int,
     attachment_id: int,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> JSONResponse:
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     if attachment.mime_type != "message/rfc822":
@@ -317,10 +310,10 @@ async def stream_eml_part(
     note_id: int,
     attachment_id: int,
     part_index: int,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     if attachment.mime_type != "message/rfc822":
@@ -358,10 +351,10 @@ async def list_zip_attachment(
     note_id: int,
     attachment_id: int,
     password: Optional[str] = None,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> JSONResponse:
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     if attachment.mime_type != "application/zip":
@@ -415,10 +408,10 @@ async def stream_zip_entry(
     attachment_id: int,
     path: str,
     password: Optional[str] = None,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     if attachment.mime_type != "application/zip":
@@ -480,10 +473,10 @@ async def parse_zip_eml_entry(
     attachment_id: int,
     path: str,
     password: Optional[str] = None,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> JSONResponse:
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     if attachment.mime_type != "application/zip":
@@ -543,10 +536,10 @@ async def stream_zip_eml_part(
     path: str,
     part_index: int,
     password: Optional[str] = None,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     if attachment.mime_type != "application/zip":
@@ -592,10 +585,10 @@ async def update_attachment_tags(
     note_id: int,
     attachment_id: int,
     body: AttachmentTagUpdate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     # Delete existing tags
@@ -632,10 +625,10 @@ async def update_attachment(
     note_id: int,
     attachment_id: int,
     body: AttachmentUpdate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     # Update filename if provided (only the display name; stored_filename is unchanged)
@@ -695,10 +688,10 @@ async def update_attachment_content(
     note_id: int,
     attachment_id: int,
     body: AttachmentContentUpdate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     if attachment.mime_type not in _TEXT_EDITABLE_MIMES and not attachment.mime_type.startswith("text/"):
@@ -731,10 +724,10 @@ async def update_attachment_content(
 async def delete_attachment(
     note_id: int,
     attachment_id: int,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_owned_note(note_id, current_user, db)
     attachment = await _get_attachment(attachment_id, note_id, db)
 
     upload_dir = os.path.join(settings.upload_dir, str(current_user.id), str(note_id))

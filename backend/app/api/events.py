@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from app.api.deps import get_owned_note
 from app.database.connection import get_db
 from app.models.database import Event, EventAttachment, Note, User
 from app.schemas.event import EventCreate, EventUpdate, EventResponse, EventWithNoteResponse, EventAttachmentResponse
@@ -32,14 +33,6 @@ ALLOWED_MIME_TYPES = {
 }
 
 
-async def _get_note_owned(note_id: int, user: User, db: AsyncSession) -> Note:
-    result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == user.id)
-    )
-    note = result.scalar_one_or_none()
-    if not note:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-    return note
 
 
 async def _get_event_owned(event_id: int, user: User, db: AsyncSession) -> Event:
@@ -100,10 +93,10 @@ async def list_events(
     note_id: int,
     include_archived: bool = Query(False),
     archived_only: bool = Query(False),
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_note_owned(note_id, current_user, db)
     q = (
         select(Event)
         .options(selectinload(Event.attachments), selectinload(Event.reminders))
@@ -121,10 +114,10 @@ async def list_events(
 async def create_event(
     note_id: int,
     payload: EventCreate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_note_owned(note_id, current_user, db)
     event = Event(
         note_id=note_id,
         user_id=current_user.id,
@@ -150,10 +143,10 @@ async def update_event(
     note_id: int,
     event_id: int,
     payload: EventUpdate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_note_owned(note_id, current_user, db)
     event = await _get_event_owned(event_id, current_user, db)
     if event.note_id != note_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -172,10 +165,10 @@ async def update_event(
 async def delete_event(
     note_id: int,
     event_id: int,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await _get_note_owned(note_id, current_user, db)
     event = await _get_event_owned(event_id, current_user, db)
     if event.note_id != note_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")

@@ -18,14 +18,9 @@ import { buildVirtualBookmarks } from '@/lib/virtualBookmarks';
 import NoteEditor from '@/components/notes/NoteEditor';
 import NoteFieldsPanel from '@/components/notes/NoteFieldsPanel';
 import SecretList from '@/components/secrets/SecretList';
-import SecretForm from '@/components/secrets/SecretForm';
 import AttachmentGroupedList from '@/components/attachments/AttachmentGroupedList';
 import AttachmentFlatList from '@/components/attachments/AttachmentFlatList';
-import AttachmentUploadForm from '@/components/attachments/AttachmentUploadForm';
-import AttachmentEditForm from '@/components/attachments/AttachmentEditForm';
-import TextFileCreateForm from '@/components/attachments/TextFileCreateForm';
 import BookmarkList from '@/components/bookmarks/BookmarkList';
-import BookmarkForm from '@/components/bookmarks/BookmarkForm';
 import TaskPanel from '@/components/tasks/TaskPanel';
 import EventPanel from '@/components/events/EventPanel';
 import Modal from '@/components/common/Modal';
@@ -34,8 +29,10 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CollapsedSection from '@/components/common/CollapsedSection';
 import { ArchiveIcon, ArrowDownTrayIcon, CalendarIcon, ChevronDownIcon, DocumentTextIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, RestoreIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
 import ShareModal from '@/components/notes/ShareModal';
+import NotePageModals from '@/components/notes/NotePageModals';
 import AttachmentPreviewModal from '@/components/attachments/AttachmentPreviewModal';
 import { useConfirm } from '@/hooks/useConfirm';
+import { usePasteAndDrop } from '@/hooks/usePasteAndDrop';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 import api from '@/lib/api';
 import { clearCached } from '@/lib/faviconCache';
@@ -118,17 +115,21 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [archivedBookmarksCount, setArchivedBookmarksCount] = useState<number | null>(null);
   const eventPanelAddRef = useRef<(() => void) | null>(null); // MutableRefObject by default
 
-  // Paste-image state (images: quick modal with preview)
-  const [pasteFile, setPasteFile] = useState<File | null>(null);
-  const [pasteName, setPasteName] = useState('');
-  const [pastePreviewUrl, setPastePreviewUrl] = useState('');
-  const [pasteUploading, setPasteUploading] = useState(false);
-  const filenameInputRef = useRef<HTMLInputElement>(null);
-  // Paste-file state (non-images or multiple files: reuse upload modal pre-filled)
-  const [pasteUploadFiles, setPasteUploadFiles] = useState<File[]>([]);
-  // Drag-and-drop state
-  const [isDragging, setIsDragging] = useState(false);
-  const dragCounterRef = useRef(0);
+  const {
+    pasteFile,
+    pasteName, setPasteName,
+    pastePreviewUrl,
+    pasteUploading,
+    pasteUploadFiles, setPasteUploadFiles,
+    isDragging,
+    filenameInputRef,
+    handlePasteConfirm,
+    handlePasteCancel,
+  } = usePasteAndDrop({
+    uploadAttachment,
+    onMultipleFiles: (files) => { setPasteUploadFiles(files); setShowUploadModal(true); },
+    uploadLabel: 'uploaded!',
+  });
 
   const fetchBacklinks = useCallback(async () => {
     try {
@@ -192,128 +193,16 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     load();
   }, [noteId]);
 
-  // Document-level paste listener: active for the whole note page
-  useEffect(() => {
-    const handleDocumentPaste = (e: ClipboardEvent) => {
-      // Don't trigger if a modal filename input is focused or modal already open
-      if (filenameInputRef.current && document.activeElement === filenameInputRef.current) return;
-      if (pasteFile) return;
-      // Don't trigger if focus is inside a field image paste zone
-      if (document.activeElement?.closest('[data-image-paste-zone]')) return;
-
-      const pastedFiles: File[] = Array.from(e.clipboardData?.items ?? [])
-        .filter((item) => item.kind === 'file')
-        .map((item) => item.getAsFile())
-        .filter((f): f is File => f !== null);
-
-      if (pastedFiles.length === 0) {
-        pastedFiles.push(...Array.from(e.clipboardData?.files ?? []));
-      }
-
-      if (pastedFiles.length === 0) return;
-      e.preventDefault();
-
-      if (pastedFiles.length === 1 && pastedFiles[0].type.startsWith('image/')) {
-        openPasteModal(pastedFiles[0]);
-      } else {
-        setPasteUploadFiles(pastedFiles);
-        setShowUploadModal(true);
-      }
-    };
-
-    document.addEventListener('paste', handleDocumentPaste);
-    return () => document.removeEventListener('paste', handleDocumentPaste);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pasteFile]);
-
   // ESC key: close preview overlays in cascade
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
-      if (previewState) {
-        handleClosePreview();
-      }
+      if (previewState) handleClosePreview();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewState]);
-
-  // Document-level drag-and-drop listener
-  useEffect(() => {
-    const handleDragEnter = (e: DragEvent) => {
-      if (!e.dataTransfer?.types.includes('Files')) return;
-      e.preventDefault();
-      dragCounterRef.current += 1;
-      if (dragCounterRef.current === 1) setIsDragging(true);
-    };
-    const handleDragOver = (e: DragEvent) => {
-      if (!e.dataTransfer?.types.includes('Files')) return;
-      e.preventDefault();
-    };
-    const handleDragLeave = (e: DragEvent) => {
-      dragCounterRef.current -= 1;
-      if (dragCounterRef.current === 0) setIsDragging(false);
-    };
-    const handleDrop = (e: DragEvent) => {
-      e.preventDefault();
-      dragCounterRef.current = 0;
-      setIsDragging(false);
-      const droppedFiles = Array.from(e.dataTransfer?.files ?? []);
-      if (droppedFiles.length === 0) return;
-      if (droppedFiles.length === 1 && droppedFiles[0].type.startsWith('image/')) {
-        openPasteModal(droppedFiles[0]);
-      } else {
-        setPasteUploadFiles(droppedFiles);
-        setShowUploadModal(true);
-      }
-    };
-
-    document.addEventListener('dragenter', handleDragEnter);
-    document.addEventListener('dragover', handleDragOver);
-    document.addEventListener('dragleave', handleDragLeave);
-    document.addEventListener('drop', handleDrop);
-    return () => {
-      document.removeEventListener('dragenter', handleDragEnter);
-      document.removeEventListener('dragover', handleDragOver);
-      document.removeEventListener('dragleave', handleDragLeave);
-      document.removeEventListener('drop', handleDrop);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const openPasteModal = (file: File) => {
-    const ext = file.type.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
-    const defaultName = `pasted-image-${Date.now()}.${ext}`;
-    setPasteName(defaultName);
-    setPastePreviewUrl(URL.createObjectURL(file));
-    setPasteFile(file);
-    setTimeout(() => filenameInputRef.current?.select(), 50);
-  };
-
-  const handlePasteConfirm = async () => {
-    if (!pasteFile) return;
-    setPasteUploading(true);
-    try {
-      const namedFile = new File([pasteFile], pasteName, { type: pasteFile.type });
-      await uploadAttachment(namedFile);
-      toast.success(`${pasteName} uploaded!`);
-    } catch {
-      toast.error('Failed to upload pasted image');
-    } finally {
-      setPasteUploading(false);
-      URL.revokeObjectURL(pastePreviewUrl);
-      setPasteFile(null);
-      setPastePreviewUrl('');
-    }
-  };
-
-  const handlePasteCancel = () => {
-    URL.revokeObjectURL(pastePreviewUrl);
-    setPasteFile(null);
-    setPasteName('');
-    setPastePreviewUrl('');
-  };
 
   const handleUpdate = async (data: any) => {
     setSaving(true);
@@ -842,57 +731,29 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       {/* Technical Fields Panel */}
       <NoteFieldsPanel noteId={noteId} />
 
-      <Modal isOpen={showSecretModal} onClose={() => setShowSecretModal(false)} title={tSecrets('addSecret')}>
-        <SecretForm onSubmit={handleCreateSecret} />
-      </Modal>
-
-      <Modal isOpen={showUploadModal} onClose={() => { setShowUploadModal(false); setPasteUploadFiles([]); }} title={tAttachments('upload')}>
-        <AttachmentUploadForm
-          onUpload={handleUpload}
-          onComplete={handleUploadComplete}
-          availableTags={availableTagsFromHook}
-          initialFiles={pasteUploadFiles.length > 0 ? pasteUploadFiles : undefined}
-        />
-      </Modal>
-
-      <Modal isOpen={showTextFileModal} onClose={() => setShowTextFileModal(false)} title={tAttachments('createTextFile')}>
-        <TextFileCreateForm
-          onUpload={handleUpload}
-          onComplete={() => { handleUploadComplete(1); setShowTextFileModal(false); }}
-          availableTags={availableTagsFromHook}
-        />
-      </Modal>
-
-      <Modal isOpen={!!editingAttachment} onClose={() => setEditingAttachment(null)} title={tAttachments('editAttachment')}>
-        {editingAttachment && (
-          <AttachmentEditForm
-            attachment={editingAttachment}
-            availableTags={availableTagsFromHook}
-            onSave={handleEditAttachment}
-            onCancel={() => setEditingAttachment(null)}
-            fetchContent={() => fetchTextContent(editingAttachment.id)}
-          />
-        )}
-      </Modal>
-
-      <Modal isOpen={showBookmarkModal} onClose={() => setShowBookmarkModal(false)} title={tBookmarks('add')}>
-        <BookmarkForm
-          availableTags={availableTagsFromHook}
-          onSubmit={handleCreateBookmark}
-          onCancel={() => setShowBookmarkModal(false)}
-        />
-      </Modal>
-
-      <Modal isOpen={!!editingBookmark} onClose={() => setEditingBookmark(null)} title={tBookmarks('edit')}>
-        {editingBookmark && (
-          <BookmarkForm
-            initial={editingBookmark}
-            availableTags={availableTagsFromHook}
-            onSubmit={handleUpdateBookmark}
-            onCancel={() => setEditingBookmark(null)}
-          />
-        )}
-      </Modal>
+      <NotePageModals
+        availableTags={availableTagsFromHook}
+        showSecretModal={showSecretModal}
+        onCloseSecretModal={() => setShowSecretModal(false)}
+        onCreateSecret={handleCreateSecret}
+        showUploadModal={showUploadModal}
+        onCloseUploadModal={() => { setShowUploadModal(false); setPasteUploadFiles([]); }}
+        pasteUploadFiles={pasteUploadFiles}
+        onUpload={handleUpload}
+        onUploadComplete={handleUploadComplete}
+        showTextFileModal={showTextFileModal}
+        onCloseTextFileModal={() => setShowTextFileModal(false)}
+        editingAttachment={editingAttachment}
+        onCloseEditAttachment={() => setEditingAttachment(null)}
+        onSaveAttachment={handleEditAttachment}
+        fetchAttachmentContent={fetchTextContent}
+        showBookmarkModal={showBookmarkModal}
+        onCloseBookmarkModal={() => setShowBookmarkModal(false)}
+        onCreateBookmark={handleCreateBookmark}
+        editingBookmark={editingBookmark}
+        onCloseEditBookmark={() => setEditingBookmark(null)}
+        onUpdateBookmark={handleUpdateBookmark}
+      />
 
       {previewState && (
         <AttachmentPreviewModal

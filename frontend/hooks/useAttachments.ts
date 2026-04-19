@@ -3,6 +3,8 @@
 import { useState, useCallback } from 'react';
 import api from '@/lib/api';
 import { Attachment } from '@/lib/types';
+import { useArchivable } from '@/hooks/useArchivable';
+import { useAttachmentParsers } from '@/hooks/useAttachmentParsers';
 
 export function useAttachments(noteId: number) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -74,152 +76,6 @@ export function useAttachments(noteId: number) {
     [noteId],
   );
 
-  const parseZip = useCallback(
-    async (
-      attachmentId: number,
-      password?: string,
-    ): Promise<{
-      entries: { name: string; size: number; compressed_size: number; is_dir: boolean; content_type: string }[];
-      encrypted: boolean;
-    }> => {
-      const params: Record<string, string> = {};
-      if (password) params.password = password;
-      const response = await api.get(`/api/notes/${noteId}/attachments/${attachmentId}/zip`, { params });
-      return response.data;
-    },
-    [noteId],
-  );
-
-  const previewZipEntry = useCallback(
-    async (attachmentId: number, entryPath: string, password?: string): Promise<string> => {
-      const params: Record<string, string> = { path: entryPath };
-      if (password) params.password = password;
-      const response = await api.get(
-        `/api/notes/${noteId}/attachments/${attachmentId}/zip/entry`,
-        { params, responseType: 'blob' },
-      );
-      return URL.createObjectURL(response.data as Blob);
-    },
-    [noteId],
-  );
-
-  const downloadZipEntry = useCallback(
-    async (attachmentId: number, entryPath: string, filename: string, password?: string): Promise<void> => {
-      const params: Record<string, string> = { path: entryPath };
-      if (password) params.password = password;
-      const response = await api.get(
-        `/api/notes/${noteId}/attachments/${attachmentId}/zip/entry`,
-        { params, responseType: 'blob' },
-      );
-      const url = URL.createObjectURL(response.data as Blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    },
-    [noteId],
-  );
-
-  const previewZipEmlPart = useCallback(
-    async (attachmentId: number, entryPath: string, partIndex: number, password?: string): Promise<string> => {
-      const params: Record<string, string> = { path: entryPath, part_index: String(partIndex) };
-      if (password) params.password = password;
-      const response = await api.get(
-        `/api/notes/${noteId}/attachments/${attachmentId}/zip/entry/eml/part`,
-        { params, responseType: 'blob' },
-      );
-      return URL.createObjectURL(response.data as Blob);
-    },
-    [noteId],
-  );
-
-  const downloadZipEmlPart = useCallback(
-    async (attachmentId: number, entryPath: string, partIndex: number, filename: string, password?: string): Promise<void> => {
-      const params: Record<string, string> = { path: entryPath, part_index: String(partIndex) };
-      if (password) params.password = password;
-      const response = await api.get(
-        `/api/notes/${noteId}/attachments/${attachmentId}/zip/entry/eml/part`,
-        { params, responseType: 'blob' },
-      );
-      const url = URL.createObjectURL(response.data as Blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    },
-    [noteId],
-  );
-
-  const parseZipEml = useCallback(
-    async (
-      attachmentId: number,
-      entryPath: string,
-      password?: string,
-    ): Promise<{
-      headers: Record<string, string>;
-      body_text: string | null;
-      body_html: string | null;
-      attachments: { index: number; filename: string; content_type: string; size: number }[];
-    }> => {
-      const params: Record<string, string> = { path: entryPath };
-      if (password) params.password = password;
-      const response = await api.get(
-        `/api/notes/${noteId}/attachments/${attachmentId}/zip/entry/eml`,
-        { params },
-      );
-      return response.data;
-    },
-    [noteId],
-  );
-
-  const parseEml = useCallback(
-    async (attachmentId: number): Promise<{
-      headers: Record<string, string>;
-      body_text: string | null;
-      body_html: string | null;
-      attachments: { index: number; filename: string; content_type: string; size: number }[];
-    }> => {
-      const response = await api.get(`/api/notes/${noteId}/attachments/${attachmentId}/eml`);
-      return response.data;
-    },
-    [noteId],
-  );
-
-  const previewEmlPart = useCallback(
-    async (attachmentId: number, partIndex: number): Promise<string> => {
-      const response = await api.get(
-        `/api/notes/${noteId}/attachments/${attachmentId}/eml/part/${partIndex}`,
-        { responseType: 'blob' },
-      );
-      return URL.createObjectURL(response.data as Blob);
-    },
-    [noteId],
-  );
-
-  const downloadEmlPart = useCallback(
-    async (attachmentId: number, partIndex: number, filename: string): Promise<void> => {
-      const response = await api.get(
-        `/api/notes/${noteId}/attachments/${attachmentId}/eml/part/${partIndex}`,
-        { responseType: 'blob' },
-      );
-      const url = URL.createObjectURL(response.data as Blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    },
-    [noteId],
-  );
-
   const reorderAttachments = useCallback(
     async (items: { id: number; position: number }[]): Promise<void> => {
       await api.patch(`/api/notes/${noteId}/attachments/reorder`, items);
@@ -250,33 +106,16 @@ export function useAttachments(noteId: number) {
     [noteId],
   );
 
-  const archiveAttachment = useCallback(
-    async (attachmentId: number, archiveNote?: string): Promise<void> => {
-      await api.patch(`/api/notes/${noteId}/attachments/${attachmentId}`, {
-        is_archived: true,
-        archive_note: archiveNote || null,
-      });
-      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
-    },
-    [noteId],
+  const {
+    archiveItem: archiveAttachment,
+    restoreItem: restoreAttachment,
+    fetchArchived: fetchArchivedAttachments,
+  } = useArchivable<Attachment>(
+    { basePath: `/api/notes/${noteId}/attachments`, archiveMethod: 'patch' },
+    setAttachments,
   );
 
-  const restoreAttachment = useCallback(
-    async (attachmentId: number): Promise<Attachment> => {
-      const response = await api.patch<Attachment>(`/api/notes/${noteId}/attachments/${attachmentId}`, {
-        is_archived: false,
-        archive_note: null,
-      });
-      setAttachments((prev) => [...prev, response.data].sort((a, b) => a.position - b.position));
-      return response.data;
-    },
-    [noteId],
-  );
-
-  const fetchArchivedAttachments = useCallback(async (): Promise<Attachment[]> => {
-    const res = await api.get<Attachment[]>(`/api/notes/${noteId}/attachments`, { params: { archived_only: true } });
-    return res.data;
-  }, [noteId]);
+  const parsers = useAttachmentParsers(noteId);
 
   return {
     attachments,
@@ -291,17 +130,9 @@ export function useAttachments(noteId: number) {
     fetchTextContent,
     updateAttachment,
     updateAttachmentContent,
-    parseZip,
-    previewZipEntry,
-    downloadZipEntry,
-    parseZipEml,
-    previewZipEmlPart,
-    downloadZipEmlPart,
-    parseEml,
-    previewEmlPart,
-    downloadEmlPart,
     archiveAttachment,
     restoreAttachment,
     fetchArchivedAttachments,
+    ...parsers,
   };
 }

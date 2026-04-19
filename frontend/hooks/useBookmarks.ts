@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import api from '@/lib/api';
 import { Bookmark, BookmarkCreate, BookmarkUpdate } from '@/lib/types';
+import { useArchivable } from '@/hooks/useArchivable';
 
 export function useBookmarks(noteId: number) {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -54,33 +55,14 @@ export function useBookmarks(noteId: number) {
     [noteId],
   );
 
-  const archiveBookmark = useCallback(
-    async (bookmarkId: number, archiveNote?: string): Promise<void> => {
-      await api.put(`/api/notes/${noteId}/bookmarks/${bookmarkId}`, {
-        is_archived: true,
-        archive_note: archiveNote || null,
-      });
-      setBookmarks((prev) => prev.filter((b) => b.id !== bookmarkId));
-    },
-    [noteId],
+  const {
+    archiveItem: archiveBookmark,
+    restoreItem: restoreBookmark,
+    fetchArchived: fetchArchivedBookmarks,
+  } = useArchivable<Bookmark>(
+    { basePath: `/api/notes/${noteId}/bookmarks`, archiveMethod: 'put' },
+    setBookmarks,
   );
-
-  const restoreBookmark = useCallback(
-    async (bookmarkId: number): Promise<Bookmark> => {
-      const response = await api.put<Bookmark>(`/api/notes/${noteId}/bookmarks/${bookmarkId}`, {
-        is_archived: false,
-        archive_note: null,
-      });
-      setBookmarks((prev) => [...prev, response.data].sort((a, b) => a.position - b.position));
-      return response.data;
-    },
-    [noteId],
-  );
-
-  const fetchArchivedBookmarks = useCallback(async (): Promise<Bookmark[]> => {
-    const res = await api.get<Bookmark[]>(`/api/notes/${noteId}/bookmarks`, { params: { archived_only: true } });
-    return res.data;
-  }, [noteId]);
 
   return {
     bookmarks,

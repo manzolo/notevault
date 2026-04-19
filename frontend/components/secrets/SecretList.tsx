@@ -27,7 +27,7 @@ interface SecretListProps {
   onHide: (id: number) => void;
   onDelete: (id: number) => void;
   onArchive: (id: number, note?: string) => Promise<void>;
-  onRestore: (id: number) => Promise<void>;
+  onRestore: (id: number) => Promise<unknown>;
   onCopyDirect?: (id: number) => Promise<void>;
   onReorder: (items: { id: number; position: number }[]) => Promise<void>;
   fetchArchivedSecrets: () => Promise<Secret[]>;

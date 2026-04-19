@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from app.api.deps import get_owned_note
 from app.database.connection import get_db
 from app.models.database import Note, Secret, SecretAccessLog, User
 from app.models.enums import AuditAction
@@ -24,16 +25,10 @@ async def list_secrets(
     note_id: int,
     include_archived: bool = Query(False),
     archived_only: bool = Query(False),
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # Verify note ownership
-    note_result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == current_user.id)
-    )
-    if not note_result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-
     q = select(Secret).where(Secret.note_id == note_id)
     if archived_only:
         q = q.where(Secret.is_archived == True)  # noqa: E712
@@ -47,15 +42,10 @@ async def list_secrets(
 async def reorder_secrets(
     note_id: int,
     items: List[ReorderItem],
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    note_result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == current_user.id)
-    )
-    if not note_result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-
     for item in items:
         await db.execute(
             update(Secret)
@@ -70,15 +60,10 @@ async def reorder_secrets(
 async def create_secret(
     note_id: int,
     secret_data: SecretCreate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    note_result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == current_user.id)
-    )
-    if not note_result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-
     enc = get_encryption()
     encrypted_value = enc.encrypt(secret_data.value)
 
@@ -111,15 +96,10 @@ async def create_secret(
 async def get_secret(
     note_id: int,
     secret_id: int,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    note_result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == current_user.id)
-    )
-    if not note_result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-
     result = await db.execute(
         select(Secret).where(Secret.id == secret_id, Secret.note_id == note_id)
     )
@@ -135,15 +115,10 @@ async def reveal_secret(
     note_id: int,
     secret_id: int,
     request: Request,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    note_result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == current_user.id)
-    )
-    if not note_result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-
     result = await db.execute(
         select(Secret).where(Secret.id == secret_id, Secret.note_id == note_id)
     )
@@ -181,15 +156,10 @@ async def archive_secret(
     note_id: int,
     secret_id: int,
     body: SecretArchiveUpdate,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    note_result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == current_user.id)
-    )
-    if not note_result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-
     result = await db.execute(
         select(Secret).where(Secret.id == secret_id, Secret.note_id == note_id)
     )
@@ -208,15 +178,10 @@ async def archive_secret(
 async def delete_secret(
     note_id: int,
     secret_id: int,
+    note: Note = Depends(get_owned_note),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    note_result = await db.execute(
-        select(Note).where(Note.id == note_id, Note.user_id == current_user.id)
-    )
-    if not note_result.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-
     result = await db.execute(
         select(Secret).where(Secret.id == secret_id, Secret.note_id == note_id)
     )
