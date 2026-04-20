@@ -1,62 +1,54 @@
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.schemas.note import NoteResponse
 
 
 class MatchingAttachment(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     note_id: int
     filename: str
     mime_type: str
 
-    class Config:
-        from_attributes = True
-
-
 class MatchingBookmark(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     note_id: int
     url: str
     title: str | None = None
     description: str | None = None
 
-    class Config:
-        from_attributes = True
-
-
 class MatchingField(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     note_id: int
     group_name: str
     key: str
     value: str
 
-    class Config:
-        from_attributes = True
-
-
 class MatchingEvent(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     note_id: int
     title: str
     description: str | None = None
     start_datetime: str
 
-    class Config:
-        from_attributes = True
-
-
 class MatchingTask(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     note_id: int
     title: str
     is_done: bool = False
 
-    class Config:
-        from_attributes = True
-
-
 class SearchNoteResponse(NoteResponse):
+    model_config = ConfigDict(from_attributes=True)
+
     match_in_attachment: bool = False
     match_in_bookmark: bool = False
     match_in_fields: bool = False
@@ -67,10 +59,6 @@ class SearchNoteResponse(NoteResponse):
     matching_fields: List[MatchingField] = []
     matching_events: List[MatchingEvent] = []
     matching_tasks: List[MatchingTask] = []
-
-    class Config:
-        from_attributes = True
-
 
 class SearchResponse(BaseModel):
     items: List[SearchNoteResponse]

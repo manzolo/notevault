@@ -7,6 +7,7 @@ def test_settings_defaults():
     s = Settings()
     assert s.algorithm == "HS256"
     assert s.access_token_expire_days == 7
+    assert s.journal_note_title_format == "iso"
 
 
 def test_master_key_bytes_valid():

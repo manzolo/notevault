@@ -15,7 +15,7 @@ import FolderTree from '@/components/folders/FolderTree';
 import MiniCalendar from '@/components/calendar/MiniCalendar';
 import Pagination from '@/components/common/Pagination';
 import Button from '@/components/common/Button';
-import { PlusIcon, FolderIcon, CalendarIcon, ChevronDownIcon } from '@/components/common/Icons';
+import { PlusIcon, FolderIcon, CalendarIcon, ChevronDownIcon, BookOpenIcon } from '@/components/common/Icons';
 import api from '@/lib/api';
 import { MatchingAttachment, MatchingTask, SearchResponse } from '@/lib/types';
 import { dateToLocalStart, dateToLocalEnd } from '@/lib/utils';
@@ -23,12 +23,13 @@ import AttachmentPreviewModal from '@/components/attachments/AttachmentPreviewMo
 
 export default function DashboardPage() {
   const t = useTranslations('notes');
+  const tNav = useTranslations('nav');
   const tFolders = useTranslations('folders');
   const tCalendar = useTranslations('calendar');
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { notes, total, loading, fetchNotes, deleteNote, updateNote } = useNotes();
+  const { notes, total, loading, fetchNotes, deleteNote, updateNote, createDailyNote } = useNotes();
   const { tags, fetchTags } = useTags();
   const { categories, fetchCategories, createCategory, updateCategory, deleteCategory } = useCategories();
   const [page, setPage] = useState(1);
@@ -52,6 +53,7 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPage, setSearchPage] = useState(1);
   const [attachPreview, setAttachPreview] = useState<{ noteId: number; attachment: MatchingAttachment } | null>(null);
+  const [journalLoading, setJournalLoading] = useState(false);
 
   // Mobile sidebar accordion state
   const [mobileFoldersOpen, setMobileFoldersOpen] = useState(false);
@@ -199,6 +201,16 @@ export default function DashboardPage() {
     setAttachPreview({ noteId, attachment: att });
   };
 
+  const handleTodayNote = async () => {
+    setJournalLoading(true);
+    try {
+      const daily = await createDailyNote(undefined, locale);
+      router.push(`/${locale}/notes/${daily.note_id}`);
+    } finally {
+      setJournalLoading(false);
+    }
+  };
+
   const handleCloseAttachPreview = () => {
     setAttachPreview(null);
   };
@@ -300,12 +312,18 @@ export default function DashboardPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
             {t('myNotes')}
           </h1>
-          <Button variant="secondary" onClick={() => {
-            const href = selectedCategoryId != null
-              ? `/${locale}/notes/new?category_id=${selectedCategoryId}`
-              : `/${locale}/notes/new`;
-            router.push(href);
-          }}><PlusIcon />{t('newNote')}</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={handleTodayNote} loading={journalLoading}>
+              <BookOpenIcon />
+              {tNav('todayNote')}
+            </Button>
+            <Button variant="secondary" onClick={() => {
+              const href = selectedCategoryId != null
+                ? `/${locale}/notes/new?category_id=${selectedCategoryId}`
+                : `/${locale}/notes/new`;
+              router.push(href);
+            }}><PlusIcon />{t('newNote')}</Button>
+          </div>
         </div>
 
         {/* Search */}

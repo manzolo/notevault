@@ -13,10 +13,12 @@ import {
   PlusIcon,
   CheckSquareIcon,
   CalendarIcon,
+  BookOpenIcon,
   CogIcon,
   UserIcon,
   LogoutIcon,
 } from './Icons';
+import { useNotes } from '@/hooks/useNotes';
 
 function SunIcon() {
   return (
@@ -59,8 +61,10 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { createDailyNote } = useNotes();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [journalLoading, setJournalLoading] = useState(false);
 
   const handleNewNote = (onNavigate?: () => void) => {
     const catId = typeof window !== 'undefined' ? sessionStorage.getItem('dashboard_categoryId') : null;
@@ -72,6 +76,17 @@ export default function Navbar() {
   };
 
   const closeMenu = () => setMenuOpen(false);
+
+  const handleTodayNote = async (onNavigate?: () => void) => {
+    setJournalLoading(true);
+    try {
+      const daily = await createDailyNote(undefined, locale);
+      onNavigate?.();
+      router.push(`/${locale}/notes/${daily.note_id}`);
+    } finally {
+      setJournalLoading(false);
+    }
+  };
 
   const isActive = (segment: string) => pathname.includes(`/${segment}`);
 
@@ -126,6 +141,10 @@ export default function Navbar() {
                   <button type="button" onClick={() => handleNewNote()} className={navLinkClass('notes/new')}>
                     <PlusIcon className="w-3.5 h-3.5" />
                     {t('newNote')}
+                  </button>
+                  <button type="button" onClick={() => handleTodayNote()} className={navLinkClass('notes')}>
+                    <BookOpenIcon className="w-3.5 h-3.5" />
+                    {t('todayNote')}
                   </button>
                   <Link href={`/${locale}/tasks`} className={navLinkClass('tasks')}>
                     <CheckSquareIcon className="w-3.5 h-3.5" />
@@ -214,6 +233,10 @@ export default function Navbar() {
                 <button type="button" onClick={() => handleNewNote(closeMenu)} className={navLinkClass('notes/new', true)}>
                   <PlusIcon className="w-4 h-4 shrink-0" />
                   {t('newNote')}
+                </button>
+                <button type="button" onClick={() => handleTodayNote(closeMenu)} className={navLinkClass('notes', true)} disabled={journalLoading}>
+                  <BookOpenIcon className="w-4 h-4 shrink-0" />
+                  {t('todayNote')}
                 </button>
                 <Link href={`/${locale}/tasks`} className={navLinkClass('tasks', true)} onClick={closeMenu}>
                   <CheckSquareIcon className="w-4 h-4 shrink-0" />

@@ -7,7 +7,9 @@ import { CalendarEventWithNote, FieldDateEntry, TaskWithNote } from "@/lib/types
 import { useAllEvents } from "@/hooks/useEvents";
 import { useAllTasks } from "@/hooks/useTasks";
 import { useFieldDates } from "@/hooks/useFieldDates";
-import { CalendarIcon } from "@/components/common/Icons";
+import { useJournalDates } from "@/hooks/useJournalDates";
+import { useNotes } from "@/hooks/useNotes";
+import { BookOpenIcon, CalendarIcon } from "@/components/common/Icons";
 
 function buildCalendarGrid(year: number, month: number): (number | null)[][] {
   const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
@@ -38,6 +40,7 @@ export default function CalendarPage() {
   const tEvents = useTranslations("events");
   const tTasks = useTranslations("tasks");
   const tFields = useTranslations("fields");
+  const tJournal = useTranslations("journal");
   const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) ?? "en";
@@ -53,6 +56,8 @@ export default function CalendarPage() {
   const { events, fetchEvents } = useAllEvents(monthStr);
   const { tasks: allTasks, fetchAllTasks } = useAllTasks();
   const { fieldDates, fetchFieldDates } = useFieldDates(monthStr);
+  const { journalDates, fetchJournalDates } = useJournalDates(monthStr);
+  const { createDailyNote } = useNotes();
 
   useEffect(() => {
     fetchEvents();
@@ -65,6 +70,10 @@ export default function CalendarPage() {
   useEffect(() => {
     fetchFieldDates();
   }, [fetchFieldDates]);
+
+  useEffect(() => {
+    fetchJournalDates();
+  }, [fetchJournalDates]);
 
   // Filter tasks that have a due_date in the current month
   const tasks = allTasks.filter((task: TaskWithNote) => {
@@ -111,6 +120,16 @@ export default function CalendarPage() {
 
   const isToday = (day: number) =>
     today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+
+  const toISODate = (day: number) =>
+    `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+  const journalOnDay = (day: number) => journalDates.includes(toISODate(day));
+
+  const handleJournalOpen = async (journalDate: string) => {
+    const daily = await createDailyNote(journalDate, locale);
+    router.push(`/${locale}/notes/${daily.note_id}`);
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
@@ -171,7 +190,7 @@ export default function CalendarPage() {
               const dayEvents = day ? eventsOnDay(day) : [];
               const dayTasks = day ? tasksOnDay(day) : [];
               const dayFdates = day ? fieldDatesOnDay(day) : [];
-              const totalItems = dayEvents.length + dayTasks.length + dayFdates.length;
+              const hasJournal = day ? journalOnDay(day) : false;
               const MAX_PILLS = 3;
               const combined = [
                 ...dayEvents.map((e) => ({ type: "event" as const, item: e })),
@@ -179,7 +198,7 @@ export default function CalendarPage() {
                 ...dayFdates.map((f) => ({ type: "field" as const, item: f })),
               ];
               const shown = combined.slice(0, MAX_PILLS);
-              const more = Math.max(0, totalItems - MAX_PILLS);
+              const more = Math.max(0, combined.length - MAX_PILLS);
 
               return (
                 <div
@@ -198,6 +217,19 @@ export default function CalendarPage() {
                     >
                       {day}
                     </span>
+                  )}
+                  {hasJournal && day && (
+                    <button
+                      onClick={() => handleJournalOpen(toISODate(day))}
+                      className="w-full text-left rounded border-l-2 border-cyan-500 px-1.5 py-0.5 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-800 dark:text-cyan-300 overflow-hidden shadow-sm"
+                      title={`${tJournal("badge")} — ${toISODate(day)}`}
+                    >
+                      <div className="flex items-center gap-1 text-xs truncate font-medium">
+                        <BookOpenIcon className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{tJournal("badge")}</span>
+                      </div>
+                      <div className="text-[10px] truncate opacity-70">{toISODate(day)}</div>
+                    </button>
                   )}
                   {shown.map(({ type, item }, i) => {
                     if (type === "field") {
@@ -249,7 +281,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Legend */}
-      {(events.length > 0 || tasks.length > 0 || fieldDates.length > 0) && (
+      {(events.length > 0 || tasks.length > 0 || fieldDates.length > 0 || journalDates.length > 0) && (
         <div className="flex items-center gap-4 mt-4 px-1 flex-wrap">
           {events.length > 0 && (
             <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
@@ -269,10 +301,16 @@ export default function CalendarPage() {
               {tFields("fieldDates")}
             </span>
           )}
+          {journalDates.length > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 dark:bg-cyan-400 inline-block" />
+              {tJournal("badge")}
+            </span>
+          )}
         </div>
       )}
 
-      {events.length === 0 && tasks.length === 0 && fieldDates.length === 0 && (
+      {events.length === 0 && tasks.length === 0 && fieldDates.length === 0 && journalDates.length === 0 && (
         <p className="text-center text-gray-400 mt-6 text-sm">{t("noItems")}</p>
       )}
     </div>

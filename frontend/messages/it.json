@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "newNote": "Nuova Nota",
+    "todayNote": "Oggi",
     "settings": "Impostazioni",
     "tasks": "Attività",
     "calendar": "Calendario",
@@ -129,6 +130,13 @@
     "badgeTasks": "{count, plural, one {# task} other {# task}}",
     "badgeEvents": "{count, plural, one {# evento} other {# eventi}}",
     "badgeSecrets": "{count, plural, one {# segreto} other {# segreti}}"
+  },
+  "journal": {
+    "badge": "Diario",
+    "prev": "Prec",
+    "next": "Succ",
+    "openSelected": "Apri il diario del giorno selezionato",
+    "createSelected": "Crea il diario del giorno selezionato"
   },
   "secrets": {
     "secrets": "Segreti",

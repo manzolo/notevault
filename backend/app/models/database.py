@@ -60,6 +60,10 @@ class Category(Base):
 
 class Note(Base):
     __tablename__ = "notes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "journal_date", name="uq_note_user_journal_date"),
+        Index("ix_note_user_journal_date", "user_id", "journal_date"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(500), nullable=False)
@@ -68,6 +72,7 @@ class Note(Base):
     is_archived = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
+    journal_date = Column(Date, nullable=True)
     fts_vector = Column(TSVECTOR)  # populated by DB trigger only
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

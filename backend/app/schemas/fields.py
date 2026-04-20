@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class NoteFieldCreate(BaseModel):
@@ -29,6 +29,8 @@ class NoteFieldUpdate(BaseModel):
 
 
 class NoteFieldResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     note_id: int
     group_name: str
@@ -43,10 +45,6 @@ class NoteFieldResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-
-
 class NoteFieldGroup(BaseModel):
     group_name: str
     fields: List[NoteFieldResponse]
@@ -58,6 +56,8 @@ class NoteFieldReorderItem(BaseModel):
 
 
 class FieldDateEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     note_id: int
     note_title: str
@@ -67,6 +67,3 @@ class FieldDateEntry(BaseModel):
     field_date: date
     link: Optional[str] = None
     price: Optional[str] = None
-
-    class Config:
-        from_attributes = True

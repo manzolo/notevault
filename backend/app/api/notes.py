@@ -1,19 +1,251 @@
+import asyncio
 import os
 import shutil
-from datetime import datetime
+from calendar import monthrange
+from datetime import date, datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, and_
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 from app.database.connection import get_db
 from app.models.database import Note, Tag, NoteTag, Attachment, Event, Category, Task, NoteField, Secret
-from app.schemas.note import NoteCreate, NoteUpdate, NoteResponse, NoteListResponse
+from app.schemas.note import (
+    NoteCreate,
+    NoteUpdate,
+    NoteResponse,
+    NoteListResponse,
+    DailyNoteRequest,
+    DailyNoteResponse,
+    JournalAdjacentResponse,
+)
 from app.security.dependencies import get_current_user
 from app.models.database import User
 from app.config import get_settings
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
+
+_JOURNAL_WEEKDAYS = {
+    "en": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "it": ["Lunedi", "Martedi", "Mercoledi", "Giovedi", "Venerdi", "Sabato", "Domenica"],
+}
+
+_JOURNAL_MONTHS = {
+    "en": [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
+    ],
+    "it": [
+        "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+        "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
+    ],
+}
+
+
+def _normalize_locale(raw_locale: Optional[str]) -> str:
+    if not raw_locale:
+        return "en"
+    normalized = raw_locale.split("-", 1)[0].split("_", 1)[0].lower()
+    return normalized if normalized in _JOURNAL_WEEKDAYS else "en"
+
+
+def _format_localized_long(target_date: date, locale: str) -> str:
+    weekday = _JOURNAL_WEEKDAYS[locale][target_date.weekday()]
+    month = _JOURNAL_MONTHS[locale][target_date.month - 1]
+    return f"{weekday} {target_date.day} {month} {target_date.year}"
+
+
+def _build_journal_note_title(target_date: date, locale: Optional[str], settings) -> str:
+    fmt = (settings.journal_note_title_format or "iso").strip()
+    if fmt == "" or fmt == "iso":
+        return target_date.isoformat()
+
+    normalized_locale = _normalize_locale(locale)
+    if fmt == "localized_long":
+        return _format_localized_long(target_date, normalized_locale)
+
+    return fmt.format(
+        date=target_date.isoformat(),
+        weekday=_JOURNAL_WEEKDAYS[normalized_locale][target_date.weekday()],
+        month=_JOURNAL_MONTHS[normalized_locale][target_date.month - 1],
+        month_number=f"{target_date.month:02d}",
+        day=f"{target_date.day:02d}",
+        year=str(target_date.year),
+    )
+
+
+async def _find_or_create_category(
+    *,
+    db: AsyncSession,
+    current_user: User,
+    name: str,
+    parent_id: Optional[int],
+) -> Category:
+    result = await db.execute(
+        select(Category).where(
+            Category.user_id == current_user.id,
+            Category.name == name,
+            Category.parent_id == parent_id,
+        )
+    )
+    category = result.scalar_one_or_none()
+    if category:
+        return category
+
+    try:
+        async with db.begin_nested():
+            category = Category(name=name, user_id=current_user.id, parent_id=parent_id)
+            db.add(category)
+            await db.flush()
+    except IntegrityError:
+        pass
+
+    result = await db.execute(
+        select(Category).where(
+            Category.user_id == current_user.id,
+            Category.name == name,
+            Category.parent_id == parent_id,
+        )
+    )
+    category = result.scalar_one_or_none()
+    if not category:
+        raise HTTPException(status_code=500, detail="Failed to create journal folder")
+    return category
+
+
+def _parse_month(month: str) -> tuple[date, date]:
+    try:
+        year_str, month_str = month.split("-", 1)
+        year = int(year_str)
+        month_num = int(month_str)
+        start = date(year, month_num, 1)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="month must be in YYYY-MM format") from exc
+    end = date(year, month_num, monthrange(year, month_num)[1])
+    return start, end
+
+
+@router.post("/daily", response_model=DailyNoteResponse)
+async def create_or_get_daily_note(
+    payload: DailyNoteRequest = Body(default_factory=DailyNoteRequest),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    target_date = payload.journal_date or date.today()
+    settings = get_settings()
+
+    result = await db.execute(
+        select(Note.id).where(
+            Note.user_id == current_user.id,
+            Note.journal_date == target_date,
+        )
+    )
+    existing_note_id = result.scalar_one_or_none()
+    if existing_note_id is not None:
+        return DailyNoteResponse(note_id=existing_note_id, created=False)
+
+    year_folder = await _find_or_create_category(
+        db=db,
+        current_user=current_user,
+        name=target_date.strftime("%Y"),
+        parent_id=None,
+    )
+    month_folder = await _find_or_create_category(
+        db=db,
+        current_user=current_user,
+        name=target_date.strftime("%Y-%m"),
+        parent_id=year_folder.id,
+    )
+
+    created = False
+    try:
+        async with db.begin_nested():
+            note = Note(
+                title=_build_journal_note_title(target_date, payload.locale, settings),
+                content="",
+                user_id=current_user.id,
+                category_id=month_folder.id,
+                journal_date=target_date,
+            )
+            db.add(note)
+            await db.flush()
+            existing_note_id = note.id
+            created = True
+    except IntegrityError:
+        pass
+
+    if existing_note_id is None:
+        result = await db.execute(
+            select(Note.id).where(
+                Note.user_id == current_user.id,
+                Note.journal_date == target_date,
+            )
+        )
+        existing_note_id = result.scalar_one_or_none()
+
+    if existing_note_id is None:
+        raise HTTPException(status_code=500, detail="Failed to create journal note")
+
+    return DailyNoteResponse(note_id=existing_note_id, created=created)
+
+
+@router.get("/journal-dates", response_model=list[str])
+async def get_journal_dates(
+    month: str = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    month_start, month_end = _parse_month(month)
+    result = await db.execute(
+        select(Note.journal_date)
+        .where(
+            Note.user_id == current_user.id,
+            Note.journal_date.is_not(None),
+            Note.journal_date >= month_start,
+            Note.journal_date <= month_end,
+        )
+        .order_by(Note.journal_date.asc())
+    )
+    return [journal_date.isoformat() for journal_date in result.scalars().all()]
+
+
+@router.get("/daily/adjacent", response_model=JournalAdjacentResponse)
+async def get_adjacent_daily_notes(
+    date_value: date = Query(..., alias="date"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    prev_result, next_result = await asyncio.gather(
+        db.execute(
+            select(Note.id, Note.journal_date)
+            .where(
+                Note.user_id == current_user.id,
+                Note.journal_date.is_not(None),
+                Note.journal_date < date_value,
+            )
+            .order_by(Note.journal_date.desc())
+            .limit(1)
+        ),
+        db.execute(
+            select(Note.id, Note.journal_date)
+            .where(
+                Note.user_id == current_user.id,
+                Note.journal_date.is_not(None),
+                Note.journal_date > date_value,
+            )
+            .order_by(Note.journal_date.asc())
+            .limit(1)
+        ),
+    )
+    prev_row = prev_result.first()
+    next_row = next_result.first()
+    return JournalAdjacentResponse(
+        prev_date=prev_row.journal_date if prev_row else None,
+        prev_id=prev_row.id if prev_row else None,
+        next_date=next_row.journal_date if next_row else None,
+        next_id=next_row.id if next_row else None,
+    )
 
 
 
@@ -198,6 +430,7 @@ async def list_notes(
             "id": note.id, "title": note.title, "content": note.content,
             "is_pinned": note.is_pinned, "is_archived": note.is_archived,
             "user_id": note.user_id, "category_id": note.category_id,
+            "journal_date": note.journal_date,
             "tags": note.tags, "created_at": note.created_at, "updated_at": note.updated_at,
             **extra,
         }

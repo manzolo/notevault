@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from app.schemas.tag import TagResponse
 
 
@@ -23,6 +23,8 @@ class NoteUpdate(BaseModel):
 
 
 class NoteResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     title: str
     content: str
@@ -30,6 +32,7 @@ class NoteResponse(BaseModel):
     is_archived: bool
     user_id: int
     category_id: Optional[int]
+    journal_date: Optional[date] = None
     tags: List[TagResponse] = []
     created_at: datetime
     updated_at: datetime
@@ -38,13 +41,28 @@ class NoteResponse(BaseModel):
     event_count: int = 0
     secret_count: int = 0
 
-    class Config:
-        from_attributes = True
-
-
 class NoteListResponse(BaseModel):
     items: List[NoteResponse]
     total: int
     page: int
     per_page: int
     pages: int
+
+
+class DailyNoteRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    journal_date: Optional[date] = Field(default=None, alias="date")
+    locale: Optional[str] = None
+
+
+class DailyNoteResponse(BaseModel):
+    note_id: int
+    created: bool
+
+
+class JournalAdjacentResponse(BaseModel):
+    prev_date: Optional[date] = None
+    prev_id: Optional[int] = None
+    next_date: Optional[date] = None
+    next_id: Optional[int] = None

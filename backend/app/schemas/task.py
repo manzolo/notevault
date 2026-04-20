@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 def _coerce_date_str(v: object) -> object:
@@ -37,6 +37,8 @@ class TaskUpdate(BaseModel):
 
 
 class TaskResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     note_id: int
     user_id: int
@@ -48,10 +50,6 @@ class TaskResponse(BaseModel):
     archive_note: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
 
 class TaskWithNoteResponse(TaskResponse):
     note_title: str

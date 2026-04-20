@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import api from '@/lib/api';
-import { Note, NoteCreate, NoteUpdate, NoteListResponse } from '@/lib/types';
+import { DailyNoteResponse, JournalAdjacentResponse, Note, NoteCreate, NoteUpdate, NoteListResponse } from '@/lib/types';
 
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -67,5 +67,33 @@ export function useNotes() {
     return response.data;
   }, []);
 
-  return { notes, total, loading, error, fetchNotes, createNote, updateNote, deleteNote, getNote };
+  const createDailyNote = useCallback(async (journalDate?: string, _locale?: string): Promise<DailyNoteResponse> => {
+    const response = await api.post<DailyNoteResponse>('/api/notes/daily', journalDate ? { date: journalDate } : {});
+    return response.data;
+  }, []);
+
+  const getJournalDates = useCallback(async (month: string): Promise<string[]> => {
+    const response = await api.get<string[]>('/api/notes/journal-dates', { params: { month } });
+    return response.data;
+  }, []);
+
+  const getAdjacentJournalNotes = useCallback(async (journalDate: string): Promise<JournalAdjacentResponse> => {
+    const response = await api.get<JournalAdjacentResponse>('/api/notes/daily/adjacent', { params: { date: journalDate } });
+    return response.data;
+  }, []);
+
+  return {
+    notes,
+    total,
+    loading,
+    error,
+    fetchNotes,
+    createNote,
+    updateNote,
+    deleteNote,
+    getNote,
+    createDailyNote,
+    getJournalDates,
+    getAdjacentJournalNotes,
+  };
 }

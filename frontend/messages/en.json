@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "newNote": "New Note",
+    "todayNote": "Today",
     "settings": "Settings",
     "tasks": "Tasks",
     "calendar": "Calendar",
@@ -129,6 +130,13 @@
     "badgeTasks": "{count, plural, one {# task} other {# tasks}}",
     "badgeEvents": "{count, plural, one {# event} other {# events}}",
     "badgeSecrets": "{count, plural, one {# secret} other {# secrets}}"
+  },
+  "journal": {
+    "badge": "Journal",
+    "prev": "Prev",
+    "next": "Next",
+    "openSelected": "Open journal for selected day",
+    "createSelected": "Create journal for selected day"
   },
   "secrets": {
     "secrets": "Secrets",

@@ -13,7 +13,7 @@ import { useSecrets } from '@/hooks/useSecrets';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useTasks } from '@/hooks/useTasks';
-import { Attachment, Bookmark, CalendarEvent, Note } from '@/lib/types';
+import { Attachment, Bookmark, CalendarEvent, JournalAdjacentResponse, Note } from '@/lib/types';
 import { buildVirtualBookmarks } from '@/lib/virtualBookmarks';
 import NoteEditor from '@/components/notes/NoteEditor';
 import NoteFieldsPanel from '@/components/notes/NoteFieldsPanel';
@@ -27,7 +27,7 @@ import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CollapsedSection from '@/components/common/CollapsedSection';
-import { ArchiveIcon, ArrowDownTrayIcon, CalendarIcon, ChevronDownIcon, DocumentTextIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, RestoreIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
+import { ArchiveIcon, ArrowDownTrayIcon, ArrowLeftIcon, ArrowRightIcon, CalendarIcon, ChevronDownIcon, DocumentTextIcon, EyeIcon, FolderIcon, KeyIcon, LinkIcon, LockClosedIcon, PaperclipIcon, PaperclipUploadIcon, PencilIcon, RestoreIcon, ShareIcon, TrashIcon, XMarkIcon } from '@/components/common/Icons';
 import ShareModal from '@/components/notes/ShareModal';
 import NotePageModals from '@/components/notes/NotePageModals';
 import AttachmentPreviewModal from '@/components/attachments/AttachmentPreviewModal';
@@ -60,11 +60,12 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const tTasks = useTranslations('tasks');
   const tEvents = useTranslations('events');
   const tCommon = useTranslations('common');
+  const tJournal = useTranslations('journal');
   const locale = useLocale();
   const router = useRouter();
   const noteId = parseInt(params.id);
 
-  const { getNote, updateNote, deleteNote } = useNotes();
+  const { getNote, updateNote, deleteNote, getAdjacentJournalNotes } = useNotes();
   const { tags: availableTagsFromHook, fetchTags, createTag } = useTags();
   const { categories, fetchCategories, flattenCategories } = useCategories();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -118,6 +119,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [archivedTasksCount, setArchivedTasksCount] = useState<number | null>(null);
   const [archivedSecretsCount, setArchivedSecretsCount] = useState<number | null>(null);
   const [archivedBookmarksCount, setArchivedBookmarksCount] = useState<number | null>(null);
+  const [journalAdjacent, setJournalAdjacent] = useState<JournalAdjacentResponse | null>(null);
   const eventPanelAddRef = useRef<(() => void) | null>(null); // MutableRefObject by default
 
   const {
@@ -197,6 +199,16 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     };
     load();
   }, [noteId]);
+
+  useEffect(() => {
+    if (!note?.journal_date) {
+      setJournalAdjacent(null);
+      return;
+    }
+    getAdjacentJournalNotes(note.journal_date)
+      .then(setJournalAdjacent)
+      .catch(() => setJournalAdjacent(null));
+  }, [getAdjacentJournalNotes, note?.journal_date]);
 
   useEffect(() => {
     if (loading) return;
@@ -385,9 +397,38 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       )}
 
       <div className="flex items-start justify-between gap-2 sm:gap-4">
-        <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">{note.title}</h1>
-          <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">{note.title}</h1>
+            <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
+          </div>
+          {note.journal_date && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
+                {`📔 ${tJournal('badge')} — ${note.journal_date}`}
+              </span>
+              {journalAdjacent?.prev_id && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/${locale}/notes/${journalAdjacent.prev_id}`)}
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-orange-300 hover:text-orange-700 dark:border-gray-700 dark:text-gray-300 dark:hover:border-orange-500 dark:hover:text-orange-300"
+                >
+                  <ArrowLeftIcon className="w-3 h-3" />
+                  {tJournal('prev')}
+                </button>
+              )}
+              {journalAdjacent?.next_id && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/${locale}/notes/${journalAdjacent.next_id}`)}
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-orange-300 hover:text-orange-700 dark:border-gray-700 dark:text-gray-300 dark:hover:border-orange-500 dark:hover:text-orange-300"
+                >
+                  {tJournal('next')}
+                  <ArrowRightIcon className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="sm" onClick={() => setShowShareModal(true)} title="Share">

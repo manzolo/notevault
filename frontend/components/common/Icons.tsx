@@ -226,6 +226,33 @@ export function CalendarIcon({ className = base }: IconProps) {
   );
 }
 
+export function BookOpenIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M12 6.25A5.25 5.25 0 0017.25 11.5V19a1 1 0 01-1.447.894L12 18l-3.803 1.894A1 1 0 016.75 19v-7.5A5.25 5.25 0 0012 6.25z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M7.5 5.75h9A2.75 2.75 0 0119.25 8.5v9.75M7.5 5.75A2.75 2.75 0 004.75 8.5v9.75M7.5 5.75V18.5" />
+    </svg>
+  );
+}
+
+export function ArrowLeftIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+export function ArrowRightIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
 export function DocumentTextIcon({ className = base }: IconProps) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">

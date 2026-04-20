@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.models.enums import SecretType
 
 
@@ -22,6 +22,8 @@ class SecretArchiveUpdate(BaseModel):
 
 
 class SecretResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     secret_type: SecretType
@@ -34,10 +36,6 @@ class SecretResponse(BaseModel):
     archive_note: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
 
 class SecretRevealResponse(BaseModel):
     id: int

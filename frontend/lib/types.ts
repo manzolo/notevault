@@ -72,6 +72,7 @@ export interface Note {
   is_archived: boolean;
   user_id: number;
   category_id: number | null;
+  journal_date?: string | null;
   tags: Tag[];
   created_at: string;
   updated_at: string;
@@ -79,6 +80,18 @@ export interface Note {
   task_count?: number;
   event_count?: number;
   secret_count?: number;
+}
+
+export interface DailyNoteResponse {
+  note_id: number;
+  created: boolean;
+}
+
+export interface JournalAdjacentResponse {
+  prev_date?: string | null;
+  prev_id?: number | null;
+  next_date?: string | null;
+  next_id?: number | null;
 }
 
 export interface NoteListResponse {

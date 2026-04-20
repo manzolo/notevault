@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserCreate(BaseModel):
@@ -15,6 +15,8 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     username: str
     email: str
@@ -24,10 +26,6 @@ class UserResponse(BaseModel):
     telegram_chat_id: Optional[str] = None
     notification_email: Optional[str] = None
     created_at: datetime
-
-    class Config:
-        from_attributes = True
-
 
 class UserNotificationUpdate(BaseModel):
     telegram_chat_id: Optional[str] = None

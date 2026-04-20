@@ -1,10 +1,12 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.schemas.tag import TagResponse
 
 
 class AttachmentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     note_id: int
     filename: str
@@ -18,10 +20,6 @@ class AttachmentResponse(BaseModel):
     tags: List[TagResponse] = []
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
 
 class AttachmentTagUpdate(BaseModel):
     tag_ids: List[int] = []

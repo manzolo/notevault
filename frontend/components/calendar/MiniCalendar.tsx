@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { useAllEvents } from '@/hooks/useEvents';
 import { useAllTasks } from '@/hooks/useTasks';
 import { useFieldDates } from '@/hooks/useFieldDates';
+import { useJournalDates } from '@/hooks/useJournalDates';
+import { useNotes } from '@/hooks/useNotes';
 import { CalendarEventWithNote, FieldDateEntry, TaskWithNote } from '@/lib/types';
 
 interface MiniCalendarProps {
@@ -34,6 +37,9 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
   const tEvents = useTranslations('events');
   const tTasks = useTranslations('tasks');
   const tFields = useTranslations('fields');
+  const tJournal = useTranslations('journal');
+  const locale = useLocale();
+  const router = useRouter();
 
   const today = new Date();
   const [current, setCurrent] = useState(
@@ -51,10 +57,14 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
   const { events, fetchEvents } = useAllEvents(monthStr);
   const { tasks: allTasks, fetchAllTasks } = useAllTasks();
   const { fieldDates, fetchFieldDates } = useFieldDates(monthStr);
+  const { journalDates, fetchJournalDates } = useJournalDates(monthStr);
+  const { createDailyNote } = useNotes();
+  const [journalActionLoading, setJournalActionLoading] = useState(false);
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
   useEffect(() => { fetchAllTasks(); }, [fetchAllTasks]);
   useEffect(() => { fetchFieldDates(); }, [fetchFieldDates]);
+  useEffect(() => { fetchJournalDates(); }, [fetchJournalDates]);
 
   const tasks = allTasks.filter((task: TaskWithNote) => {
     if (!task.due_date) return false;
@@ -118,18 +128,31 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
   const isToday = (day: number) =>
     today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
 
-  const isSelected = (day: number) => {
-    if (!selectedDate) return false;
-    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return selectedDate === iso;
-  };
+  const toISODate = (d: number) =>
+    `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+  const isSelected = (day: number) => selectedDate === toISODate(day);
+
+  const journalOnDay = (day: number) => journalDates.includes(toISODate(day));
+  const selectedDayHasJournal = selectedDate ? journalDates.includes(selectedDate) : false;
 
   const handleDayClick = (day: number) => {
-    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const iso = toISODate(day);
     if (selectedDate === iso) {
-      onDayClick(null); // deselect
+      onDayClick(null);
     } else {
       onDayClick(iso);
+    }
+  };
+
+  const handleSelectedJournalAction = async () => {
+    if (!selectedDate || journalActionLoading) return;
+    setJournalActionLoading(true);
+    try {
+      const daily = await createDailyNote(selectedDate, locale);
+      router.push(`/${locale}/notes/${daily.note_id}`);
+    } finally {
+      setJournalActionLoading(false);
     }
   };
 
@@ -257,9 +280,14 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
                 const hasEvent = dayEvents.length > 0;
                 const hasTask = dayTasks.length > 0;
                 const hasFieldDate = dayFdates.length > 0;
+                const hasJournal = journalOnDay(day);
                 const today_ = isToday(day);
                 const selected = isSelected(day);
-                const tooltip = (hasEvent || hasTask || hasFieldDate) ? dayTooltip(dayEvents, dayTasks, dayFdates) : undefined;
+                const tooltip = (hasEvent || hasTask || hasFieldDate)
+                  ? dayTooltip(dayEvents, dayTasks, dayFdates)
+                  : hasJournal
+                  ? tJournal('badge')
+                  : undefined;
 
                 return (
                   <button
@@ -275,7 +303,7 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
                     }`}
                   >
                     <span className="text-[11px] leading-none font-medium">{day}</span>
-                    {(hasEvent || hasTask || hasFieldDate) && (
+                    {(hasEvent || hasTask || hasFieldDate || hasJournal) && (
                       <div className="flex gap-0.5 mt-0.5">
                         {hasEvent && (
                           <span className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-indigo-400 dark:bg-indigo-500'}`} />
@@ -286,6 +314,9 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
                         {hasFieldDate && (
                           <span className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-emerald-500 dark:bg-emerald-400'}`} />
                         )}
+                        {hasJournal && (
+                          <span data-testid={`journal-dot-${day}`} className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-cyan-500 dark:bg-cyan-400'}`} />
+                        )}
                       </div>
                     )}
                   </button>
@@ -295,7 +326,7 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
           </div>
 
           {/* Legend */}
-          {(events.length > 0 || tasks.length > 0 || fieldDates.length > 0) && (
+          {(events.length > 0 || tasks.length > 0 || fieldDates.length > 0 || journalDates.length > 0) && (
             <div className="flex items-center gap-3 mt-2 px-0.5 flex-wrap">
               {events.length > 0 && (
                 <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
@@ -315,7 +346,28 @@ export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarP
                   {tFields('fieldDates')}
                 </span>
               )}
+              {journalDates.length > 0 && (
+                <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 inline-block" />
+                  {tJournal('badge')}
+                </span>
+              )}
             </div>
+          )}
+          {selectedDate && (
+            <button
+              type="button"
+              onClick={handleSelectedJournalAction}
+              disabled={journalActionLoading}
+              className="mt-2 w-full rounded-lg border border-cyan-200 bg-cyan-50 px-2.5 py-2 text-left text-[11px] font-medium text-cyan-800 transition-colors hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-cyan-900/60 dark:bg-cyan-950/30 dark:text-cyan-300 dark:hover:bg-cyan-950/50"
+            >
+              <span className="block text-[10px] uppercase tracking-wide text-cyan-600 dark:text-cyan-400">
+                {selectedDate}
+              </span>
+              <span className="block mt-0.5">
+                {selectedDayHasJournal ? tJournal('openSelected') : tJournal('createSelected')}
+              </span>
+            </button>
           )}
         </>
       )}
