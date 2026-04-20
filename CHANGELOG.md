@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.16.4] - 2026-04-20
+### Added
+- Codex local release workflow: added `.codex/skills/release-bump/SKILL.md` plus `.codex/commands/bump.md` as a project-local wrapper for patch/minor/major release execution.
+
+### Fixed
+- Calendar and MiniCalendar: tasks with a `due_date` are now hidden once marked as completed, so done tasks no longer appear in calendar views.
+- Calendar export regression coverage: added backend/frontend tests to ensure completed tasks stay excluded from calendar-related surfaces.
+
 ## [0.16.3] - 2026-04-20
 ### Added
 - Journal tree view: new `GET /api/notes/journal-tree` endpoint returns journal entries organized hierarchically by year/month/day for chronological browsing.
@@ -254,4 +262,3 @@ docker compose exec db psql -U notevault -c "SELECT version();" | grep PostgreSQ
 ## [0.12.5] - 2026-04-18
 ### Changed
 - Updated bump release command with improved workflow
-
