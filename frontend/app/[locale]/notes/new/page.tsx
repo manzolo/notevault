@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { useNotes } from '@/hooks/useNotes';
@@ -13,6 +13,8 @@ export default function NewNotePage() {
   const t = useTranslations('notes');
   const locale = useLocale();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialCategoryId = searchParams.get('category_id') ? parseInt(searchParams.get('category_id')!) : null;
   const { createNote } = useNotes();
   const { tags, fetchTags, createTag } = useTags();
   const { fetchCategories, flattenCategories, categories } = useCategories();
@@ -41,6 +43,7 @@ export default function NewNotePage() {
           availableTags={tags}
           onCreateTag={createTag}
           availableCategories={flattenCategories(categories)}
+          initialCategoryId={initialCategoryId}
         />
       </div>
     </div>

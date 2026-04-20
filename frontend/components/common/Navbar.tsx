@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from './ThemeProvider';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -57,9 +57,19 @@ export default function Navbar() {
   const t = useTranslations('nav');
   const locale = useLocale();
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleNewNote = (onNavigate?: () => void) => {
+    const catId = typeof window !== 'undefined' ? sessionStorage.getItem('dashboard_categoryId') : null;
+    const href = catId && catId !== 'null'
+      ? `/${locale}/notes/new?category_id=${catId}`
+      : `/${locale}/notes/new`;
+    onNavigate?.();
+    router.push(href);
+  };
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -113,10 +123,10 @@ export default function Navbar() {
                     <HomeIcon className="w-3.5 h-3.5" />
                     {t('dashboard')}
                   </Link>
-                  <Link href={`/${locale}/notes/new`} className={navLinkClass('notes/new')}>
+                  <button type="button" onClick={() => handleNewNote()} className={navLinkClass('notes/new')}>
                     <PlusIcon className="w-3.5 h-3.5" />
                     {t('newNote')}
-                  </Link>
+                  </button>
                   <Link href={`/${locale}/tasks`} className={navLinkClass('tasks')}>
                     <CheckSquareIcon className="w-3.5 h-3.5" />
                     {t('tasks')}
@@ -201,10 +211,10 @@ export default function Navbar() {
                   <HomeIcon className="w-4 h-4 shrink-0" />
                   {t('dashboard')}
                 </Link>
-                <Link href={`/${locale}/notes/new`} className={navLinkClass('notes/new', true)} onClick={closeMenu}>
+                <button type="button" onClick={() => handleNewNote(closeMenu)} className={navLinkClass('notes/new', true)}>
                   <PlusIcon className="w-4 h-4 shrink-0" />
                   {t('newNote')}
-                </Link>
+                </button>
                 <Link href={`/${locale}/tasks`} className={navLinkClass('tasks', true)} onClick={closeMenu}>
                   <CheckSquareIcon className="w-4 h-4 shrink-0" />
                   {t('tasks')}

@@ -300,9 +300,12 @@ export default function DashboardPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
             {t('myNotes')}
           </h1>
-          <Link href={`/${locale}/notes/new`}>
-            <Button variant="secondary"><PlusIcon />{t('newNote')}</Button>
-          </Link>
+          <Button variant="secondary" onClick={() => {
+            const href = selectedCategoryId != null
+              ? `/${locale}/notes/new?category_id=${selectedCategoryId}`
+              : `/${locale}/notes/new`;
+            router.push(href);
+          }}><PlusIcon />{t('newNote')}</Button>
         </div>
 
         {/* Search */}

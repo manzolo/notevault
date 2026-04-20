@@ -199,9 +199,15 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   }, [noteId]);
 
   useEffect(() => {
-    if (!bodyRef.current) return;
-    setBodyOverflows(bodyRef.current.scrollHeight > BODY_COLLAPSED_HEIGHT);
-  }, [note?.content]);
+    if (loading) return;
+    const el = bodyRef.current;
+    if (!el) return;
+    const check = () => setBodyOverflows(el.scrollHeight > BODY_COLLAPSED_HEIGHT);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loading, note?.content]);
 
   // ESC key: close preview overlays in cascade
   useEffect(() => {
@@ -418,8 +424,8 @@ export default function NotePage({ params }: { params: { id: string; locale: str
           {note.content && (
             <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-indigo-500 border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
               <div
-                className="relative overflow-hidden"
-                style={{ maxHeight: bodyExpanded || !bodyOverflows ? undefined : BODY_COLLAPSED_HEIGHT }}
+                className={`relative${bodyOverflows && !bodyExpanded ? ' overflow-hidden' : ''}`}
+                style={{ maxHeight: bodyOverflows && !bodyExpanded ? BODY_COLLAPSED_HEIGHT : undefined }}
               >
                 <div ref={bodyRef} className="prose prose-sm max-w-none dark:prose-invert">
                   <ReactMarkdown
