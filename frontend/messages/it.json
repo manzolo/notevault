@@ -257,7 +257,8 @@
     "setDueDate": "Imposta scadenza",
     "editDueDate": "Modifica scadenza",
     "reminders": "Promemoria",
-    "reminderNoDueDate": "Imposta una scadenza per abilitare i promemoria."
+    "reminderNoDueDate": "Imposta una scadenza per abilitare i promemoria.",
+    "editTitle": "Clicca per modificare"
   },
   "search": {
     "placeholder": "Cerca note...",

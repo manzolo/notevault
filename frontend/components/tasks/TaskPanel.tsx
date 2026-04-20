@@ -249,9 +249,12 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
 }) {
   const tc = useTranslations('common');
   const t = useTranslations('tasks');
-  const { confirmInput, dialog: archiveDialog } = useConfirm();
+  const { confirm, confirmInput, dialog: confirmDialog } = useConfirm();
   const [toggling, setToggling] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(task.title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const reminderRef = useRef<TaskRemindersSectionHandle>(null);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
@@ -277,9 +280,34 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
     if (confirmed) onArchive(value || undefined);
   };
 
+  const handleDelete = async () => {
+    const ok = await confirm(tc('deleteConfirm'));
+    if (!ok) return;
+    await onDelete(task.id);
+  };
+
+  const startEditTitle = () => {
+    setTitleDraft(task.title);
+    setEditingTitle(true);
+    setTimeout(() => titleInputRef.current?.select(), 0);
+  };
+
+  const commitEditTitle = async () => {
+    const trimmed = titleDraft.trim();
+    setEditingTitle(false);
+    if (trimmed && trimmed !== task.title) {
+      await onUpdate(task.id, { title: trimmed });
+    }
+  };
+
+  const cancelEditTitle = () => {
+    setEditingTitle(false);
+    setTitleDraft(task.title);
+  };
+
   return (
     <>
-    {archiveDialog}
+    {confirmDialog}
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
@@ -304,9 +332,28 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
           disabled={toggling}
           className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 accent-indigo-500 cursor-pointer flex-shrink-0 mt-0.5"
         />
-        <span className={`flex-1 text-sm leading-snug ${task.is_done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
-          {task.title}
-        </span>
+        {editingTitle ? (
+          <input
+            ref={titleInputRef}
+            type="text"
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onBlur={commitEditTitle}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); commitEditTitle(); }
+              if (e.key === 'Escape') { e.preventDefault(); cancelEditTitle(); }
+            }}
+            className="flex-1 text-sm leading-snug bg-transparent border-b border-indigo-400 dark:border-indigo-500 outline-none text-gray-800 dark:text-gray-200 py-0"
+          />
+        ) : (
+          <span
+            onClick={!task.is_done ? startEditTitle : undefined}
+            className={`flex-1 text-sm leading-snug ${task.is_done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200 cursor-text hover:text-indigo-600 dark:hover:text-indigo-400'}`}
+            title={!task.is_done ? t('editTitle') : undefined}
+          >
+            {task.title}
+          </span>
+        )}
       </div>
 
       {/* Bottom row: due date + actions (indented past checkbox) */}
@@ -353,7 +400,7 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, onArchive }: {
         {!task.is_done && (
           <button
             type="button"
-            onClick={() => onDelete(task.id)}
+            onClick={handleDelete}
             className="sm:opacity-0 sm:group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
           >
             <TrashIcon className="h-3.5 w-3.5" />

@@ -257,7 +257,8 @@
     "setDueDate": "Set due date",
     "editDueDate": "Edit due date",
     "reminders": "Reminders",
-    "reminderNoDueDate": "Set a due date to enable reminders."
+    "reminderNoDueDate": "Set a due date to enable reminders.",
+    "editTitle": "Click to edit"
   },
   "search": {
     "placeholder": "Search notes...",
