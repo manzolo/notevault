@@ -13,7 +13,6 @@ import { CalendarEventWithNote, FieldDateEntry, TaskWithNote } from '@/lib/types
 interface MiniCalendarProps {
   selectedDate: string | null; // YYYY-MM-DD or null
   onDayClick: (date: string | null) => void;
-  refreshKey?: number;
 }
 
 function buildGrid(year: number, month: number): (number | null)[][] {
@@ -33,7 +32,7 @@ function buildGrid(year: number, month: number): (number | null)[][] {
   return grid;
 }
 
-export default function MiniCalendar({ selectedDate, onDayClick, refreshKey = 0 }: MiniCalendarProps) {
+export default function MiniCalendar({ selectedDate, onDayClick }: MiniCalendarProps) {
   const t = useTranslations('calendar');
   const tEvents = useTranslations('events');
   const tTasks = useTranslations('tasks');
@@ -62,10 +61,10 @@ export default function MiniCalendar({ selectedDate, onDayClick, refreshKey = 0 
   const { createDailyNote } = useNotes();
   const [journalActionLoading, setJournalActionLoading] = useState(false);
 
-  useEffect(() => { fetchEvents(); }, [fetchEvents, refreshKey]);
-  useEffect(() => { fetchAllTasks(); }, [fetchAllTasks, refreshKey]);
-  useEffect(() => { fetchFieldDates(); }, [fetchFieldDates, refreshKey]);
-  useEffect(() => { fetchJournalDates(); }, [fetchJournalDates, refreshKey]);
+  useEffect(() => { fetchEvents(); }, [fetchEvents]);
+  useEffect(() => { fetchAllTasks(); }, [fetchAllTasks]);
+  useEffect(() => { fetchFieldDates(); }, [fetchFieldDates]);
+  useEffect(() => { fetchJournalDates(); }, [fetchJournalDates]);
 
   const tasks = allTasks.filter((task: TaskWithNote) => {
     if (!task.due_date) return false;
@@ -316,7 +315,7 @@ export default function MiniCalendar({ selectedDate, onDayClick, refreshKey = 0 
                           <span className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-emerald-500 dark:bg-emerald-400'}`} />
                         )}
                         {hasJournal && (
-                          <span data-testid={`journal-dot-${day}`} className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-rose-500 dark:bg-rose-400'}`} />
+                          <span data-testid={`journal-dot-${day}`} className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-cyan-500 dark:bg-cyan-400'}`} />
                         )}
                       </div>
                     )}
@@ -349,7 +348,7 @@ export default function MiniCalendar({ selectedDate, onDayClick, refreshKey = 0 
               )}
               {journalDates.length > 0 && (
                 <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 inline-block" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 inline-block" />
                   {tJournal('badge')}
                 </span>
               )}
@@ -360,9 +359,9 @@ export default function MiniCalendar({ selectedDate, onDayClick, refreshKey = 0 
               type="button"
               onClick={handleSelectedJournalAction}
               disabled={journalActionLoading}
-              className="mt-2 w-full rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-2 text-left text-[11px] font-medium text-rose-800 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50"
+              className="mt-2 w-full rounded-lg border border-cyan-200 bg-cyan-50 px-2.5 py-2 text-left text-[11px] font-medium text-cyan-800 transition-colors hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-cyan-900/60 dark:bg-cyan-950/30 dark:text-cyan-300 dark:hover:bg-cyan-950/50"
             >
-              <span className="block text-[10px] uppercase tracking-wide text-rose-600 dark:text-rose-400">
+              <span className="block text-[10px] uppercase tracking-wide text-cyan-600 dark:text-cyan-400">
                 {selectedDate}
               </span>
               <span className="block mt-0.5">

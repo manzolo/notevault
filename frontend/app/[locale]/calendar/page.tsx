@@ -221,7 +221,7 @@ export default function CalendarPage() {
                   {hasJournal && day && (
                     <button
                       onClick={() => handleJournalOpen(toISODate(day))}
-                      className="w-full text-left rounded border-l-2 border-rose-500 px-1.5 py-0.5 bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 overflow-hidden shadow-sm"
+                      className="w-full text-left rounded border-l-2 border-cyan-500 px-1.5 py-0.5 bg-cyan-100 dark:bg-cyan-900/40 text-cyan-800 dark:text-cyan-300 overflow-hidden shadow-sm"
                       title={`${tJournal("badge")} — ${toISODate(day)}`}
                     >
                       <div className="flex items-center gap-1 text-xs truncate font-medium">
@@ -303,7 +303,7 @@ export default function CalendarPage() {
           )}
           {journalDates.length > 0 && (
             <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 dark:bg-rose-400 inline-block" />
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 dark:bg-cyan-400 inline-block" />
               {tJournal("badge")}
             </span>
           )}
