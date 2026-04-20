@@ -76,7 +76,11 @@ In production, browser traffic hits Nginx Proxy Manager → frontend:3000. The f
 
 **Tags:** M2M via `note_tags`, `attachment_tags`, `bookmark_tags` join tables. Tags are per-user (unique on `name + user_id`). `POST /api/tags` is idempotent (returns existing tag if name exists). Filter notes by tag with `GET /api/notes?tag_id=N` (subquery, no JOIN to avoid duplicates).
 
-**Daily Journal:** `Note.journal_date` (DATE, nullable) with unique constraint per user. `POST /api/notes/daily` is idempotent — returns existing note if one exists for that date, otherwise creates it inside auto-generated `YYYY/YYYY-MM` category folders. `GET /api/notes/journal-dates?month=YYYY-MM` returns ISO dates with journal entries. `GET /api/notes/daily/adjacent?date=YYYY-MM-DD` returns prev/next journal note IDs (two queries run in parallel via `asyncio.gather`).
+**Daily Journal:** `Note.journal_date` (DATE, nullable) with unique constraint per user. `POST /api/notes/daily` is idempotent — accepts `date` (optional, defaults to today) and `locale` (used for localized title format: e.g., "Lunedì 20 Aprile 2026" for IT). Creates note inside auto-generated `YYYY/YYYY-MM` category folders. `GET /api/notes/journal-dates?month=YYYY-MM` returns ISO dates with journal entries. `GET /api/notes/daily/adjacent?date=YYYY-MM-DD` returns prev/next journal note IDs (queries parallelized via `asyncio.gather`). `GET /api/notes/journal-tree` returns hierarchical year/month/day structure for tree view navigation.
+
+**Journal Title Formatting:** Controlled by `JOURNAL_NOTE_TITLE_FORMAT` env var. Defaults to `"iso"` (e.g., `2026-04-20`). Set to `"localized_long"` for language-aware formatting. Supports template strings: `{date}`, `{weekday}`, `{month}`, `{month_number}`, `{day}`, `{year}`.
+
+**Calendar Export Preferences:** User model has `ical_include_events`, `ical_include_tasks`, `ical_include_journal`, `ical_include_field_dates` (migration 038). `PATCH /api/auth/me/calendar-export` endpoint allows granular toggle of export categories (default True for backward compat).
 
 **Secrets encryption:** `MASTER_KEY` env var → `master_key_bytes` (32B) → `AESGCM`. Changing `MASTER_KEY` makes all existing secrets unreadable.
 

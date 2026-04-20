@@ -54,6 +54,8 @@ NoteVault is a **self-hosted, multi-user knowledge base** that combines a WYSIWY
 | **Bookmarks** | Per-note URL bookmarks with title/description, archive, drag-to-reorder; virtual bookmarks from secrets/events |
 | **Technical Fields** | Structured key→value fields grouped by category; sub-fields: date, link, price, note, image |
 | **Notifications** | In-app bell for task/event reminders; snooze with preset or custom duration |
+| **Daily Journal** | Per-day journal notes with auto folder hierarchy, mini-calendar with date picker, localized titles (e.g., "Lunedì 20 Aprile 2026"), prev/next navigation, tree view browser |
+| **Calendar Export** | iCal export with granular preferences: toggle events, tasks, journal entries, field dates inclusion |
 | **Filters** | Tag, date range, folder recursive, pinned-only, archived-only |
 | **Wiki-links** | `[[Note title]]` bidirectional links with autocomplete |
 | **Sharing** | Public or user-restricted share links, per-section granularity |
