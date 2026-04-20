@@ -26,7 +26,7 @@ test.describe('Notes', () => {
   // ── Create note ───────────────────────────────────────────────────────────
 
   test('create a note and see it in the list', async ({ page }) => {
-    await page.click('a:has-text("Nuova Nota"), a:has-text("New Note")');
+    await page.click('a:has-text("Nuova Nota"), a:has-text("New Note"), button:has-text("Nuova Nota"), button:has-text("New Note")');
     await page.waitForURL(/\/it\/notes\/new/);
 
     await page.fill('input[id]', 'E2E Test Note');

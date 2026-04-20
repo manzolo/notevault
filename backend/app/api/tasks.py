@@ -1,4 +1,5 @@
 from typing import List, Optional
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -113,13 +114,18 @@ async def update_task(
         task.is_archived = data.is_archived
         task.archive_note = data.archive_note if data.is_archived else None
 
-    # When due_date changes, reset all reminders so scheduler re-fires them
+    # When due_date changes, reset reminders whose trigger window is still in
+    # the future; mark the rest as skipped so the scheduler doesn't fire them
+    # retrospectively (e.g. task rescheduled after the reminder window passed).
     if due_date_changed:
-        await db.execute(
-            update(TaskReminder)
-            .where(TaskReminder.task_id == task.id)
-            .values(notified_at=None)
-        )
+        now = datetime.now(timezone.utc)
+        result = await db.execute(select(TaskReminder).where(TaskReminder.task_id == task.id))
+        for tr in result.scalars().all():
+            if task.due_date is None:
+                tr.notified_at = None
+            else:
+                trigger_time = task.due_date - timedelta(minutes=tr.minutes_before)
+                tr.notified_at = None if trigger_time > now else now
 
     await db.flush()
     await db.refresh(task)
