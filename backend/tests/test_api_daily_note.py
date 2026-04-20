@@ -96,6 +96,34 @@ async def test_journal_dates_filters_by_month_and_user(client, auth_headers, sec
     assert response.json() == ["2026-04-01", "2026-04-15"]
 
 
+async def test_journal_tree_groups_notes_by_year_month_day(client, auth_headers):
+    first = await client.post("/api/notes/daily", json={"date": "2026-04-20"}, headers=auth_headers)
+    second = await client.post("/api/notes/daily", json={"date": "2026-04-19"}, headers=auth_headers)
+    await client.post("/api/notes/daily", json={"date": "2025-12-31"}, headers=auth_headers)
+
+    response = await client.get("/api/notes/journal-tree", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data[0]["year"] == 2026
+    assert data[0]["months"][0]["month"] == "2026-04"
+    assert data[0]["months"][0]["days"][0]["date"] == "2026-04-20"
+    assert data[0]["months"][0]["days"][0]["note_id"] == first.json()["note_id"]
+    assert data[0]["months"][0]["days"][1]["date"] == "2026-04-19"
+    assert data[0]["months"][0]["days"][1]["note_id"] == second.json()["note_id"]
+    assert data[1]["year"] == 2025
+
+
+async def test_list_notes_can_filter_by_journal_month(client, auth_headers):
+    await client.post("/api/notes/daily", json={"date": "2026-04-20"}, headers=auth_headers)
+    await client.post("/api/notes/daily", json={"date": "2026-04-10"}, headers=auth_headers)
+    await client.post("/api/notes/daily", json={"date": "2026-05-01"}, headers=auth_headers)
+
+    response = await client.get("/api/notes?journal_month=2026-04", headers=auth_headers)
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert [item["journal_date"] for item in items] == ["2026-04-20", "2026-04-10"]
+
+
 async def test_journal_date_unique_per_user(db_session, client, auth_headers):
     db_session.add(Note(title="One", content="", user_id=1, journal_date=date(2026, 4, 20)))
     await db_session.flush()

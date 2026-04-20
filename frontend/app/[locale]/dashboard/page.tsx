@@ -17,7 +17,7 @@ import Pagination from '@/components/common/Pagination';
 import Button from '@/components/common/Button';
 import { PlusIcon, FolderIcon, CalendarIcon, ChevronDownIcon, BookOpenIcon } from '@/components/common/Icons';
 import api from '@/lib/api';
-import { MatchingAttachment, MatchingTask, SearchResponse } from '@/lib/types';
+import { JournalTreeYear, MatchingAttachment, MatchingTask, SearchResponse } from '@/lib/types';
 import { dateToLocalStart, dateToLocalEnd } from '@/lib/utils';
 import AttachmentPreviewModal from '@/components/attachments/AttachmentPreviewModal';
 
@@ -29,7 +29,7 @@ export default function DashboardPage() {
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { notes, total, loading, fetchNotes, deleteNote, updateNote, createDailyNote } = useNotes();
+  const { notes, total, loading, fetchNotes, deleteNote, updateNote, createDailyNote, getJournalTree } = useNotes();
   const { tags, fetchTags } = useTags();
   const { categories, fetchCategories, createCategory, updateCategory, deleteCategory } = useCategories();
   const [page, setPage] = useState(1);
@@ -54,6 +54,11 @@ export default function DashboardPage() {
   const [searchPage, setSearchPage] = useState(1);
   const [attachPreview, setAttachPreview] = useState<{ noteId: number; attachment: MatchingAttachment } | null>(null);
   const [journalLoading, setJournalLoading] = useState(false);
+  const [journalTree, setJournalTree] = useState<JournalTreeYear[]>([]);
+  const [selectedJournalKey, setSelectedJournalKey] = useState<string | null>(null);
+  const [selectedJournalYear, setSelectedJournalYear] = useState<number | null>(null);
+  const [selectedJournalMonth, setSelectedJournalMonth] = useState<string | null>(null);
+  const [selectedJournalDate, setSelectedJournalDate] = useState<string | null>(null);
 
   // Mobile sidebar accordion state
   const [mobileFoldersOpen, setMobileFoldersOpen] = useState(false);
@@ -76,8 +81,9 @@ export default function DashboardPage() {
     if (user) {
       fetchTags();
       fetchCategories();
+      getJournalTree().then(setJournalTree).catch(() => setJournalTree([]));
     }
-  }, [user]);
+  }, [user, fetchTags, fetchCategories, getJournalTree]);
 
   useEffect(() => {
     if (user) {
@@ -85,9 +91,23 @@ export default function DashboardPage() {
       const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
       // bypassCategoryFilter: pass undefined so useNotes skips unfiled filter (shows all folders)
       const catId = bypassCategoryFilter ? undefined : selectedCategoryId;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive).then(() => {});
+      fetchNotes(
+        page,
+        PER_PAGE,
+        selectedTagId,
+        after,
+        before,
+        catId,
+        pinnedOnly,
+        archivedOnly,
+        undefined,
+        recursive,
+        selectedJournalYear,
+        selectedJournalMonth,
+        selectedJournalDate,
+      ).then(() => {});
     }
-  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly, archivedOnly, recursive, bypassCategoryFilter]);
+  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly, archivedOnly, recursive, bypassCategoryFilter, selectedJournalYear, selectedJournalMonth, selectedJournalDate, fetchNotes]);
 
   useEffect(() => {
     sessionStorage.setItem('dashboard_categoryId', String(selectedCategoryId));
@@ -105,8 +125,32 @@ export default function DashboardPage() {
   const handleCategorySelect = (categoryId: number | null) => {
     setSelectedCategoryId(categoryId);
     setBypassCategoryFilter(false);
+    setSelectedJournalKey(null);
+    setSelectedJournalYear(null);
+    setSelectedJournalMonth(null);
+    setSelectedJournalDate(null);
     if (categoryId === null) setRecursive(false);
     setPage(1);
+  };
+
+  const handleJournalSelect = (selection: {
+    key: string | null;
+    year?: number | null;
+    month?: string | null;
+    date?: string | null;
+  }) => {
+    setSelectedCategoryId(null);
+    setBypassCategoryFilter(true);
+    setRecursive(false);
+    setSelectedJournalKey(selection.key);
+    setSelectedJournalYear(selection.year ?? null);
+    setSelectedJournalMonth(selection.month ?? null);
+    setSelectedJournalDate(selection.date ?? null);
+    setPage(1);
+  };
+
+  const handleOpenJournalDay = (noteId: number) => {
+    router.push(`/${locale}/notes/${noteId}`);
   };
 
   const handleDateChange = (from: string, to: string) => {
@@ -155,9 +199,11 @@ export default function DashboardPage() {
 
   const handleDelete = async (id: number) => {
     await deleteNote(id);
+    getJournalTree().then(setJournalTree).catch(() => setJournalTree([]));
     const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
     const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
-    fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
+    const catId = bypassCategoryFilter ? undefined : selectedCategoryId;
+    fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate);
   };
 
   const handlePin = async (id: number, pinned: boolean) => {
@@ -167,7 +213,8 @@ export default function DashboardPage() {
     } else {
       const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
       const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
+      const catId = bypassCategoryFilter ? undefined : selectedCategoryId;
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate);
     }
   };
 
@@ -178,7 +225,8 @@ export default function DashboardPage() {
     } else {
       const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
       const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
+      const catId = bypassCategoryFilter ? undefined : selectedCategoryId;
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate);
     }
   };
 
@@ -266,11 +314,16 @@ export default function DashboardPage() {
     onUpdateCategory: updateCategory,
     onDeleteCategory: deleteCategory,
     onRefresh: fetchCategories,
+    journalTree,
+    selectedJournalKey,
+    onSelectJournal: handleJournalSelect,
+    onOpenJournalDay: handleOpenJournalDay,
     onDropNote: async (noteId: number, categoryId: number | null) => {
       await updateNote(noteId, { category_id: categoryId });
       const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
       const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
+      const catId = bypassCategoryFilter ? undefined : selectedCategoryId;
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate);
       fetchCategories();
     },
   };

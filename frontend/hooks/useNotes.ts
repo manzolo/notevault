@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import api from '@/lib/api';
-import { DailyNoteResponse, JournalAdjacentResponse, Note, NoteCreate, NoteUpdate, NoteListResponse } from '@/lib/types';
+import { DailyNoteResponse, JournalAdjacentResponse, JournalTreeYear, Note, NoteCreate, NoteUpdate, NoteListResponse } from '@/lib/types';
 
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -21,6 +21,9 @@ export function useNotes() {
     archivedOnly?: boolean,
     includeArchived?: boolean,
     recursive?: boolean,
+    journalYear?: number | null,
+    journalMonth?: string | null,
+    journalDate?: string | null,
   ) => {
     setLoading(true);
     setError(null);
@@ -38,6 +41,9 @@ export function useNotes() {
       if (archivedOnly) params.archived_only = true;
       if (includeArchived) params.include_archived = true;
       if (recursive) params.recursive = true;
+      if (journalYear != null) params.journal_year = journalYear;
+      if (journalMonth) params.journal_month = journalMonth;
+      if (journalDate) params.journal_date = journalDate;
       const response = await api.get<NoteListResponse>('/api/notes', { params });
       setNotes(response.data.items);
       setTotal(response.data.total);
@@ -85,6 +91,11 @@ export function useNotes() {
     return response.data;
   }, []);
 
+  const getJournalTree = useCallback(async (): Promise<JournalTreeYear[]> => {
+    const response = await api.get<JournalTreeYear[]>('/api/notes/journal-tree');
+    return response.data;
+  }, []);
+
   return {
     notes,
     total,
@@ -98,5 +109,6 @@ export function useNotes() {
     createDailyNote,
     getJournalDates,
     getAdjacentJournalNotes,
+    getJournalTree,
   };
 }

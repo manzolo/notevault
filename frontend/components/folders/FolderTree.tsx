@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Category } from '@/lib/types';
+import { Category, JournalTreeYear } from '@/lib/types';
 import {
+  BookOpenIcon,
   FolderIcon,
   FolderOpenIcon,
   ChevronRightIcon,
@@ -23,6 +24,10 @@ interface FolderTreeProps {
   onUpdateCategory: (id: number, data: { name?: string; parent_id?: number | null }) => Promise<Category>;
   onDeleteCategory: (id: number) => Promise<void>;
   onRefresh: () => void;
+  journalTree?: JournalTreeYear[];
+  selectedJournalKey?: string | null;
+  onSelectJournal?: (selection: { key: string | null; year?: number | null; month?: string | null; date?: string | null }) => void;
+  onOpenJournalDay?: (noteId: number) => void;
   onDropNote?: (noteId: number, categoryId: number | null) => Promise<void>;
   isDragging?: boolean;
 }
@@ -325,6 +330,10 @@ export default function FolderTree({
   onUpdateCategory,
   onDeleteCategory,
   onRefresh,
+  journalTree = [],
+  selectedJournalKey = null,
+  onSelectJournal,
+  onOpenJournalDay,
   onDropNote,
   isDragging = false,
 }: FolderTreeProps) {
@@ -351,6 +360,9 @@ export default function FolderTree({
   const [creatingRoot, setCreatingRoot] = useState(false);
   const [newRootName, setNewRootName] = useState('');
   const [createRootError, setCreateRootError] = useState<string | null>(null);
+  const [journalExpanded, setJournalExpanded] = useState(false);
+  const [expandedJournalYears, setExpandedJournalYears] = useState<Set<number>>(new Set());
+  const [expandedJournalMonths, setExpandedJournalMonths] = useState<Set<string>>(new Set());
 
   // Auto-expand ancestors of selected category
   useEffect(() => {
@@ -538,7 +550,7 @@ export default function FolderTree({
       {/* "All Notes" root item */}
       <div
         className={`flex items-center rounded-md transition-colors px-1 ${
-          selectedCategoryId === null
+          selectedCategoryId === null && selectedJournalKey === null
             ? 'bg-indigo-50 dark:bg-indigo-900/30'
             : dropTarget === 'root'
             ? 'bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-300 dark:ring-indigo-700'
@@ -552,11 +564,14 @@ export default function FolderTree({
         <FolderOpenIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0 mr-1" />
         <button
           className="flex-1 text-left py-1.5"
-          onClick={() => onSelect(null)}
+          onClick={() => {
+            onSelectJournal?.({ key: null });
+            onSelect(null);
+          }}
         >
           <span
             className={`text-xs ${
-              selectedCategoryId === null
+              selectedCategoryId === null && selectedJournalKey === null
                 ? 'text-indigo-700 dark:text-indigo-300 font-medium'
                 : 'text-gray-600 dark:text-gray-400'
             }`}
@@ -565,6 +580,135 @@ export default function FolderTree({
           </span>
         </button>
       </div>
+
+      {/* Virtual journal tree */}
+      {journalTree.length > 0 && (
+        <div className="mt-1">
+          <div
+            className={`flex items-center rounded-md transition-colors px-1 ${
+              selectedJournalKey?.startsWith('journal:')
+                ? 'bg-rose-50 dark:bg-rose-950/30'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            <button className="p-1 shrink-0" onClick={() => setJournalExpanded((prev) => !prev)}>
+              <ChevronRightIcon
+                className={`w-3 h-3 transition-transform ${journalExpanded ? 'rotate-90 text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'}`}
+              />
+            </button>
+            <BookOpenIcon className="w-4 h-4 text-rose-500 shrink-0 mr-1" />
+            <button
+              className="flex-1 text-left py-1.5"
+              onClick={() => {
+                setJournalExpanded((prev) => !prev);
+                onSelectJournal?.({ key: null });
+              }}
+            >
+              <span className={`text-xs ${selectedJournalKey?.startsWith('journal:') ? 'text-rose-700 dark:text-rose-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}>
+                {t('journal')}
+              </span>
+            </button>
+          </div>
+
+          {journalExpanded && (
+            <div className="mt-0.5">
+              {journalTree.map((yearNode) => {
+                const yearKey = `journal:year:${yearNode.year}`;
+                const yearExpanded = expandedJournalYears.has(yearNode.year);
+                return (
+                  <div key={yearNode.year}>
+                    <div
+                      className={`flex items-center rounded-md transition-colors ${selectedJournalKey === yearKey ? 'bg-rose-50 dark:bg-rose-950/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}
+                      style={{ paddingLeft: '18px' }}
+                    >
+                      <button
+                        className="p-1 shrink-0"
+                        onClick={() => setExpandedJournalYears((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(yearNode.year)) next.delete(yearNode.year);
+                          else next.add(yearNode.year);
+                          return next;
+                        })}
+                      >
+                        <ChevronRightIcon className={`w-3 h-3 transition-transform ${yearExpanded ? 'rotate-90 text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'}`} />
+                      </button>
+                      <button
+                        className="flex-1 text-left py-1.5"
+                        onClick={() => {
+                          setExpandedJournalYears((prev) => new Set(prev).add(yearNode.year));
+                          onSelectJournal?.({ key: yearKey, year: yearNode.year });
+                        }}
+                      >
+                        <span className={`text-xs ${selectedJournalKey === yearKey ? 'text-rose-700 dark:text-rose-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}>
+                          {yearNode.year}
+                        </span>
+                      </button>
+                    </div>
+                    {yearExpanded && yearNode.months.map((monthNode) => {
+                      const monthKey = `journal:month:${monthNode.month}`;
+                      const monthExpanded = expandedJournalMonths.has(monthNode.month);
+                      return (
+                        <div key={monthNode.month}>
+                          <div
+                            className={`flex items-center rounded-md transition-colors ${selectedJournalKey === monthKey ? 'bg-rose-50 dark:bg-rose-950/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}
+                            style={{ paddingLeft: '32px' }}
+                          >
+                            <button
+                              className="p-1 shrink-0"
+                              onClick={() => setExpandedJournalMonths((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(monthNode.month)) next.delete(monthNode.month);
+                                else next.add(monthNode.month);
+                                return next;
+                              })}
+                            >
+                              <ChevronRightIcon className={`w-3 h-3 transition-transform ${monthExpanded ? 'rotate-90 text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'}`} />
+                            </button>
+                            <button
+                              className="flex-1 text-left py-1.5"
+                              onClick={() => {
+                                setExpandedJournalMonths((prev) => new Set(prev).add(monthNode.month));
+                                onSelectJournal?.({ key: monthKey, month: monthNode.month });
+                              }}
+                            >
+                              <span className={`text-xs ${selectedJournalKey === monthKey ? 'text-rose-700 dark:text-rose-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}>
+                                {monthNode.month}
+                              </span>
+                            </button>
+                          </div>
+                          {monthExpanded && monthNode.days.map((dayNode) => {
+                            const dayKey = `journal:day:${dayNode.date}`;
+                            return (
+                              <div
+                                key={dayNode.date}
+                                className={`flex items-center rounded-md transition-colors ${selectedJournalKey === dayKey ? 'bg-rose-50 dark:bg-rose-950/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}
+                                style={{ paddingLeft: '52px' }}
+                              >
+                                <span className="w-4 shrink-0" />
+                                <button
+                                  className="flex-1 text-left py-1.5 min-w-0"
+                                  onClick={() => {
+                                    onSelectJournal?.({ key: dayKey, date: dayNode.date });
+                                    onOpenJournalDay?.(dayNode.note_id);
+                                  }}
+                                >
+                                  <span className={`text-xs truncate block ${selectedJournalKey === dayKey ? 'text-rose-700 dark:text-rose-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}>
+                                    {dayNode.title}
+                                  </span>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tree */}
       <div className="mt-0.5">

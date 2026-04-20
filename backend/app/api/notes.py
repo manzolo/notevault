@@ -19,6 +19,9 @@ from app.schemas.note import (
     DailyNoteRequest,
     DailyNoteResponse,
     JournalAdjacentResponse,
+    JournalTreeYear,
+    JournalTreeMonth,
+    JournalTreeDay,
 )
 from app.security.dependencies import get_current_user
 from app.models.database import User
@@ -248,6 +251,47 @@ async def get_adjacent_daily_notes(
     )
 
 
+@router.get("/journal-tree", response_model=list[JournalTreeYear])
+async def get_journal_tree(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Note.id, Note.title, Note.journal_date)
+        .where(
+            Note.user_id == current_user.id,
+            Note.is_archived == False,  # noqa: E712
+            Note.journal_date.is_not(None),
+        )
+        .order_by(Note.journal_date.desc())
+    )
+    rows = result.all()
+
+    years: list[JournalTreeYear] = []
+    years_map: dict[int, JournalTreeYear] = {}
+    months_map: dict[tuple[int, str], JournalTreeMonth] = {}
+
+    for row in rows:
+        journal_date = row.journal_date
+        year = journal_date.year
+        month = journal_date.strftime("%Y-%m")
+
+        if year not in years_map:
+            year_node = JournalTreeYear(year=year, months=[])
+            years_map[year] = year_node
+            years.append(year_node)
+        if (year, month) not in months_map:
+            month_node = JournalTreeMonth(month=month, days=[])
+            months_map[(year, month)] = month_node
+            years_map[year].months.append(month_node)
+
+        months_map[(year, month)].days.append(
+            JournalTreeDay(date=journal_date, note_id=row.id, title=row.title)
+        )
+
+    return years
+
+
 
 @router.get("", response_model=NoteListResponse)
 async def list_notes(
@@ -264,6 +308,9 @@ async def list_notes(
     created_before: Optional[datetime] = Query(None),
     updated_after: Optional[datetime] = Query(None),
     updated_before: Optional[datetime] = Query(None),
+    journal_year: Optional[int] = Query(None),
+    journal_month: Optional[str] = Query(None),
+    journal_date: Optional[date] = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -394,12 +441,36 @@ async def list_notes(
         base_filter = base_filter & (Note.updated_at >= updated_after)
     if updated_before is not None:
         base_filter = base_filter & (Note.updated_at <= updated_before)
+    if journal_date is not None:
+        base_filter = base_filter & (Note.journal_date == journal_date)
+    elif journal_month is not None:
+        try:
+            month_start, month_end = _parse_month(journal_month)
+            base_filter = base_filter & (
+                Note.journal_date.is_not(None)
+            ) & (
+                Note.journal_date >= month_start
+            ) & (
+                Note.journal_date <= month_end
+            )
+        except HTTPException:
+            pass
+    elif journal_year is not None:
+        base_filter = base_filter & (
+            Note.journal_date.is_not(None)
+        ) & (
+            func.extract("year", Note.journal_date) == journal_year
+        )
 
     count_result = await db.execute(select(func.count(Note.id)).where(base_filter))
     total = count_result.scalar()
+    order_by = [Note.is_pinned.desc(), Note.updated_at.desc()]
+    if journal_date is not None or journal_month is not None or journal_year is not None:
+        order_by = [Note.journal_date.desc(), Note.updated_at.desc()]
+
     result = await db.execute(
         select(Note).options(selectinload(Note.tags)).where(base_filter)
-        .order_by(Note.is_pinned.desc(), Note.updated_at.desc())
+        .order_by(*order_by)
         .offset(offset).limit(per_page)
     )
     notes = result.scalars().all()

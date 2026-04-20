@@ -98,6 +98,22 @@ export interface JournalAdjacentResponse {
   next_id?: number | null;
 }
 
+export interface JournalTreeDay {
+  date: string;
+  note_id: number;
+  title: string;
+}
+
+export interface JournalTreeMonth {
+  month: string;
+  days: JournalTreeDay[];
+}
+
+export interface JournalTreeYear {
+  year: number;
+  months: JournalTreeMonth[];
+}
+
 export interface NoteListResponse {
   items: Note[];
   total: number;

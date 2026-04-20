@@ -66,3 +66,19 @@ class JournalAdjacentResponse(BaseModel):
     prev_id: Optional[int] = None
     next_date: Optional[date] = None
     next_id: Optional[int] = None
+
+
+class JournalTreeDay(BaseModel):
+    date: date
+    note_id: int
+    title: str
+
+
+class JournalTreeMonth(BaseModel):
+    month: str
+    days: List[JournalTreeDay]
+
+
+class JournalTreeYear(BaseModel):
+    year: int
+    months: List[JournalTreeMonth]
