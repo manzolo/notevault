@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.15.7] - 2026-04-20
+### Added
+- Task inline title editing: clicking a non-done task title enters edit mode (indigo underline input); Enter/blur saves, Escape cancels.
+- Task delete confirmation: the trash icon now shows a confirm dialog before deleting, consistent with the archive flow.
+
 ## [0.15.6] - 2026-04-20
 ### Fixed
 - Task reminders on due_date change: reminders whose trigger window is still in the future are re-armed (`notified_at = NULL`); reminders whose window has already passed are marked skipped (`notified_at = now`) so the scheduler never fires them retrospectively.
