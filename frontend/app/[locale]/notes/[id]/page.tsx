@@ -104,6 +104,11 @@ export default function NotePage({ params }: { params: { id: string; locale: str
 
   const [emlAttachmentsMap, setEmlAttachmentsMap] = useState<Record<number, number>>({});
 
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [bodyExpanded, setBodyExpanded] = useState(false);
+  const [bodyOverflows, setBodyOverflows] = useState(false);
+  const BODY_COLLAPSED_HEIGHT = 200;
+
   // Collapsed section state
   const [eventsCount, setEventsCount] = useState<number | null>(null);
   const [archivedEventsCount, setArchivedEventsCount] = useState<number | null>(null);
@@ -192,6 +197,11 @@ export default function NotePage({ params }: { params: { id: string; locale: str
     };
     load();
   }, [noteId]);
+
+  useEffect(() => {
+    if (!bodyRef.current) return;
+    setBodyOverflows(bodyRef.current.scrollHeight > BODY_COLLAPSED_HEIGHT);
+  }, [note?.content]);
 
   // ESC key: close preview overlays in cascade
   useEffect(() => {
@@ -406,26 +416,46 @@ export default function NotePage({ params }: { params: { id: string; locale: str
       ) : (
         <>
           {note.content && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-indigo-500 border border-gray-200 dark:border-gray-700 p-4 sm:p-6 prose prose-sm max-w-none dark:prose-invert">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  a({ href, children }) {
-                    if (href?.startsWith('wiki-link:')) {
-                      return <span className="text-gray-700 dark:text-gray-300">{children}</span>;
-                    }
-                    return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
-                  },
-                }}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border-l-4 border-l-indigo-500 border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+              <div
+                className="relative overflow-hidden"
+                style={{ maxHeight: bodyExpanded || !bodyOverflows ? undefined : BODY_COLLAPSED_HEIGHT }}
               >
-                {note.content.replace(
-                  /\[\[([^\]]+)\]\]/g,
-                  (_, title) => {
-                    const linked = wikiLinksMap.get(title);
-                    return linked ? `[${title}](wiki-link:${linked.id})` : `[[${title}]]`;
-                  }
+                <div ref={bodyRef} className="prose prose-sm max-w-none dark:prose-invert">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      a({ href, children }) {
+                        if (href?.startsWith('wiki-link:')) {
+                          return <span className="text-gray-700 dark:text-gray-300">{children}</span>;
+                        }
+                        return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+                      },
+                    }}
+                  >
+                    {note.content.replace(
+                      /\[\[([^\]]+)\]\]/g,
+                      (_, title) => {
+                        const linked = wikiLinksMap.get(title);
+                        return linked ? `[${title}](wiki-link:${linked.id})` : `[[${title}]]`;
+                      }
+                    )}
+                  </ReactMarkdown>
+                </div>
+                {!bodyExpanded && bodyOverflows && (
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none" />
                 )}
-              </ReactMarkdown>
+              </div>
+              {bodyOverflows && (
+                <button
+                  type="button"
+                  onClick={() => setBodyExpanded((v) => !v)}
+                  className="mt-2 flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
+                >
+                  <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform duration-200 ${bodyExpanded ? 'rotate-180' : ''}`} />
+                  {bodyExpanded ? t('showLess') : t('showMore')}
+                </button>
+              )}
             </div>
           )}
 

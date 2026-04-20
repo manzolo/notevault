@@ -122,6 +122,8 @@
     "dateFilterHint": "Also matches notes with events in this range",
     "resetFilters": "Reset all filters",
     "wikiLinks": "Linked notes",
+    "showMore": "Show more",
+    "showLess": "Show less",
     "includeSubfolders": "Include subfolders",
     "badgeAttachments": "{count, plural, one {# attachment} other {# attachments}}",
     "badgeTasks": "{count, plural, one {# task} other {# tasks}}",
