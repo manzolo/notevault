@@ -67,8 +67,11 @@ export function useNotes() {
     return response.data;
   }, []);
 
-  const createDailyNote = useCallback(async (journalDate?: string, _locale?: string): Promise<DailyNoteResponse> => {
-    const response = await api.post<DailyNoteResponse>('/api/notes/daily', journalDate ? { date: journalDate } : {});
+  const createDailyNote = useCallback(async (journalDate?: string, locale?: string): Promise<DailyNoteResponse> => {
+    const response = await api.post<DailyNoteResponse>('/api/notes/daily', {
+      ...(journalDate ? { date: journalDate } : {}),
+      ...(locale ? { locale } : {}),
+    });
     return response.data;
   }, []);
 
