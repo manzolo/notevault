@@ -66,7 +66,7 @@ In production, browser traffic hits Nginx Proxy Manager → frontend:3000. The f
 | `main.py` | FastAPI app factory, middleware, router registration |
 | `config.py` | `Settings` (pydantic-settings); `cors_origins` is a comma-string (not list); `master_key_bytes` SHA-256-hashes any non-32-byte key |
 | `models/database.py` | All SQLAlchemy ORM models in one file; `SAEnum` uses `values_callable=lambda x: [e.value for e in x]` |
-| `api/` | One router per domain: `auth`, `notes`, `tags`, `categories`, `secrets`, `search`, `attachments`, `bookmarks` |
+| `api/` | One router per domain: `auth`, `notes`, `tags`, `categories`, `secrets`, `search`, `attachments`, `bookmarks`; `notes.py` also handles daily-journal endpoints |
 | `security/auth.py` | JWT HS256 (7-day), bcrypt directly (no passlib) |
 | `security/encryption.py` | `SecretEncryption`: stores `nonce(12B) || ciphertext` as BYTEA |
 | `security/rate_limit.py` | Single global slowapi `Limiter`; key = `user:{id}` from JWT sub |
@@ -75,6 +75,8 @@ In production, browser traffic hits Nginx Proxy Manager → frontend:3000. The f
 **FTS:** `fts_vector` columns on `notes`, `attachments`, `bookmarks` are populated exclusively by PostgreSQL triggers (never written from the ORM). `conftest.py` must install these triggers explicitly — `Base.metadata.create_all` does not.
 
 **Tags:** M2M via `note_tags`, `attachment_tags`, `bookmark_tags` join tables. Tags are per-user (unique on `name + user_id`). `POST /api/tags` is idempotent (returns existing tag if name exists). Filter notes by tag with `GET /api/notes?tag_id=N` (subquery, no JOIN to avoid duplicates).
+
+**Daily Journal:** `Note.journal_date` (DATE, nullable) with unique constraint per user. `POST /api/notes/daily` is idempotent — returns existing note if one exists for that date, otherwise creates it inside auto-generated `YYYY/YYYY-MM` category folders. `GET /api/notes/journal-dates?month=YYYY-MM` returns ISO dates with journal entries. `GET /api/notes/daily/adjacent?date=YYYY-MM-DD` returns prev/next journal note IDs (two queries run in parallel via `asyncio.gather`).
 
 **Secrets encryption:** `MASTER_KEY` env var → `master_key_bytes` (32B) → `AESGCM`. Changing `MASTER_KEY` makes all existing secrets unreadable.
 
@@ -85,8 +87,9 @@ All pages live under `frontend/app/[locale]/` (next-intl App Router i18n). Local
 | Path | Purpose |
 |------|---------|
 | `lib/api.ts` | axios instance with JWT Bearer interceptor; 401 → redirect to login |
-| `lib/types.ts` | All TypeScript types (Note, Tag, Secret, Attachment, Bookmark…) |
-| `hooks/useNotes.ts` | Fetch paginated notes; accepts optional `tagId` for tag filter |
+| `lib/types.ts` | All TypeScript types (Note, Tag, Secret, Attachment, Bookmark, DailyNoteResponse, JournalAdjacentResponse…) |
+| `hooks/useNotes.ts` | Fetch paginated notes + `createDailyNote`, `getJournalDates`, `getAdjacentJournalNotes` |
+| `hooks/useJournalDates.ts` | Month-scoped journal date fetching for MiniCalendar |
 | `hooks/useTags.ts` | `fetchTags` + `createTag` (alphabetical dedup insert) |
 | `hooks/useSecrets.ts` | 30-second auto-clear timer for revealed secret values |
 | `components/common/Button.tsx` | variants: `primary` (indigo gradient), `secondary` (gray), `danger`, `ghost`, `ghost-danger` |
