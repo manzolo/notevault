@@ -13,13 +13,43 @@ const fetchAllTasks = jest.fn();
 const fetchFieldDates = jest.fn();
 const fetchJournalDates = jest.fn();
 const createDailyNote = jest.fn();
+const mockTasks = [
+  {
+    id: 1,
+    note_id: 10,
+    user_id: 1,
+    title: 'Visible task',
+    is_done: false,
+    due_date: '2026-04-15T09:00:00Z',
+    position: 0,
+    is_archived: false,
+    archive_note: null,
+    created_at: '2026-04-01T00:00:00Z',
+    updated_at: '2026-04-01T00:00:00Z',
+    note_title: 'Work',
+  },
+  {
+    id: 2,
+    note_id: 11,
+    user_id: 1,
+    title: 'Completed task',
+    is_done: true,
+    due_date: '2026-04-15T10:00:00Z',
+    position: 1,
+    is_archived: false,
+    archive_note: null,
+    created_at: '2026-04-01T00:00:00Z',
+    updated_at: '2026-04-01T00:00:00Z',
+    note_title: 'Done note',
+  },
+];
 
 jest.mock('@/hooks/useEvents', () => ({
   useAllEvents: () => ({ events: [], fetchEvents }),
 }));
 
 jest.mock('@/hooks/useTasks', () => ({
-  useAllTasks: () => ({ tasks: [], fetchAllTasks }),
+  useAllTasks: () => ({ tasks: mockTasks, fetchAllTasks }),
 }));
 
 jest.mock('@/hooks/useFieldDates', () => ({
@@ -74,5 +104,12 @@ describe('MiniCalendar', () => {
       expect(createDailyNote).toHaveBeenCalledWith('2026-04-15', 'en');
       expect(push).toHaveBeenCalledWith('/en/notes/42');
     });
+  });
+
+  it('non conta i task completati nel giorno', () => {
+    render(<MiniCalendar selectedDate={null} onDayClick={jest.fn()} />);
+
+    expect(screen.getByRole('button', { name: '15' })).toHaveAttribute('title', expect.stringContaining('Visible task'));
+    expect(screen.getByRole('button', { name: '15' })).not.toHaveAttribute('title', expect.stringContaining('Completed task'));
   });
 });

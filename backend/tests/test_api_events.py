@@ -459,3 +459,21 @@ async def test_export_calendar_respects_content_preferences(client, auth_headers
     assert "Future Task" in body
     assert "2099-06-17" in body or "Journal note" in body
     assert "Renewal" in body
+
+
+async def test_export_calendar_excludes_done_tasks(client, auth_headers):
+    note_id = await _note(client, auth_headers, title="Task source")
+    await _task(client, auth_headers, note_id, title="Open Task", due_date="2099-06-16T08:30:00Z")
+    done = await _task(client, auth_headers, note_id, title="Done Task", due_date="2099-06-17T08:30:00Z")
+
+    update = await client.put(
+        f"/api/notes/{note_id}/tasks/{done['id']}",
+        json={"is_done": True},
+        headers=auth_headers,
+    )
+    assert update.status_code == 200
+
+    r = await client.get("/api/events/export/calendar.ics", headers=auth_headers)
+    body = r.text
+    assert "Open Task" in body
+    assert "Done Task" not in body

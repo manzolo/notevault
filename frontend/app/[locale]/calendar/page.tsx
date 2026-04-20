@@ -77,7 +77,7 @@ export default function CalendarPage() {
 
   // Filter tasks that have a due_date in the current month
   const tasks = allTasks.filter((task: TaskWithNote) => {
-    if (!task.due_date) return false;
+    if (task.is_done || !task.due_date) return false;
     const d = new Date(task.due_date);
     return d.getFullYear() === year && d.getMonth() === month;
   });
