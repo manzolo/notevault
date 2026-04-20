@@ -21,6 +21,10 @@ class User(Base):
     totp_secret = Column(BYTEA, nullable=True)  # encrypted nonce||ciphertext
     totp_enabled = Column(Boolean, default=False, nullable=False)
     calendar_token = Column(String(64), nullable=True, unique=True, index=True)
+    ical_include_events = Column(Boolean, default=True, nullable=False, server_default="true")
+    ical_include_tasks = Column(Boolean, default=True, nullable=False, server_default="true")
+    ical_include_journal = Column(Boolean, default=False, nullable=False, server_default="false")
+    ical_include_field_dates = Column(Boolean, default=False, nullable=False, server_default="false")
     telegram_chat_id = Column(String(100), nullable=True)
     notification_email = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

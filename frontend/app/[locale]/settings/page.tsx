@@ -32,6 +32,11 @@ export default function SettingsPage() {
 
   // Calendar export state
   const [exportLoading, setExportLoading] = useState(false);
+  const [calendarPrefsSaving, setCalendarPrefsSaving] = useState(false);
+  const [icalIncludeEvents, setIcalIncludeEvents] = useState(true);
+  const [icalIncludeTasks, setIcalIncludeTasks] = useState(true);
+  const [icalIncludeJournal, setIcalIncludeJournal] = useState(false);
+  const [icalIncludeFieldDates, setIcalIncludeFieldDates] = useState(false);
 
   // Calendar feed URL state
   const [feedToken, setFeedToken] = useState<string | null>(null);
@@ -54,6 +59,10 @@ export default function SettingsPage() {
     if (!user) return;
     setTelegramChatId(user.telegram_chat_id ?? '');
     setNotificationEmail(user.notification_email ?? '');
+    setIcalIncludeEvents(user.ical_include_events ?? true);
+    setIcalIncludeTasks(user.ical_include_tasks ?? true);
+    setIcalIncludeJournal(user.ical_include_journal ?? false);
+    setIcalIncludeFieldDates(user.ical_include_field_dates ?? false);
   }, [user?.id]);
 
   const handleSetup = async () => {
@@ -164,6 +173,24 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveCalendarExport = async () => {
+    setCalendarPrefsSaving(true);
+    try {
+      await api.patch('/api/auth/me/calendar-export', {
+        ical_include_events: icalIncludeEvents,
+        ical_include_tasks: icalIncludeTasks,
+        ical_include_journal: icalIncludeJournal,
+        ical_include_field_dates: icalIncludeFieldDates,
+      });
+      await refresh();
+      toast.success(t('exportPrefsSaved'));
+    } catch {
+      toast.error(t('exportPrefsFailed'));
+    } finally {
+      setCalendarPrefsSaving(false);
+    }
+  };
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmNewPassword) {
@@ -263,6 +290,42 @@ export default function SettingsPage() {
             {t('exportButton')}
           </Button>
         </div>
+        <div className="mt-5 space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t('exportPrefsTitle')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('exportPrefsDesc')}</p>
+          </div>
+          {[
+            { label: t('exportIncludeEvents'), hint: t('exportIncludeEventsHint'), value: icalIncludeEvents, setValue: setIcalIncludeEvents },
+            { label: t('exportIncludeTasks'), hint: t('exportIncludeTasksHint'), value: icalIncludeTasks, setValue: setIcalIncludeTasks },
+            { label: t('exportIncludeJournal'), hint: t('exportIncludeJournalHint'), value: icalIncludeJournal, setValue: setIcalIncludeJournal },
+            { label: t('exportIncludeFieldDates'), hint: t('exportIncludeFieldDatesHint'), value: icalIncludeFieldDates, setValue: setIcalIncludeFieldDates },
+          ].map(({ label, hint, value, setValue }) => (
+            <label
+              key={label}
+              className="flex items-start justify-between gap-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/30 cursor-pointer group"
+            >
+              <div>
+                <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{label}</div>
+                <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{hint}</div>
+              </div>
+              <span className="inline-flex items-center gap-2 mt-0.5">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={value}
+                  onChange={(e) => setValue(e.target.checked)}
+                />
+                <span className="relative inline-flex h-5 w-9 shrink-0 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 transition-colors duration-200 peer-checked:bg-indigo-500 peer-checked:border-indigo-500 after:absolute after:top-0.5 after:left-0.5 after:h-3.5 after:w-3.5 after:rounded-full after:bg-white after:shadow after:transition-transform after:duration-200 peer-checked:after:translate-x-4" />
+              </span>
+            </label>
+          ))}
+          <div className="flex justify-end">
+            <Button variant="secondary" onClick={handleSaveCalendarExport} loading={calendarPrefsSaving}>
+              {t('exportPrefsSave')}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* ── Calendar Subscription URL section ── */}
@@ -270,6 +333,7 @@ export default function SettingsPage() {
         <div className="mb-3">
           <h2 className="text-lg font-semibold">{t('feedTitle')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('feedDesc')}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{t('feedPrefsHint')}</p>
         </div>
         {feedLoading ? (
           <p className="text-sm text-gray-400">{t('feedLoading')}</p>

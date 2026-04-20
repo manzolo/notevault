@@ -5,6 +5,10 @@ export interface User {
   is_active: boolean;
   totp_enabled: boolean;
   calendar_token?: string | null;
+  ical_include_events?: boolean;
+  ical_include_tasks?: boolean;
+  ical_include_journal?: boolean;
+  ical_include_field_dates?: boolean;
   telegram_chat_id?: string | null;
   notification_email?: string | null;
   created_at: string;

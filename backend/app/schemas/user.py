@@ -23,9 +23,21 @@ class UserResponse(BaseModel):
     is_active: bool
     totp_enabled: bool
     calendar_token: Optional[str] = None
+    ical_include_events: bool = True
+    ical_include_tasks: bool = True
+    ical_include_journal: bool = False
+    ical_include_field_dates: bool = False
     telegram_chat_id: Optional[str] = None
     notification_email: Optional[str] = None
     created_at: datetime
+
+
+class UserCalendarExportUpdate(BaseModel):
+    ical_include_events: Optional[bool] = None
+    ical_include_tasks: Optional[bool] = None
+    ical_include_journal: Optional[bool] = None
+    ical_include_field_dates: Optional[bool] = None
+
 
 class UserNotificationUpdate(BaseModel):
     telegram_chat_id: Optional[str] = None

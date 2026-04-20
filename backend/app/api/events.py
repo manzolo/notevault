@@ -14,7 +14,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_owned_note
 from app.database.connection import get_db
-from app.models.database import Event, EventAttachment, Note, User
+from app.models.database import Event, EventAttachment, Note, NoteField, Task, User
 from app.schemas.event import EventCreate, EventUpdate, EventResponse, EventWithNoteResponse, EventAttachmentResponse
 from app.security.dependencies import get_current_user
 
@@ -335,29 +335,6 @@ async def _build_ical_response(user: User, db: AsyncSession) -> Response:
 
     now = datetime.now(timezone.utc)
 
-    non_recurring_q = (
-        select(Event)
-        .where(
-            Event.user_id == user.id,
-            Event.recurrence_rule.is_(None),
-            Event.is_archived == False,  # noqa: E712
-            Event.start_datetime >= now,
-        )
-        .order_by(Event.start_datetime)
-    )
-    recurring_q = (
-        select(Event)
-        .where(
-            Event.user_id == user.id,
-            Event.recurrence_rule.isnot(None),
-            Event.is_archived == False,  # noqa: E712
-        )
-    )
-
-    non_recurring_result = await db.execute(non_recurring_q)
-    recurring_result = await db.execute(recurring_q)
-    events_to_export = list(non_recurring_result.scalars().all()) + list(recurring_result.scalars().all())
-
     cal = Calendar()
     cal.add("prodid", "-//NoteVault//notevault//EN")
     cal.add("version", "2.0")
@@ -365,26 +342,124 @@ async def _build_ical_response(user: User, db: AsyncSession) -> Response:
     cal.add("method", "PUBLISH")
     cal.add("x-wr-calname", f"NoteVault - {user.username}")
 
-    for ev in events_to_export:
-        iev = IEvent()
-        iev.add("uid", f"notevault-event-{ev.id}@notevault")
-        iev.add("summary", ev.title)
-        iev.add("dtstart", ev.start_datetime)
-        if ev.end_datetime:
-            iev.add("dtend", ev.end_datetime)
-        if ev.description:
-            iev.add("description", ev.description)
-        if ev.url:
-            iev.add("url", ev.url)
-        iev.add("dtstamp", now)
-        iev.add("created", ev.created_at)
-        iev.add("last-modified", ev.updated_at)
-        if ev.recurrence_rule:
-            try:
-                iev.add("rrule", vRecur.from_ical(ev.recurrence_rule))
-            except Exception:
-                pass
-        cal.add_component(iev)
+    if user.ical_include_events:
+        non_recurring_q = (
+            select(Event)
+            .where(
+                Event.user_id == user.id,
+                Event.recurrence_rule.is_(None),
+                Event.is_archived == False,  # noqa: E712
+                Event.start_datetime >= now,
+            )
+            .order_by(Event.start_datetime)
+        )
+        recurring_q = (
+            select(Event)
+            .where(
+                Event.user_id == user.id,
+                Event.recurrence_rule.isnot(None),
+                Event.is_archived == False,  # noqa: E712
+            )
+        )
+
+        non_recurring_result = await db.execute(non_recurring_q)
+        recurring_result = await db.execute(recurring_q)
+        events_to_export = list(non_recurring_result.scalars().all()) + list(recurring_result.scalars().all())
+
+        for ev in events_to_export:
+            iev = IEvent()
+            iev.add("uid", f"notevault-event-{ev.id}@notevault")
+            iev.add("summary", ev.title)
+            iev.add("dtstart", ev.start_datetime)
+            if ev.end_datetime:
+                iev.add("dtend", ev.end_datetime)
+            if ev.description:
+                iev.add("description", ev.description)
+            if ev.url:
+                iev.add("url", ev.url)
+            iev.add("dtstamp", now)
+            iev.add("created", ev.created_at)
+            iev.add("last-modified", ev.updated_at)
+            if ev.recurrence_rule:
+                try:
+                    iev.add("rrule", vRecur.from_ical(ev.recurrence_rule))
+                except Exception:
+                    pass
+            cal.add_component(iev)
+
+    if user.ical_include_tasks:
+        tasks_result = await db.execute(
+            select(Task, Note.title.label("note_title"))
+            .join(Note, Note.id == Task.note_id)
+            .where(
+                Task.user_id == user.id,
+                Task.is_archived == False,  # noqa: E712
+                Task.is_done == False,  # noqa: E712
+                Task.due_date.isnot(None),
+                Task.due_date >= now,
+            )
+            .order_by(Task.due_date)
+        )
+        for task, note_title in tasks_result.all():
+            iev = IEvent()
+            iev.add("uid", f"notevault-task-{task.id}@notevault")
+            iev.add("summary", task.title)
+            iev.add("dtstart", task.due_date)
+            iev.add("dtstamp", now)
+            iev.add("created", task.created_at)
+            iev.add("last-modified", task.updated_at)
+            iev.add("description", f"Task from note: {note_title}")
+            cal.add_component(iev)
+
+    if user.ical_include_journal:
+        journal_result = await db.execute(
+            select(Note)
+            .where(
+                Note.user_id == user.id,
+                Note.is_archived == False,  # noqa: E712
+                Note.journal_date.isnot(None),
+                Note.journal_date >= now.date(),
+            )
+            .order_by(Note.journal_date)
+        )
+        for note in journal_result.scalars().all():
+            iev = IEvent()
+            iev.add("uid", f"notevault-journal-{note.id}@notevault")
+            iev.add("summary", note.title)
+            iev.add("dtstart", note.journal_date)
+            iev.add("dtend", note.journal_date + timedelta(days=1))
+            iev.add("dtstamp", now)
+            iev.add("created", note.created_at)
+            iev.add("last-modified", note.updated_at)
+            iev.add("description", "Journal note")
+            cal.add_component(iev)
+
+    if user.ical_include_field_dates:
+        field_dates_result = await db.execute(
+            select(NoteField, Note.title.label("note_title"))
+            .join(Note, Note.id == NoteField.note_id)
+            .where(
+                Note.user_id == user.id,
+                Note.is_archived == False,  # noqa: E712
+                NoteField.field_date.isnot(None),
+                NoteField.field_date >= now.date(),
+            )
+            .order_by(NoteField.field_date, NoteField.id)
+        )
+        for field, note_title in field_dates_result.all():
+            iev = IEvent()
+            iev.add("uid", f"notevault-field-date-{field.id}@notevault")
+            iev.add("summary", field.key)
+            iev.add("dtstart", field.field_date)
+            iev.add("dtend", field.field_date + timedelta(days=1))
+            iev.add("dtstamp", now)
+            iev.add("created", field.created_at)
+            iev.add("last-modified", field.updated_at)
+            description = f"Field date from note: {note_title}"
+            if field.value:
+                description += f"\n{field.value}"
+            iev.add("description", description)
+            cal.add_component(iev)
 
     return Response(
         content=cal.to_ical(),

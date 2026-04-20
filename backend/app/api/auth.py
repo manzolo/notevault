@@ -8,7 +8,7 @@ from app.schemas.user import (
     UserCreate, UserLogin, UserResponse, TokenResponse,
     LoginResponse, TotpSetupResponse, TotpEnableRequest,
     TotpDisableRequest, TotpVerifyRequest, ChangePasswordRequest,
-    UserNotificationUpdate,
+    UserNotificationUpdate, UserCalendarExportUpdate,
 )
 from app.security.auth import hash_password, verify_password, create_access_token, verify_token
 from app.security.dependencies import get_current_user
@@ -121,6 +121,25 @@ async def update_notification_settings(
         current_user.telegram_chat_id = data.telegram_chat_id or None
     if data.notification_email is not None:
         current_user.notification_email = data.notification_email or None
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
+
+
+@router.patch("/me/calendar-export", response_model=UserResponse)
+async def update_calendar_export_settings(
+    data: UserCalendarExportUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if data.ical_include_events is not None:
+        current_user.ical_include_events = data.ical_include_events
+    if data.ical_include_tasks is not None:
+        current_user.ical_include_tasks = data.ical_include_tasks
+    if data.ical_include_journal is not None:
+        current_user.ical_include_journal = data.ical_include_journal
+    if data.ical_include_field_dates is not None:
+        current_user.ical_include_field_dates = data.ical_include_field_dates
     await db.commit()
     await db.refresh(current_user)
     return current_user

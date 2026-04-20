@@ -97,3 +97,22 @@ async def test_me_requires_auth(client):
     # FastAPI returns 403 when the Authorization header is missing entirely
     # (HTTPBearer scheme) and 401 when the token is invalid/expired
     assert response.status_code in (401, 403)
+
+
+async def test_update_calendar_export_settings(client, auth_headers):
+    response = await client.patch(
+        "/api/auth/me/calendar-export",
+        json={
+            "ical_include_events": False,
+            "ical_include_tasks": False,
+            "ical_include_journal": True,
+            "ical_include_field_dates": True,
+        },
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["ical_include_events"] is False
+    assert data["ical_include_tasks"] is False
+    assert data["ical_include_journal"] is True
+    assert data["ical_include_field_dates"] is True

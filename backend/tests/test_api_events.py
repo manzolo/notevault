@@ -1,4 +1,7 @@
+from datetime import date
+
 import pytest
+from app.models.database import NoteField
 
 
 async def _note(client, auth_headers, title="Test Note"):
@@ -11,6 +14,17 @@ async def _event(client, auth_headers, note_id, title="Team Meeting", start="202
     payload = {"title": title, "start_datetime": start, **kwargs}
     r = await client.post(
         f"/api/notes/{note_id}/events",
+        json=payload,
+        headers=auth_headers,
+    )
+    assert r.status_code == 201
+    return r.json()
+
+
+async def _task(client, auth_headers, note_id, title="Follow up", due_date="2099-06-16T10:00:00Z", **kwargs):
+    payload = {"title": title, "due_date": due_date, **kwargs}
+    r = await client.post(
+        f"/api/notes/{note_id}/tasks",
         json=payload,
         headers=auth_headers,
     )
@@ -410,3 +424,38 @@ async def test_export_calendar_isolation(client, auth_headers, second_auth_heade
     # Second user's export should not contain user1's event
     r = await client.get("/api/events/export/calendar.ics", headers=second_auth_headers)
     assert "User1 Event" not in r.text
+
+
+async def test_export_calendar_respects_content_preferences(client, auth_headers, db_session):
+    note_id = await _note(client, auth_headers, title="Source Note")
+    await _event(client, auth_headers, note_id, title="Future Event", start="2099-06-15T10:00:00Z")
+    await _task(client, auth_headers, note_id, title="Future Task", due_date="2099-06-16T08:30:00Z")
+    await client.post("/api/notes/daily", json={"date": "2099-06-17"}, headers=auth_headers)
+    db_session.add(NoteField(
+        note_id=note_id,
+        group_name="Dates",
+        key="Renewal",
+        value="Annual renewal",
+        position=0,
+        field_date=date(2099, 6, 18),
+    ))
+    await db_session.commit()
+
+    response = await client.patch(
+        "/api/auth/me/calendar-export",
+        json={
+            "ical_include_events": False,
+            "ical_include_tasks": True,
+            "ical_include_journal": True,
+            "ical_include_field_dates": True,
+        },
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+
+    r = await client.get("/api/events/export/calendar.ics", headers=auth_headers)
+    body = r.text
+    assert "Future Event" not in body
+    assert "Future Task" in body
+    assert "2099-06-17" in body or "Journal note" in body
+    assert "Renewal" in body
