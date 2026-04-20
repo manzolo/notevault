@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.0] - 2026-04-20
+### Added
+- Daily Journal: `POST /api/notes/daily` creates or retrieves today's journal note (idempotent), auto-creating `YYYY/YYYY-MM` folder hierarchy.
+- Journal dates endpoint `GET /api/notes/journal-dates?month=YYYY-MM` returns ISO dates with journal entries for a given month.
+- Adjacent navigation `GET /api/notes/daily/adjacent?date=YYYY-MM-DD` returns prev/next journal note IDs (parallel queries via `asyncio.gather`).
+- Note model: `journal_date` DATE column with per-user unique constraint and index (migration 037).
+- MiniCalendar: orange dot on journal days; clicking a journal day filters the note list; a selected-day action button opens or creates the journal for that date.
+- Note detail page: journal badge with date and prev/next arrow navigation between journal entries.
+- Dashboard and Navbar: "Today" button (BookOpen icon) to open or create today's journal note.
+- `useJournalDates` hook for month-scoped journal date fetching.
+- `ArrowLeftIcon`, `ArrowRightIcon`, `BookOpenIcon` added to icon library.
+
 ## [0.15.7] - 2026-04-20
 ### Added
 - Task inline title editing: clicking a non-done task title enters edit mode (indigo underline input); Enter/blur saves, Escape cancels.
