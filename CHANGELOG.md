@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.16.3] - 2026-04-20
+### Added
+- Journal tree view: new `GET /api/notes/journal-tree` endpoint returns journal entries organized hierarchically by year/month/day for chronological browsing.
+- Dashboard journal tab: FolderTree component supports journal mode, allowing users to navigate and select journal entries from a tree structure.
+
 ## [0.16.2] - 2026-04-20
 ### Added
 - Calendar export preferences: users can now toggle which categories to include in iCal exports (events, tasks, journal entries, field dates) via Settings page and `PATCH /api/auth/me/calendar-export` endpoint.
