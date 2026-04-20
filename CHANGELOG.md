@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.15.4] - 2026-04-20
+### Added
+- Collapsible note body: long markdown content (>200px) is clamped with a fade gradient and a "Show more / Show less" toggle; short notes render fully without any toggle. i18n in en/it.
+
 ## [0.15.3] - 2026-04-19
 ### Fixed
 - DateInfoTooltip: popover now opens rightward (`left-0`) instead of leftward (`right-0`), preventing it from being clipped at the left edge of the screen
