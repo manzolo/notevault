@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.16.1] - 2026-04-20
+### Fixed
+- Daily journal: `createDailyNote` no longer sends `locale` parameter to the API (only `journalDate` is valid).
+
 ## [0.16.0] - 2026-04-20
 ### Added
 - Daily Journal: `POST /api/notes/daily` creates or retrieves today's journal note (idempotent), auto-creating `YYYY/YYYY-MM` folder hierarchy.
