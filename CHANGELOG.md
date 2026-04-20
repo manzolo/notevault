@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.15.6] - 2026-04-20
+### Fixed
+- Task reminders on due_date change: reminders whose trigger window is still in the future are re-armed (`notified_at = NULL`); reminders whose window has already passed are marked skipped (`notified_at = now`) so the scheduler never fires them retrospectively.
+- E2E Playwright test: broadened "New Note" selector to match `<button>` in addition to `<a>` (Navbar changed from Link to button in v0.15.5).
+
 ## [0.15.5] - 2026-04-20
 ### Added
 - New note pre-selects current folder: both the Navbar "+ New Note" button and the dashboard "+ New Note" button now pass `?category_id=X` when a folder is active, so the Category dropdown is pre-filled on the create form.
