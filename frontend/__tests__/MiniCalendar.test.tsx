@@ -75,4 +75,20 @@ describe('MiniCalendar', () => {
       expect(push).toHaveBeenCalledWith('/en/notes/42');
     });
   });
+
+  it('ricarica tutti i dati del calendario quando cambia la chiave di refresh', () => {
+    const { rerender } = render(<MiniCalendar selectedDate={null} onDayClick={jest.fn()} refreshKey={0} />);
+
+    expect(fetchJournalDates).toHaveBeenCalledTimes(1);
+    expect(fetchEvents).toHaveBeenCalledTimes(1);
+    expect(fetchAllTasks).toHaveBeenCalledTimes(1);
+    expect(fetchFieldDates).toHaveBeenCalledTimes(1);
+
+    rerender(<MiniCalendar selectedDate={null} onDayClick={jest.fn()} refreshKey={1} />);
+
+    expect(fetchJournalDates).toHaveBeenCalledTimes(2);
+    expect(fetchEvents).toHaveBeenCalledTimes(2);
+    expect(fetchAllTasks).toHaveBeenCalledTimes(2);
+    expect(fetchFieldDates).toHaveBeenCalledTimes(2);
+  });
 });

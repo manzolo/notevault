@@ -54,6 +54,7 @@ export default function DashboardPage() {
   const [searchPage, setSearchPage] = useState(1);
   const [attachPreview, setAttachPreview] = useState<{ noteId: number; attachment: MatchingAttachment } | null>(null);
   const [journalLoading, setJournalLoading] = useState(false);
+  const [calendarRefreshKey, setCalendarRefreshKey] = useState(0);
 
   // Mobile sidebar accordion state
   const [mobileFoldersOpen, setMobileFoldersOpen] = useState(false);
@@ -155,6 +156,7 @@ export default function DashboardPage() {
 
   const handleDelete = async (id: number) => {
     await deleteNote(id);
+    setCalendarRefreshKey((prev) => prev + 1);
     const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
     const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
     fetchNotes(page, PER_PAGE, selectedTagId, after, before, selectedCategoryId, pinnedOnly, archivedOnly, undefined, recursive);
@@ -301,6 +303,7 @@ export default function DashboardPage() {
           <MiniCalendar
             selectedDate={selectedCalendarDay}
             onDayClick={handleCalendarDayClick}
+            refreshKey={calendarRefreshKey}
           />
         </div>
       </aside>
@@ -393,6 +396,7 @@ export default function DashboardPage() {
                   <MiniCalendar
                     selectedDate={selectedCalendarDay}
                     onDayClick={handleCalendarDayClick}
+                    refreshKey={calendarRefreshKey}
                   />
                 </div>
               )}
