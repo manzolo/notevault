@@ -1,8 +1,12 @@
 # Changelog
 
+## [0.16.2] - 2026-04-20
+### Added
+- Calendar export preferences: users can now toggle which categories to include in iCal exports (events, tasks, journal entries, field dates) via Settings page and `PATCH /api/auth/me/calendar-export` endpoint.
+
 ## [0.16.1] - 2026-04-20
 ### Fixed
-- Daily journal: `createDailyNote` no longer sends `locale` parameter to the API (only `journalDate` is valid).
+- Daily journal: `createDailyNote` now correctly sends `locale` parameter to the API for localized note titles.
 
 ## [0.16.0] - 2026-04-20
 ### Added
