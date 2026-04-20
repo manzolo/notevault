@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.5] - 2026-04-20
+### Added
+- New note pre-selects current folder: both the Navbar "+ New Note" button and the dashboard "+ New Note" button now pass `?category_id=X` when a folder is active, so the Category dropdown is pre-filled on the create form.
+
+### Fixed
+- Note body collapse trigger: `useEffect` now depends on `loading` in addition to `note?.content`, so the expand/collapse button correctly appears after the note finishes loading (previously the DOM measurement ran while the spinner was still shown).
+
 ## [0.15.4] - 2026-04-20
 ### Added
 - Collapsible note body: long markdown content (>200px) is clamped with a fade gradient and a "Show more / Show less" toggle; short notes render fully without any toggle. i18n in en/it.
