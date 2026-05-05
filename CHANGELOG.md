@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.16.5] - 2026-05-05
+### Fixed
+- Modal and ShareModal: removed backdrop-click-to-close to prevent accidental data loss when switching back to the browser window.
+
 ## [0.16.4] - 2026-04-20
 ### Added
 - Codex local release workflow: added `.codex/skills/release-bump/SKILL.md` plus `.codex/commands/bump.md` as a project-local wrapper for patch/minor/major release execution.
