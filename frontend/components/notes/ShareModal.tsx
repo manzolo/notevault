@@ -193,7 +193,6 @@ export default function ShareModal({ noteId, onClose }: ShareModalProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/70 backdrop-blur-md"
-      onClick={onClose}
     >
       <div
         className="relative bg-white dark:bg-vault-800 rounded-xl shadow-modal w-full max-w-md overflow-hidden border border-cream-300/60 dark:border-vault-600/60 flex flex-col"
