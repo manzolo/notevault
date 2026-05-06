@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.16.6] - 2026-05-06
+### Added
+- Secrets FTS search: searching by secret name, username, or URL now returns the containing note with an amber badge showing the matched secret name. Encrypted values are never indexed. Migration 039 adds `fts_vector` column + trigger on `secrets` table.
+
 ## [0.16.5] - 2026-05-05
 ### Fixed
 - Modal and ShareModal: removed backdrop-click-to-close to prevent accidental data loss when switching back to the browser window.
