@@ -279,6 +279,7 @@ export default function DashboardPage() {
             fields: item.match_in_fields ?? false,
             event: item.match_in_event ?? false,
             task: item.match_in_task ?? false,
+            secret: item.match_in_secret ?? false,
           },
         ])
       )
@@ -302,6 +303,10 @@ export default function DashboardPage() {
 
   const matchingTasksMap = searchResults
     ? new Map(searchResults.items.map((item) => [item.id, item.matching_tasks ?? []]))
+    : undefined;
+
+  const matchingSecretsMap = searchResults
+    ? new Map(searchResults.items.map((item) => [item.id, item.matching_secrets ?? []]))
     : undefined;
 
   const folderTreeProps = {
@@ -488,6 +493,7 @@ export default function DashboardPage() {
           matchingFieldsMap={matchingFieldsMap}
           matchingEventsMap={matchingEventsMap}
           matchingTasksMap={matchingTasksMap}
+          matchingSecretsMap={matchingSecretsMap}
           onPreviewAttachment={handlePreviewAttachment}
         />
 

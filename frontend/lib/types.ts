@@ -361,17 +361,27 @@ export interface MatchingTask {
   is_done: boolean;
 }
 
+export interface MatchingSecret {
+  id: number;
+  note_id: number;
+  name: string;
+  secret_type: string;
+  username?: string;
+}
+
 export interface SearchNote extends Note {
   match_in_attachment?: boolean;
   match_in_bookmark?: boolean;
   match_in_fields?: boolean;
   match_in_event?: boolean;
   match_in_task?: boolean;
+  match_in_secret?: boolean;
   matching_attachments?: MatchingAttachment[];
   matching_bookmarks?: MatchingBookmark[];
   matching_fields?: MatchingField[];
   matching_events?: MatchingEvent[];
   matching_tasks?: MatchingTask[];
+  matching_secrets?: MatchingSecret[];
 }
 
 export interface SearchResponse {

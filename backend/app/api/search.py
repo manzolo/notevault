@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import or_, exists, select, func
 from sqlalchemy.orm import selectinload
 from app.database.connection import get_db
-from app.models.database import Attachment, Bookmark, Event, Note, NoteField, NoteTag, Task, User
-from app.schemas.search import MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, MatchingTask, SearchResponse, SearchNoteResponse
+from app.models.database import Attachment, Bookmark, Event, Note, NoteField, NoteTag, Secret, Task, User
+from app.schemas.search import MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, MatchingSecret, MatchingTask, SearchResponse, SearchNoteResponse
 from app.security.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/search", tags=["search"])
@@ -92,6 +92,18 @@ async def search_notes(
         .label("match_in_task")
     )
 
+    # Correlated subquery: True if the note has matching secrets (name/username/url only)
+    secret_match = (
+        exists()
+        .where(
+            Secret.note_id == Note.id,
+            Secret.is_archived == False,  # noqa: E712
+            Secret.fts_vector.op("@@")(tsquery),
+        )
+        .correlate(Note)
+        .label("match_in_secret")
+    )
+
     base_where = [
         Note.user_id == current_user.id,
         or_(
@@ -118,6 +130,11 @@ async def search_notes(
                 Task.is_archived == False,  # noqa: E712
                 Task.fts_vector.op("@@")(tsquery),
             ),
+            exists().where(
+                Secret.note_id == Note.id,
+                Secret.is_archived == False,  # noqa: E712
+                Secret.fts_vector.op("@@")(tsquery),
+            ),
         ),
     ]
 
@@ -135,7 +152,7 @@ async def search_notes(
 
     # Main query with all match columns
     query = (
-        select(Note, attachment_match, bookmark_match, fields_match, event_match, task_match)
+        select(Note, attachment_match, bookmark_match, fields_match, event_match, task_match, secret_match)
         .options(selectinload(Note.tags))
         .where(*base_where)
         .order_by(func.ts_rank(Note.fts_vector, tsquery).desc())
@@ -151,7 +168,7 @@ async def search_notes(
 
     # Batch-fetch matching attachments for notes that have a match
     matching_att_map: dict = defaultdict(list)
-    att_note_ids = [note.id for note, ma, mb, mf, me, mt in rows if ma]
+    att_note_ids = [note.id for note, ma, mb, mf, me, mt, ms in rows if ma]
     if att_note_ids:
         att_q = select(
             Attachment.id, Attachment.note_id, Attachment.filename, Attachment.mime_type
@@ -166,7 +183,7 @@ async def search_notes(
 
     # Batch-fetch matching bookmarks for notes that have a match
     matching_bm_map: dict = defaultdict(list)
-    bm_note_ids = [note.id for note, ma, mb, mf, me, mt in rows if mb]
+    bm_note_ids = [note.id for note, ma, mb, mf, me, mt, ms in rows if mb]
     if bm_note_ids:
         bm_q = select(
             Bookmark.id, Bookmark.note_id, Bookmark.url, Bookmark.title, Bookmark.description
@@ -181,7 +198,7 @@ async def search_notes(
 
     # Batch-fetch matching fields for notes that have a match
     matching_fields_map: dict = defaultdict(list)
-    fields_note_ids = [note.id for note, ma, mb, mf, me, mt in rows if mf]
+    fields_note_ids = [note.id for note, ma, mb, mf, me, mt, ms in rows if mf]
     if fields_note_ids:
         fld_q = select(
             NoteField.id, NoteField.note_id, NoteField.group_name, NoteField.key, NoteField.value
@@ -196,7 +213,7 @@ async def search_notes(
 
     # Batch-fetch matching events for notes that have a match
     matching_events_map: dict = defaultdict(list)
-    event_note_ids = [note.id for note, ma, mb, mf, me, mt in rows if me]
+    event_note_ids = [note.id for note, ma, mb, mf, me, mt, ms in rows if me]
     if event_note_ids:
         ev_q = select(
             Event.id, Event.note_id, Event.title, Event.description, Event.start_datetime
@@ -218,7 +235,7 @@ async def search_notes(
 
     # Batch-fetch matching tasks for notes that have a match
     matching_tasks_map: dict = defaultdict(list)
-    task_note_ids = [note.id for note, ma, mb, mf, me, mt in rows if mt]
+    task_note_ids = [note.id for note, ma, mb, mf, me, mt, ms in rows if mt]
     if task_note_ids:
         tk_q = select(
             Task.id, Task.note_id, Task.title, Task.is_done
@@ -232,19 +249,43 @@ async def search_notes(
                 MatchingTask(id=tk_id, note_id=tk_note_id, title=tk_title, is_done=tk_is_done)
             )
 
+    # Batch-fetch matching secrets (name/username/url only — no encrypted_value)
+    matching_secrets_map: dict = defaultdict(list)
+    secret_note_ids = [note.id for note, ma, mb, mf, me, mt, ms in rows if ms]
+    if secret_note_ids:
+        sc_q = select(
+            Secret.id, Secret.note_id, Secret.name, Secret.secret_type, Secret.username
+        ).where(
+            Secret.note_id.in_(secret_note_ids),
+            Secret.is_archived == False,  # noqa: E712
+            Secret.fts_vector.op("@@")(tsquery),
+        )
+        for sc_id, sc_note_id, sc_name, sc_type, sc_username in (await db.execute(sc_q)).all():
+            matching_secrets_map[sc_note_id].append(
+                MatchingSecret(
+                    id=sc_id,
+                    note_id=sc_note_id,
+                    name=sc_name,
+                    secret_type=sc_type.value if hasattr(sc_type, "value") else str(sc_type),
+                    username=sc_username,
+                )
+            )
+
     items = []
-    for note, match_attachment, match_bookmark, match_fields, match_event, match_task in rows:
+    for note, match_attachment, match_bookmark, match_fields, match_event, match_task, match_secret in rows:
         item = SearchNoteResponse.model_validate(note)
         item.match_in_attachment = bool(match_attachment)
         item.match_in_bookmark = bool(match_bookmark)
         item.match_in_fields = bool(match_fields)
         item.match_in_event = bool(match_event)
         item.match_in_task = bool(match_task)
+        item.match_in_secret = bool(match_secret)
         item.matching_attachments = matching_att_map.get(note.id, [])
         item.matching_bookmarks = matching_bm_map.get(note.id, [])
         item.matching_fields = matching_fields_map.get(note.id, [])
         item.matching_events = matching_events_map.get(note.id, [])
         item.matching_tasks = matching_tasks_map.get(note.id, [])
+        item.matching_secrets = matching_secrets_map.get(note.id, [])
         items.append(item)
 
     return SearchResponse(items=items, total=total, query=q, page=page, per_page=per_page, pages=pages)

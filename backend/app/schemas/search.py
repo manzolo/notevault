@@ -46,6 +46,15 @@ class MatchingTask(BaseModel):
     title: str
     is_done: bool = False
 
+class MatchingSecret(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    note_id: int
+    name: str
+    secret_type: str
+    username: str | None = None
+
 class SearchNoteResponse(NoteResponse):
     model_config = ConfigDict(from_attributes=True)
 
@@ -54,11 +63,13 @@ class SearchNoteResponse(NoteResponse):
     match_in_fields: bool = False
     match_in_event: bool = False
     match_in_task: bool = False
+    match_in_secret: bool = False
     matching_attachments: List[MatchingAttachment] = []
     matching_bookmarks: List[MatchingBookmark] = []
     matching_fields: List[MatchingField] = []
     matching_events: List[MatchingEvent] = []
     matching_tasks: List[MatchingTask] = []
+    matching_secrets: List[MatchingSecret] = []
 
 class SearchResponse(BaseModel):
     items: List[SearchNoteResponse]

@@ -3,7 +3,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Category, MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, MatchingTask, Note } from '@/lib/types';
+import { Category, MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, MatchingSecret, MatchingTask, Note } from '@/lib/types';
 import NoteCard from './NoteCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -13,6 +13,7 @@ interface MatchInfo {
   fields: boolean;
   event: boolean;
   task: boolean;
+  secret: boolean;
 }
 
 interface NoteListProps {
@@ -29,6 +30,7 @@ interface NoteListProps {
   matchingFieldsMap?: Map<number, MatchingField[]>;
   matchingEventsMap?: Map<number, MatchingEvent[]>;
   matchingTasksMap?: Map<number, MatchingTask[]>;
+  matchingSecretsMap?: Map<number, MatchingSecret[]>;
   onPreviewAttachment?: (noteId: number, attachment: MatchingAttachment) => void;
 }
 
@@ -41,7 +43,7 @@ function findCategoryName(cats: Category[], id: number): string | undefined {
   return undefined;
 }
 
-export default function NoteList({ notes, loading, onDelete, onPin, onArchive, categories, filterActive, matchMap, matchingAttachmentsMap, matchingBookmarksMap, matchingFieldsMap, matchingEventsMap, matchingTasksMap, onPreviewAttachment }: NoteListProps) {
+export default function NoteList({ notes, loading, onDelete, onPin, onArchive, categories, filterActive, matchMap, matchingAttachmentsMap, matchingBookmarksMap, matchingFieldsMap, matchingEventsMap, matchingTasksMap, matchingSecretsMap, onPreviewAttachment }: NoteListProps) {
   const t = useTranslations('notes');
 
   if (loading) return <LoadingSpinner className="py-12" />;
@@ -73,11 +75,13 @@ export default function NoteList({ notes, loading, onDelete, onPin, onArchive, c
             matchInFields={match?.fields ?? false}
             matchInEvent={match?.event ?? false}
             matchInTask={match?.task ?? false}
+            matchInSecret={match?.secret ?? false}
             matchingAttachments={matchingAttachmentsMap?.get(note.id)}
             matchingBookmarks={matchingBookmarksMap?.get(note.id)}
             matchingFields={matchingFieldsMap?.get(note.id)}
             matchingEvents={matchingEventsMap?.get(note.id)}
             matchingTasks={matchingTasksMap?.get(note.id)}
+            matchingSecrets={matchingSecretsMap?.get(note.id)}
             onPreviewAttachment={onPreviewAttachment}
           />
         );

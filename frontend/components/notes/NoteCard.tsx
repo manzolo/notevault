@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRef } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, MatchingTask, Note } from '@/lib/types';
+import { MatchingAttachment, MatchingBookmark, MatchingEvent, MatchingField, MatchingSecret, MatchingTask, Note } from '@/lib/types';
 import { formatRelative, stripMarkdown, truncate } from '@/lib/utils';
 import Button from '@/components/common/Button';
 import { ArchiveIcon, CalendarIcon, CheckSquareIcon, EyeIcon, FolderIcon, GripIcon, LockClosedIcon, PinIcon, TrashIcon } from '@/components/common/Icons';
@@ -30,11 +30,13 @@ interface NoteCardProps {
   matchInFields?: boolean;
   matchInEvent?: boolean;
   matchInTask?: boolean;
+  matchInSecret?: boolean;
   matchingAttachments?: MatchingAttachment[];
   matchingBookmarks?: MatchingBookmark[];
   matchingFields?: MatchingField[];
   matchingEvents?: MatchingEvent[];
   matchingTasks?: MatchingTask[];
+  matchingSecrets?: MatchingSecret[];
   onPreviewAttachment?: (noteId: number, attachment: MatchingAttachment) => void;
 }
 
@@ -56,7 +58,7 @@ function GlobeIcon() {
   );
 }
 
-export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchInFields, matchInEvent, matchInTask, matchingAttachments, matchingBookmarks, matchingFields, matchingEvents, matchingTasks, onPreviewAttachment }: NoteCardProps) {
+export default function NoteCard({ note, onDelete, onPin, onArchive, categoryName, matchInAttachment, matchInBookmark, matchInFields, matchInEvent, matchInTask, matchInSecret, matchingAttachments, matchingBookmarks, matchingFields, matchingEvents, matchingTasks, matchingSecrets, onPreviewAttachment }: NoteCardProps) {
   const locale = useLocale();
   const t = useTranslations('notes');
   const tSearch = useTranslations('search');
@@ -153,7 +155,7 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
               );
             })()}
 
-            {(matchInAttachment || matchInBookmark || matchInFields || matchInEvent || matchInTask) && (
+            {(matchInAttachment || matchInBookmark || matchInFields || matchInEvent || matchInTask || matchInSecret) && (
               <div className="mt-2 flex flex-col gap-1.5">
                 {matchInAttachment && (
                   <div className="flex items-start gap-1.5 flex-wrap">
@@ -281,6 +283,29 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
                     ) : (
                       <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded text-xs">
                         {tSearch('foundInTask')}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {matchInSecret && (
+                  <div className="flex items-start gap-1.5 flex-wrap">
+                    <LockClosedIcon className="h-3.5 w-3.5 shrink-0 text-amber-500 mt-0.5" />
+                    {matchingSecrets && matchingSecrets.length > 0 ? (
+                      <span className="flex flex-wrap gap-1">
+                        {matchingSecrets.map((sc) => (
+                          <span
+                            key={sc.id}
+                            className="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded text-xs"
+                            title={sc.username ? `${sc.secret_type} · ${sc.username}` : sc.secret_type}
+                          >
+                            {sc.name}
+                            {sc.username && <span className="text-amber-400 dark:text-amber-500 ml-1 font-normal">({sc.username})</span>}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded text-xs">
+                        {tSearch('foundInSecret')}
                       </span>
                     )}
                   </div>

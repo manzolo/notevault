@@ -130,6 +130,25 @@ BEFORE INSERT OR UPDATE ON tasks
 FOR EACH ROW EXECUTE FUNCTION tasks_fts_trigger_func()
 """
 
+_SECRET_FTS_FUNCTION = """
+CREATE OR REPLACE FUNCTION secrets_fts_trigger_func()
+RETURNS trigger AS $$
+BEGIN
+    NEW.fts_vector :=
+        setweight(to_tsvector('simple', coalesce(NEW.name, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(NEW.username, '')), 'B') ||
+        setweight(to_tsvector('simple', coalesce(NEW.url, '')), 'C');
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql
+"""
+
+_SECRET_FTS_TRIGGER = """
+CREATE OR REPLACE TRIGGER secrets_fts_update
+BEFORE INSERT OR UPDATE ON secrets
+FOR EACH ROW EXECUTE FUNCTION secrets_fts_trigger_func()
+"""
+
 
 @pytest_asyncio.fixture(scope="session")
 async def engine():
@@ -152,6 +171,8 @@ async def engine():
         await conn.execute(text(_EVENT_FTS_TRIGGER))
         await conn.execute(text(_TASK_FTS_FUNCTION))
         await conn.execute(text(_TASK_FTS_TRIGGER))
+        await conn.execute(text(_SECRET_FTS_FUNCTION))
+        await conn.execute(text(_SECRET_FTS_TRIGGER))
     yield eng
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

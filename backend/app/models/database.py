@@ -150,6 +150,7 @@ class Secret(Base):
     url = Column(String(2048), nullable=True)
     public_key = Column(Text, nullable=True)  # SSH public key, stored plain (not a secret)
     encrypted_value = Column(BYTEA, nullable=False)  # nonce(12B) || ciphertext
+    fts_vector = Column(TSVECTOR, nullable=True)
     note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False)
     position = Column(Integer, default=0, nullable=False)
     is_archived = Column(Boolean, default=False, nullable=False)
