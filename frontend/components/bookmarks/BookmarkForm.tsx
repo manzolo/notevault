@@ -38,7 +38,7 @@ export default function BookmarkForm({ initial, availableTags = [], onSubmit, on
       await onSubmit({
         url: url.trim(),
         title: title.trim() || undefined,
-        description: description.trim() || undefined,
+        description: description.trim(),
         tag_ids: selectedTagIds,
       });
     } catch (err: any) {

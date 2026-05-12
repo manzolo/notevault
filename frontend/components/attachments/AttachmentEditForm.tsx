@@ -50,7 +50,7 @@ export default function AttachmentEditForm({ attachment, availableTags = [], onS
     try {
       await onSave({
         filename: filename.trim() !== attachment.filename ? filename.trim() : undefined,
-        description: description || undefined,
+        description: description.trim(),
         tag_ids: selectedTagIds,
         content: isTextEditable && fetchContent && content !== null ? content : undefined,
       });
