@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.16.10] - 2026-05-12
+### Fixed
+- NoteCard: folder badge now always appears before tag badges in the metadata strip.
+
 ## [0.16.9] - 2026-05-12
 ### Fixed
 - Bookmark title: clearing the title field and saving now correctly sends an empty string to the backend. Same `|| undefined` coercion bug as v0.16.8 description fix.
