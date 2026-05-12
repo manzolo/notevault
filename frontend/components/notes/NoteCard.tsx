@@ -115,17 +115,17 @@ export default function NoteCard({ note, onDelete, onPin, onArchive, categoryNam
             </div>
             <p className="text-sm text-gray-500 dark:text-vault-300 mb-2 leading-relaxed">{truncate(stripMarkdown(note.content), 120)}</p>
             <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
-              {note.tags.map((tag) => (
-                <span key={tag.id} className="bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 text-xs px-2 py-0.5 rounded-full border border-violet-200/60 dark:border-violet-500/20">
-                  {tag.name}
-                </span>
-              ))}
               {categoryName && (
                 <span className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-500/20">
                   <FolderIcon className="w-3 h-3" />
                   {categoryName}
                 </span>
               )}
+              {note.tags.map((tag) => (
+                <span key={tag.id} className="bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 text-xs px-2 py-0.5 rounded-full border border-violet-200/60 dark:border-violet-500/20">
+                  {tag.name}
+                </span>
+              ))}
               <span className="font-mono text-xs text-gray-400 dark:text-vault-400 tabular-nums">{formatRelative(note.updated_at, locale)}</span>
               <DateInfoTooltip createdAt={note.created_at} updatedAt={note.updated_at} />
             </div>
