@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.16.9] - 2026-05-12
+### Fixed
+- Bookmark title: clearing the title field and saving now correctly sends an empty string to the backend. Same `|| undefined` coercion bug as v0.16.8 description fix.
+
 ## [0.16.8] - 2026-05-12
 ### Fixed
 - Attachment and bookmark description: clearing the description field and saving now correctly sends an empty string to the backend. Previously `description || undefined` coerced `""` to `undefined`, causing the PATCH/PUT to omit the field and leave the old value intact.
