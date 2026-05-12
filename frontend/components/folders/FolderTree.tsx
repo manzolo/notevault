@@ -552,9 +552,31 @@ export default function FolderTree({
 
   return (
     <div className="select-none">
-      {/* "All Notes" root item */}
+      {/* "Recently Modified" virtual item */}
       <div
         className={`flex items-center rounded-md transition-colors px-1 ${
+          recentMode
+            ? 'bg-amber-50 dark:bg-amber-900/30'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+        }`}
+      >
+        <span className="w-5 shrink-0" />
+        <ClockIcon className="w-4 h-4 text-amber-500 shrink-0 mr-1" />
+        <button
+          className="flex-1 text-left py-1.5"
+          onClick={() => {
+            onSelectRecent?.();
+          }}
+        >
+          <span className={`text-xs ${recentMode ? 'text-amber-700 dark:text-amber-300 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+            {t('recentlyModified')}
+          </span>
+        </button>
+      </div>
+
+      {/* "All Notes" root item */}
+      <div
+        className={`flex items-center rounded-md transition-colors px-1 mt-0.5 ${
           selectedCategoryId === null && selectedJournalKey === null && !recentMode
             ? 'bg-indigo-50 dark:bg-indigo-900/30'
             : dropTarget === 'root'
@@ -582,28 +604,6 @@ export default function FolderTree({
             }`}
           >
             {t('allNotes')}
-          </span>
-        </button>
-      </div>
-
-      {/* "Recently Modified" virtual item */}
-      <div
-        className={`flex items-center rounded-md transition-colors px-1 mt-0.5 ${
-          recentMode
-            ? 'bg-amber-50 dark:bg-amber-900/30'
-            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
-        }`}
-      >
-        <span className="w-5 shrink-0" />
-        <ClockIcon className="w-4 h-4 text-amber-500 shrink-0 mr-1" />
-        <button
-          className="flex-1 text-left py-1.5"
-          onClick={() => {
-            onSelectRecent?.();
-          }}
-        >
-          <span className={`text-xs ${recentMode ? 'text-amber-700 dark:text-amber-300 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
-            {t('recentlyModified')}
           </span>
         </button>
       </div>
