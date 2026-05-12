@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.16.8] - 2026-05-12
+### Fixed
+- Attachment and bookmark description: clearing the description field and saving now correctly sends an empty string to the backend. Previously `description || undefined` coerced `""` to `undefined`, causing the PATCH/PUT to omit the field and leave the old value intact.
+
 ## [0.16.7] - 2026-05-12
 ### Added
 - Recently Modified notes view: new "Recenti" / "Recently Modified" entry in the sidebar FolderTree. When selected, notes are sorted by last modification date (`updated_at DESC`) without pinned-note priority, making it easy to find the last edited note regardless of folder or pin status. New `sort=recent` query parameter on `GET /api/notes`.
