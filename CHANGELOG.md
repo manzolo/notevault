@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.16.11] - 2026-05-12
+### Fixed
+- FolderTree: "Recenti" now appears before "Senza cartella" in the sidebar folder list.
+
 ## [0.16.10] - 2026-05-12
 ### Fixed
 - NoteCard: folder badge now always appears before tag badges in the metadata strip.
