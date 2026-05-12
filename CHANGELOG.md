@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.16.7] - 2026-05-12
+### Added
+- Recently Modified notes view: new "Recenti" / "Recently Modified" entry in the sidebar FolderTree. When selected, notes are sorted by last modification date (`updated_at DESC`) without pinned-note priority, making it easy to find the last edited note regardless of folder or pin status. New `sort=recent` query parameter on `GET /api/notes`.
+
 ## [0.16.6] - 2026-05-06
 ### Added
 - Secrets FTS search: searching by secret name, username, or URL now returns the containing note with an amber badge showing the matched secret name. Encrypted values are never indexed. Migration 039 adds `fts_vector` column + trigger on `secrets` table.
