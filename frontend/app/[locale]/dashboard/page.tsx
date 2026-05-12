@@ -15,7 +15,7 @@ import FolderTree from '@/components/folders/FolderTree';
 import MiniCalendar from '@/components/calendar/MiniCalendar';
 import Pagination from '@/components/common/Pagination';
 import Button from '@/components/common/Button';
-import { PlusIcon, FolderIcon, CalendarIcon, ChevronDownIcon, BookOpenIcon } from '@/components/common/Icons';
+import { PlusIcon, FolderIcon, CalendarIcon, ChevronDownIcon, BookOpenIcon, ClockIcon } from '@/components/common/Icons';
 import api from '@/lib/api';
 import { JournalTreeYear, MatchingAttachment, MatchingTask, SearchResponse } from '@/lib/types';
 import { dateToLocalStart, dateToLocalEnd } from '@/lib/utils';
@@ -59,6 +59,7 @@ export default function DashboardPage() {
   const [selectedJournalYear, setSelectedJournalYear] = useState<number | null>(null);
   const [selectedJournalMonth, setSelectedJournalMonth] = useState<string | null>(null);
   const [selectedJournalDate, setSelectedJournalDate] = useState<string | null>(null);
+  const [recentMode, setRecentMode] = useState(false);
 
   // Mobile sidebar accordion state
   const [mobileFoldersOpen, setMobileFoldersOpen] = useState(false);
@@ -105,9 +106,10 @@ export default function DashboardPage() {
         selectedJournalYear,
         selectedJournalMonth,
         selectedJournalDate,
+        recentMode ? 'recent' : undefined,
       ).then(() => {});
     }
-  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly, archivedOnly, recursive, bypassCategoryFilter, selectedJournalYear, selectedJournalMonth, selectedJournalDate, fetchNotes]);
+  }, [user, page, selectedTagId, dateFrom, dateTo, selectedCategoryId, pinnedOnly, archivedOnly, recursive, bypassCategoryFilter, selectedJournalYear, selectedJournalMonth, selectedJournalDate, recentMode, fetchNotes]);
 
   useEffect(() => {
     sessionStorage.setItem('dashboard_categoryId', String(selectedCategoryId));
@@ -125,6 +127,7 @@ export default function DashboardPage() {
   const handleCategorySelect = (categoryId: number | null) => {
     setSelectedCategoryId(categoryId);
     setBypassCategoryFilter(false);
+    setRecentMode(false);
     setSelectedJournalKey(null);
     setSelectedJournalYear(null);
     setSelectedJournalMonth(null);
@@ -141,11 +144,24 @@ export default function DashboardPage() {
   }) => {
     setSelectedCategoryId(null);
     setBypassCategoryFilter(true);
+    setRecentMode(false);
     setRecursive(false);
     setSelectedJournalKey(selection.key);
     setSelectedJournalYear(selection.year ?? null);
     setSelectedJournalMonth(selection.month ?? null);
     setSelectedJournalDate(selection.date ?? null);
+    setPage(1);
+  };
+
+  const handleRecentSelect = () => {
+    setRecentMode(true);
+    setSelectedCategoryId(null);
+    setBypassCategoryFilter(true);
+    setRecursive(false);
+    setSelectedJournalKey(null);
+    setSelectedJournalYear(null);
+    setSelectedJournalMonth(null);
+    setSelectedJournalDate(null);
     setPage(1);
   };
 
@@ -166,6 +182,7 @@ export default function DashboardPage() {
     } else {
       // Bypass folder filter so the date search spans all folders
       setBypassCategoryFilter(true);
+      setRecentMode(false);
       setSelectedCategoryId(null);
       setRecursive(false);
       handleDateChange(date, date);
@@ -203,7 +220,7 @@ export default function DashboardPage() {
     const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
     const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
     const catId = bypassCategoryFilter ? undefined : selectedCategoryId;
-    fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate);
+    fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate, recentMode ? 'recent' : undefined);
   };
 
   const handlePin = async (id: number, pinned: boolean) => {
@@ -214,7 +231,7 @@ export default function DashboardPage() {
       const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
       const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
       const catId = bypassCategoryFilter ? undefined : selectedCategoryId;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate);
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate, recentMode ? 'recent' : undefined);
     }
   };
 
@@ -226,7 +243,7 @@ export default function DashboardPage() {
       const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
       const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
       const catId = bypassCategoryFilter ? undefined : selectedCategoryId;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate);
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate, recentMode ? 'recent' : undefined);
     }
   };
 
@@ -323,12 +340,14 @@ export default function DashboardPage() {
     selectedJournalKey,
     onSelectJournal: handleJournalSelect,
     onOpenJournalDay: handleOpenJournalDay,
+    recentMode,
+    onSelectRecent: handleRecentSelect,
     onDropNote: async (noteId: number, categoryId: number | null) => {
       await updateNote(noteId, { category_id: categoryId });
       const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
       const before = dateTo ? dateToLocalEnd(dateTo) : undefined;
       const catId = bypassCategoryFilter ? undefined : selectedCategoryId;
-      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate);
+      fetchNotes(page, PER_PAGE, selectedTagId, after, before, catId, pinnedOnly, archivedOnly, undefined, recursive, selectedJournalYear, selectedJournalMonth, selectedJournalDate, recentMode ? 'recent' : undefined);
       fetchCategories();
     },
   };
@@ -368,7 +387,12 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            {t('myNotes')}
+            {recentMode ? (
+              <span className="flex items-center gap-2">
+                <ClockIcon className="w-7 h-7 text-amber-500" />
+                {tFolders('recentlyModified')}
+              </span>
+            ) : t('myNotes')}
           </h1>
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={handleTodayNote} loading={journalLoading}>

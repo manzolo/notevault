@@ -583,3 +583,29 @@ async def test_list_notes_recursive_false_excludes_subcategories(client, auth_he
     ids = [n["id"] for n in response.json()["items"]]
     assert parent_note_id in ids
     assert child_note_id not in ids
+
+
+async def test_list_notes_sort_recent(client, auth_headers):
+    """sort=recent orders by updated_at DESC ignoring is_pinned, unlike default."""
+    # Create a pinned note first (will have earlier updated_at)
+    pinned_resp = await client.post("/api/notes", json={"title": "Pinned old note", "content": ""}, headers=auth_headers)
+    pinned_id = pinned_resp.json()["id"]
+    await client.put(f"/api/notes/{pinned_id}", json={"is_pinned": True}, headers=auth_headers)
+
+    # Create a second note (later updated_at, not pinned)
+    newer_resp = await client.post("/api/notes", json={"title": "Newer unpinned note", "content": ""}, headers=auth_headers)
+    newer_id = newer_resp.json()["id"]
+    # Touch it so updated_at > pinned note
+    await client.put(f"/api/notes/{newer_id}", json={"title": "Newer unpinned note updated"}, headers=auth_headers)
+
+    # Default sort: pinned note appears first
+    default_resp = await client.get("/api/notes", headers=auth_headers)
+    assert default_resp.status_code == 200
+    default_ids = [n["id"] for n in default_resp.json()["items"]]
+    assert default_ids.index(pinned_id) < default_ids.index(newer_id)
+
+    # sort=recent: newer (not pinned) note appears first
+    recent_resp = await client.get("/api/notes", params={"sort": "recent"}, headers=auth_headers)
+    assert recent_resp.status_code == 200
+    recent_ids = [n["id"] for n in recent_resp.json()["items"]]
+    assert recent_ids.index(newer_id) < recent_ids.index(pinned_id)

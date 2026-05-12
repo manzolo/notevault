@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Category, JournalTreeYear } from '@/lib/types';
 import {
   BookOpenIcon,
+  ClockIcon,
   FolderIcon,
   FolderOpenIcon,
   ChevronRightIcon,
@@ -30,6 +31,8 @@ interface FolderTreeProps {
   onOpenJournalDay?: (noteId: number) => void;
   onDropNote?: (noteId: number, categoryId: number | null) => Promise<void>;
   isDragging?: boolean;
+  recentMode?: boolean;
+  onSelectRecent?: () => void;
 }
 
 // Returns ancestor IDs path to targetId, or null if not found
@@ -336,6 +339,8 @@ export default function FolderTree({
   onOpenJournalDay,
   onDropNote,
   isDragging = false,
+  recentMode = false,
+  onSelectRecent,
 }: FolderTreeProps) {
   const t = useTranslations('folders');
   const tn = useTranslations('notes');
@@ -550,7 +555,7 @@ export default function FolderTree({
       {/* "All Notes" root item */}
       <div
         className={`flex items-center rounded-md transition-colors px-1 ${
-          selectedCategoryId === null && selectedJournalKey === null
+          selectedCategoryId === null && selectedJournalKey === null && !recentMode
             ? 'bg-indigo-50 dark:bg-indigo-900/30'
             : dropTarget === 'root'
             ? 'bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-300 dark:ring-indigo-700'
@@ -571,12 +576,34 @@ export default function FolderTree({
         >
           <span
             className={`text-xs ${
-              selectedCategoryId === null && selectedJournalKey === null
+              selectedCategoryId === null && selectedJournalKey === null && !recentMode
                 ? 'text-indigo-700 dark:text-indigo-300 font-medium'
                 : 'text-gray-600 dark:text-gray-400'
             }`}
           >
             {t('allNotes')}
+          </span>
+        </button>
+      </div>
+
+      {/* "Recently Modified" virtual item */}
+      <div
+        className={`flex items-center rounded-md transition-colors px-1 mt-0.5 ${
+          recentMode
+            ? 'bg-amber-50 dark:bg-amber-900/30'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+        }`}
+      >
+        <span className="w-5 shrink-0" />
+        <ClockIcon className="w-4 h-4 text-amber-500 shrink-0 mr-1" />
+        <button
+          className="flex-1 text-left py-1.5"
+          onClick={() => {
+            onSelectRecent?.();
+          }}
+        >
+          <span className={`text-xs ${recentMode ? 'text-amber-700 dark:text-amber-300 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+            {t('recentlyModified')}
           </span>
         </button>
       </div>

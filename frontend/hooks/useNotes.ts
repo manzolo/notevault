@@ -24,6 +24,7 @@ export function useNotes() {
     journalYear?: number | null,
     journalMonth?: string | null,
     journalDate?: string | null,
+    sort?: string,
   ) => {
     setLoading(true);
     setError(null);
@@ -44,6 +45,7 @@ export function useNotes() {
       if (journalYear != null) params.journal_year = journalYear;
       if (journalMonth) params.journal_month = journalMonth;
       if (journalDate) params.journal_date = journalDate;
+      if (sort) params.sort = sort;
       const response = await api.get<NoteListResponse>('/api/notes', { params });
       setNotes(response.data.items);
       setTotal(response.data.total);

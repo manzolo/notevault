@@ -295,6 +295,7 @@
   },
   "folders": {
     "allNotes": "Unfiled",
+    "recentlyModified": "Recently Modified",
     "journal": "Journal",
     "newFolder": "New folder",
     "newSubfolder": "New subfolder",

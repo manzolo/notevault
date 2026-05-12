@@ -311,6 +311,7 @@ async def list_notes(
     journal_year: Optional[int] = Query(None),
     journal_month: Optional[str] = Query(None),
     journal_date: Optional[date] = Query(None),
+    sort: str = Query("default"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -464,9 +465,12 @@ async def list_notes(
 
     count_result = await db.execute(select(func.count(Note.id)).where(base_filter))
     total = count_result.scalar()
-    order_by = [Note.is_pinned.desc(), Note.updated_at.desc()]
-    if journal_date is not None or journal_month is not None or journal_year is not None:
+    if sort == "recent":
+        order_by = [Note.updated_at.desc()]
+    elif journal_date is not None or journal_month is not None or journal_year is not None:
         order_by = [Note.journal_date.desc(), Note.updated_at.desc()]
+    else:
+        order_by = [Note.is_pinned.desc(), Note.updated_at.desc()]
 
     result = await db.execute(
         select(Note).options(selectinload(Note.tags)).where(base_filter)
