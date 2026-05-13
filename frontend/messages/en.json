@@ -186,7 +186,10 @@
     "totpCopyCode": "Copy code",
     "totpInvalidSeed": "Invalid Base32 seed",
     "keystorePassword": "Keystore password",
-    "urlKeystorePlaceholder": "e.g. /path/to/keystore.jks or alias"
+    "urlKeystorePlaceholder": "e.g. /path/to/keystore.jks or alias",
+    "edit": "Edit",
+    "save": "Save",
+    "editValuePlaceholder": "Leave blank to keep the current value"
   },
   "attachments": {
     "attachments": "Attachments",
@@ -426,7 +429,8 @@
     "archivedCount": "Archived · {count}",
     "archiveConfirm": "Archive this item?",
     "restoreConfirm": "Restore this item?",
-    "deleteConfirm": "Delete this item permanently?"
+    "deleteConfirm": "Delete this item permanently?",
+    "today": "Today"
   },
   "fields": {
     "panelTitle": "Technical Fields",

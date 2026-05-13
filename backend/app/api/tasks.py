@@ -66,6 +66,7 @@ async def create_task(
         position=data.position,
     )
     db.add(task)
+    note.updated_at = datetime.now(timezone.utc)
     await db.flush()
     await db.refresh(task)
     return task
@@ -127,6 +128,7 @@ async def update_task(
                 trigger_time = task.due_date - timedelta(minutes=tr.minutes_before)
                 tr.notified_at = None if trigger_time > now else now
 
+    note.updated_at = datetime.now(timezone.utc)
     await db.flush()
     await db.refresh(task)
     return task
@@ -141,6 +143,7 @@ async def delete_task(
     db: AsyncSession = Depends(get_db),
 ):
     task = await _get_task_owned(task_id, note_id, current_user, db)
+    note.updated_at = datetime.now(timezone.utc)
     await db.delete(task)
 
 

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import api from '@/lib/api';
-import { Secret, SecretCreate, SecretReveal } from '@/lib/types';
+import { Secret, SecretCreate, SecretReveal, SecretUpdate } from '@/lib/types';
 import { copyToClipboard } from '@/lib/utils';
 import { useArchivable } from '@/hooks/useArchivable';
 
@@ -28,6 +28,12 @@ export function useSecrets(noteId: number) {
   const createSecret = useCallback(async (data: SecretCreate): Promise<Secret> => {
     const response = await api.post<Secret>(`/api/notes/${noteId}/secrets`, data);
     setSecrets((prev) => [...prev, response.data]);
+    return response.data;
+  }, [noteId]);
+
+  const updateSecret = useCallback(async (secretId: number, data: SecretUpdate): Promise<Secret> => {
+    const response = await api.put<Secret>(`/api/notes/${noteId}/secrets/${secretId}`, data);
+    setSecrets((prev) => prev.map((s) => s.id === secretId ? response.data : s));
     return response.data;
   }, [noteId]);
 
@@ -104,6 +110,7 @@ export function useSecrets(noteId: number) {
     loading,
     fetchSecrets,
     createSecret,
+    updateSecret,
     revealSecret,
     hideSecret,
     deleteSecret,

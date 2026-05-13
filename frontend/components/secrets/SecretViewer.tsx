@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Secret, SecretReveal } from '@/lib/types';
+import { Secret, SecretReveal, SecretType, SecretUpdate } from '@/lib/types';
 import { copyToClipboard } from '@/lib/utils';
 import Button from '@/components/common/Button';
-import { ArchiveIcon, ClipboardCheckIcon, ClipboardIcon, EyeIcon, EyeOffIcon, TrashIcon } from '@/components/common/Icons';
+import Input from '@/components/common/Input';
+import { ArchiveIcon, ClipboardCheckIcon, ClipboardIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon } from '@/components/common/Icons';
 import { useConfirm } from '@/hooks/useConfirm';
 import DateInfoTooltip from '@/components/common/DateInfoTooltip';
 import TotpLiveWidget from './TotpLiveWidget';
@@ -75,6 +76,10 @@ function KeystoreValueDisplay({ value }: { value: string }) {
   return <MonoBox>{value}</MonoBox>;
 }
 
+const SECRET_TYPES: SecretType[] = ['password', 'api_key', 'token', 'ssh_key', 'certificate', 'totp_seed', 'keystore', 'other'];
+const SHOW_USERNAME: SecretType[] = ['password', 'api_key', 'ssh_key'];
+const SHOW_URL: SecretType[] = ['password', 'api_key', 'token', 'ssh_key', 'keystore'];
+
 interface SecretViewerProps {
   secret: Secret;
   revealed?: SecretReveal;
@@ -84,20 +89,56 @@ interface SecretViewerProps {
   onDelete: () => void;
   onArchive?: (note?: string) => void;
   onCopyDirect?: () => Promise<void>;
+  onUpdate?: (data: SecretUpdate) => Promise<unknown>;
 }
 
 export default function SecretViewer({
-  secret, revealed, countdownSeconds, onReveal, onHide, onDelete, onArchive, onCopyDirect,
+  secret, revealed, countdownSeconds, onReveal, onHide, onDelete, onArchive, onCopyDirect, onUpdate,
 }: SecretViewerProps) {
   const t = useTranslations('secrets');
   const tc = useTranslations('common');
   const [copied, setCopied] = useState(false);
   const [copiedPub, setCopiedPub] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editType, setEditType] = useState<SecretType>('password');
+  const [editUsername, setEditUsername] = useState('');
+  const [editUrl, setEditUrl] = useState('');
+  const [editPublicKey, setEditPublicKey] = useState('');
+  const [editValue, setEditValue] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
   const { confirm, confirmInput, dialog } = useConfirm();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: secret.id });
 
   const markCopied = () => { setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const markCopiedPub = () => { setCopiedPub(true); setTimeout(() => setCopiedPub(false), 2000); };
+
+  const startEditing = () => {
+    setEditName(secret.name);
+    setEditType(secret.secret_type);
+    setEditUsername(secret.username ?? '');
+    setEditUrl(secret.url ?? '');
+    setEditPublicKey(secret.public_key ?? '');
+    setEditValue('');
+    setEditing(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onUpdate) return;
+    setEditLoading(true);
+    try {
+      const payload: SecretUpdate = { name: editName, secret_type: editType };
+      if (editValue) payload.value = editValue;
+      payload.username = SHOW_USERNAME.includes(editType) ? (editUsername.trim() || undefined) : undefined;
+      payload.url = SHOW_URL.includes(editType) ? (editUrl.trim() || undefined) : undefined;
+      payload.public_key = editType === 'ssh_key' ? (editPublicKey.trim() || undefined) : undefined;
+      await onUpdate(payload);
+      setEditing(false);
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   const handleCopy = async (value: string) => { await copyToClipboard(value); markCopied(); };
   const handleCopyDirect = async () => { if (!onCopyDirect) return; await onCopyDirect(); markCopied(); };
@@ -112,6 +153,66 @@ export default function SecretViewer({
     });
     if (confirmed) onArchive(value || undefined);
   };
+
+  if (editing) {
+    return (
+      <div className={`border border-indigo-300 dark:border-indigo-600 border-l-2 border-l-indigo-400 rounded-lg bg-white dark:bg-gray-800/60 px-3 py-3`}>
+        <form onSubmit={handleEditSubmit} className="space-y-2">
+          <Input
+            label={t('secretName')}
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            required
+          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('secretType')}</label>
+            <select
+              value={editType}
+              onChange={(e) => setEditType(e.target.value as SecretType)}
+              className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {SECRET_TYPES.map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          {SHOW_USERNAME.includes(editType) && (
+            <Input label={t('username')} value={editUsername} onChange={(e) => setEditUsername(e.target.value)} />
+          )}
+          {SHOW_URL.includes(editType) && (
+            <Input label={t('url')} value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
+          )}
+          {editType === 'ssh_key' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('publicKey')}</label>
+              <textarea
+                value={editPublicKey}
+                onChange={(e) => setEditPublicKey(e.target.value)}
+                rows={2}
+                className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {editType === 'ssh_key' ? t('privateKey') : t('secretValue')}
+            </label>
+            <textarea
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              rows={2}
+              placeholder={t('editValuePlaceholder')}
+              className="block w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex gap-2 justify-end pt-1">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>{tc('cancel')}</Button>
+            <Button type="submit" variant="secondary" size="sm" loading={editLoading}>{t('save')}</Button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -246,6 +347,11 @@ export default function SecretViewer({
                       <EyeOffIcon />
                     </Button>
                   </>
+                )}
+                {onUpdate && (
+                  <Button size="sm" variant="ghost" title={t('edit')} onClick={startEditing}>
+                    <PencilIcon />
+                  </Button>
                 )}
                 {onArchive && (
                   <Button size="sm" variant="ghost" title={tc('archive')} onClick={handleArchive}>

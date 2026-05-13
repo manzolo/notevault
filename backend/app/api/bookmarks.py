@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -66,6 +67,7 @@ async def create_bookmark(
             if tid in owned_tag_ids:
                 db.add(BookmarkTag(bookmark_id=bookmark.id, tag_id=tid))
 
+    note.updated_at = datetime.now(timezone.utc)
     await db.flush()
 
     result = await db.execute(
@@ -155,6 +157,7 @@ async def update_bookmark(
                 if tid in owned_tag_ids:
                     db.add(BookmarkTag(bookmark_id=bookmark.id, tag_id=tid))
 
+    note.updated_at = datetime.now(timezone.utc)
     await db.flush()
 
     # Reload with updated tags (populate_existing bypasses identity-map cache)
@@ -176,4 +179,5 @@ async def delete_bookmark(
     db: AsyncSession = Depends(get_db),
 ):
     bookmark = await _get_bookmark(bookmark_id, note_id, db)
+    note.updated_at = datetime.now(timezone.utc)
     await db.delete(bookmark)

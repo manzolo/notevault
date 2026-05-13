@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Secret, SecretReveal } from '@/lib/types';
+import { Secret, SecretReveal, SecretUpdate } from '@/lib/types';
 import SecretViewer from './SecretViewer';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { ArchiveIcon, ChevronDownIcon, RestoreIcon, TrashIcon } from '@/components/common/Icons';
@@ -30,6 +30,7 @@ interface SecretListProps {
   onRestore: (id: number) => Promise<unknown>;
   onCopyDirect?: (id: number) => Promise<void>;
   onReorder: (items: { id: number; position: number }[]) => Promise<void>;
+  onUpdate?: (id: number, data: SecretUpdate) => Promise<unknown>;
   fetchArchivedSecrets: () => Promise<Secret[]>;
   setSecrets: (secrets: Secret[]) => void;
   onArchivedCountChange?: (count: number) => void;
@@ -37,7 +38,7 @@ interface SecretListProps {
 
 export default function SecretList({
   secrets, revealedSecrets, countdown, loading, onReveal, onHide, onDelete, onArchive, onRestore,
-  onCopyDirect, onReorder, fetchArchivedSecrets, setSecrets, onArchivedCountChange,
+  onCopyDirect, onReorder, onUpdate, fetchArchivedSecrets, setSecrets, onArchivedCountChange,
 }: SecretListProps) {
   const t = useTranslations('secrets');
   const tc = useTranslations('common');
@@ -118,6 +119,7 @@ export default function SecretList({
                   setArchivedSecretsAndNotify([...archivedSecrets, { ...secret, is_archived: true, archive_note: note || null }]);
                 }}
                 onCopyDirect={onCopyDirect ? () => onCopyDirect(secret.id) : undefined}
+                onUpdate={onUpdate ? (data) => onUpdate(secret.id, data) : undefined}
               />
             ))}
           </div>

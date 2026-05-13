@@ -203,6 +203,15 @@ export interface SecretCreate {
   public_key?: string;
 }
 
+export interface SecretUpdate {
+  name?: string;
+  secret_type?: SecretType;
+  value?: string;
+  username?: string;
+  url?: string;
+  public_key?: string;
+}
+
 export interface Attachment {
   id: number;
   note_id: number;

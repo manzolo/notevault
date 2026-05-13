@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
@@ -7,7 +8,7 @@ from app.api.deps import get_owned_note
 from app.database.connection import get_db
 from app.models.database import Note, Secret, SecretAccessLog, User
 from app.models.enums import AuditAction
-from app.schemas.secret import SecretArchiveUpdate, SecretCreate, SecretResponse, SecretRevealResponse
+from app.schemas.secret import SecretArchiveUpdate, SecretCreate, SecretResponse, SecretRevealResponse, SecretUpdate
 from app.security.dependencies import get_current_user
 from app.security.encryption import get_encryption
 from app.security.rate_limit import limiter
@@ -87,6 +88,43 @@ async def create_secret(
     )
     db.add(log)
 
+    note.updated_at = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(secret)
+    return secret
+
+
+@router.put("/{note_id}/secrets/{secret_id}", response_model=SecretResponse)
+async def update_secret(
+    note_id: int,
+    secret_id: int,
+    data: SecretUpdate,
+    note: Note = Depends(get_owned_note),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Secret).where(Secret.id == secret_id, Secret.note_id == note_id)
+    )
+    secret = result.scalar_one_or_none()
+    if not secret:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Secret not found")
+
+    if data.name is not None:
+        secret.name = data.name
+    if data.secret_type is not None:
+        secret.secret_type = data.secret_type
+    if data.value:
+        enc = get_encryption()
+        secret.encrypted_value = enc.encrypt(data.value)
+    if "username" in data.model_fields_set:
+        secret.username = data.username or None
+    if "url" in data.model_fields_set:
+        secret.url = data.url or None
+    if "public_key" in data.model_fields_set:
+        secret.public_key = data.public_key or None
+
+    note.updated_at = datetime.now(timezone.utc)
     await db.flush()
     await db.refresh(secret)
     return secret
@@ -169,6 +207,7 @@ async def archive_secret(
 
     secret.is_archived = body.is_archived
     secret.archive_note = body.archive_note if body.is_archived else None
+    note.updated_at = datetime.now(timezone.utc)
     await db.flush()
     await db.refresh(secret)
     return secret
@@ -197,4 +236,5 @@ async def delete_secret(
     )
     db.add(log)
 
+    note.updated_at = datetime.now(timezone.utc)
     await db.delete(secret)

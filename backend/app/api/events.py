@@ -129,6 +129,7 @@ async def create_event(
         recurrence_rule=payload.recurrence_rule,
     )
     db.add(event)
+    note.updated_at = datetime.now(timezone.utc)
     await db.flush()
     await db.refresh(event)
     # reload with attachments
@@ -153,6 +154,7 @@ async def update_event(
     for field in payload.model_fields_set:
         setattr(event, field, getattr(payload, field))
     event.updated_at = datetime.now(timezone.utc)
+    note.updated_at = datetime.now(timezone.utc)
     await db.flush()
     await db.refresh(event)
     result = await db.execute(
@@ -179,6 +181,7 @@ async def delete_event(
             os.remove(path)
         except FileNotFoundError:
             pass
+    note.updated_at = datetime.now(timezone.utc)
     await db.delete(event)
 
 

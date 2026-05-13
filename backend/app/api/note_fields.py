@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -40,6 +41,7 @@ async def create_field(
 ):
     field = NoteField(note_id=note_id, **data.model_dump())
     db.add(field)
+    note.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(field)
     return field
@@ -61,6 +63,7 @@ async def update_field(
         raise HTTPException(status_code=404, detail="Field not found")
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(field, k, v)
+    note.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(field)
     return field
@@ -79,6 +82,7 @@ async def delete_field(
     field = result.scalar_one_or_none()
     if not field:
         raise HTTPException(status_code=404, detail="Field not found")
+    note.updated_at = datetime.now(timezone.utc)
     await db.delete(field)
     await db.commit()
 

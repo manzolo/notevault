@@ -16,6 +16,15 @@ class SecretCreate(BaseModel):
         return f"SecretCreate(name={self.name!r}, secret_type={self.secret_type!r}, value={{REDACTED}})"
 
 
+class SecretUpdate(BaseModel):
+    name: Optional[str] = None
+    secret_type: Optional[SecretType] = None
+    value: Optional[str] = None
+    username: Optional[str] = None
+    url: Optional[str] = None
+    public_key: Optional[str] = None
+
+
 class SecretArchiveUpdate(BaseModel):
     is_archived: bool
     archive_note: Optional[str] = None

@@ -69,7 +69,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const { tags: availableTagsFromHook, fetchTags, createTag } = useTags();
   const { categories, fetchCategories, flattenCategories } = useCategories();
   const { confirm, dialog: confirmDialog } = useConfirm();
-  const { secrets, setSecrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, revealSecret, hideSecret, deleteSecret, copySecret, reorderSecrets, archiveSecret, restoreSecret, fetchArchivedSecrets } = useSecrets(noteId);
+  const { secrets, setSecrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, updateSecret, revealSecret, hideSecret, deleteSecret, copySecret, reorderSecrets, archiveSecret, restoreSecret, fetchArchivedSecrets } = useSecrets(noteId);
   const { attachments, setAttachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, updateAttachmentContent, fetchTextContent, deleteAttachment, previewAttachment, parseZip, previewZipEntry, downloadZipEntry, parseZipEml, previewZipEmlPart, downloadZipEmlPart, parseEml, previewEmlPart, downloadEmlPart, reorderAttachments, archiveAttachment, restoreAttachment, fetchArchivedAttachments } = useAttachments(noteId);
   const { bookmarks, setBookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark, reorderBookmarks, archiveBookmark, restoreBookmark, fetchArchivedBookmarks } = useBookmarks(noteId);
   const { tasks, setTasks, loading: tasksLoading, fetchTasks, createTask, updateTask, deleteTask, reorderTasks, archiveTask, restoreTask, fetchArchivedTasks } = useTasks(noteId);
@@ -574,6 +574,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             fetchArchivedSecrets={fetchArchivedSecrets}
             onCopyDirect={copySecret}
             onReorder={reorderSecrets}
+            onUpdate={updateSecret}
             setSecrets={setSecrets}
             onArchivedCountChange={setArchivedSecretsCount}
           />
