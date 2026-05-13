@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.16.12] - 2026-05-13
+### Added
+- Secrets: new `PUT /api/notes/{note_id}/secrets/{secret_id}` endpoint for editing secret fields and value; pencil button in SecretViewer opens inline edit form.
+### Fixed
+- Recenti ordering: any write operation on tasks, secrets, events, bookmarks, or note fields now touches `note.updated_at`, bumping the note to the top of the Recent list.
+- DateTimePicker: typing hours no longer causes focus to jump to the selected calendar day; added `requestAnimationFrame` focus restoration after react-datepicker's imperative `.focus()` call.
+- DateTimePicker: calendar popup height no longer changes when navigating months (`fixedHeight`).
+- DateTimePicker: added "Oggi / Today" button in the custom header to navigate back to the current month without changing the selected date.
+
 ## [0.16.11] - 2026-05-12
 ### Fixed
 - FolderTree: "Recenti" now appears before "Senza cartella" in the sidebar folder list.
