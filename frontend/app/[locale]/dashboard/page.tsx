@@ -341,7 +341,6 @@ export default function DashboardPage() {
     onSelectJournal: handleJournalSelect,
     onOpenJournalDay: handleOpenJournalDay,
     recentMode,
-    onSelectRecent: handleRecentSelect,
     onDropNote: async (noteId: number, categoryId: number | null) => {
       await updateNote(noteId, { category_id: categoryId });
       const after = dateFrom ? dateToLocalStart(dateFrom) : undefined;
@@ -479,6 +478,23 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Quick-filter pills */}
+        {!searchResults && (
+          <div className="mb-3 flex items-center gap-2">
+            <button
+              onClick={recentMode ? () => handleCategorySelect(null) : handleRecentSelect}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                recentMode
+                  ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 ring-1 ring-amber-300 dark:ring-amber-700'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              <ClockIcon className="w-3.5 h-3.5" />
+              {tFolders('recentlyModified')}
+            </button>
           </div>
         )}
 

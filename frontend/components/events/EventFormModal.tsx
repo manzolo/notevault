@@ -144,6 +144,7 @@ function monthlyWeekdayLabel(startDate: string, t: (k: string) => string): strin
 
 export default function EventFormModal({ event, onSave, onClose }: Props) {
   const t = useTranslations("events");
+  const tCommon = useTranslations("common");
   const [title, setTitle] = useState(event?.title ?? "");
   const [description, setDescription] = useState(event?.description ?? "");
   const [startDate, setStartDate] = useState(toDatePart(event?.start_datetime));
@@ -253,7 +254,7 @@ export default function EventFormModal({ event, onSave, onClose }: Props) {
             type="button"
             onClick={onClose}
             className="text-gray-400 dark:text-vault-300 hover:text-gray-700 dark:hover:text-vault-50 transition-colors rounded-md p-0.5 hover:bg-cream-200/60 dark:hover:bg-vault-700/60"
-            aria-label={t('close')}
+            aria-label={tCommon('close')}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
