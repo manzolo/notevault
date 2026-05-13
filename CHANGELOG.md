@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.13] - 2026-05-13
+### Changed
+- Moved "Recenti" out of the folder tree into a standalone pill filter above the note list; clicking the active pill deactivates it (returning to all notes). This fixes the broken back-navigation when entering a note from the Recents view.
+### Fixed
+- i18n: `events.close` missing translation in Italian locale (`EventFormModal` now uses `common.close`).
+
 ## [0.16.12] - 2026-05-13
 ### Added
 - Secrets: new `PUT /api/notes/{note_id}/secrets/{secret_id}` endpoint for editing secret fields and value; pencil button in SecretViewer opens inline edit form.
