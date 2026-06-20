@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.16.14] - 2026-06-21
+### Added
+- Attachments: per-note **folder organization**. Create nested folders inside a note, drag attachments into them, and drag folders to reorder or nest (file-manager style). Folders start collapsed; subfolders render before files. New `attachment_folders` table (migrations 040 + 041) and `folder_id` on attachments.
+- Attachments: **download a folder as a zip** (recursive, preserving the subfolder structure).
+- Attachments: **temporary alphabetical sort** toggle in the folder view (view-only, does not change the saved manual order).
+- Shared notes: the public share page now renders the attachment folder tree (read-only), with subfolders shown before files.
+### Fixed
+- Attachments: moving, nesting, or reordering a folder into a destination that already contains a folder with the same name now returns a clear `409 Conflict` instead of crashing with a `500` (unhandled unique-constraint violation). The folder view surfaces the error and re-syncs instead of breaking.
+
 ## [0.16.13] - 2026-05-13
 ### Changed
 - Moved "Recenti" out of the folder tree into a standalone pill filter above the note list; clicking the active pill deactivates it (returning to all notes). This fixes the broken back-navigation when entering a note from the Recents view.
