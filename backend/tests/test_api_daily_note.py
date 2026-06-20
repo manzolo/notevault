@@ -9,7 +9,13 @@ from app.config import Settings
 from app.api import notes as notes_api
 
 
-async def test_daily_note_post_creates_note_and_folder_hierarchy(client, auth_headers, db_session):
+async def test_daily_note_post_creates_note_and_folder_hierarchy(client, auth_headers, db_session, monkeypatch):
+    # Force the ISO title format so the assertion is independent of the deployment env.
+    monkeypatch.setattr(
+        notes_api,
+        "get_settings",
+        lambda: Settings(secret_key="test", master_key="test", journal_note_title_format="iso"),
+    )
     response = await client.post("/api/notes/daily", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
@@ -40,7 +46,13 @@ async def test_daily_note_post_is_idempotent(client, auth_headers):
     assert second.json()["created"] is False
 
 
-async def test_daily_note_post_with_explicit_date(client, auth_headers):
+async def test_daily_note_post_with_explicit_date(client, auth_headers, monkeypatch):
+    # Force the ISO title format so the assertion is independent of the deployment env.
+    monkeypatch.setattr(
+        notes_api,
+        "get_settings",
+        lambda: Settings(secret_key="test", master_key="test", journal_note_title_format="iso"),
+    )
     response = await client.post("/api/notes/daily", json={"date": "2026-04-15"}, headers=auth_headers)
     assert response.status_code == 200
 

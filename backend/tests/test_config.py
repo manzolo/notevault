@@ -3,7 +3,10 @@ import pytest
 from app.config import Settings
 
 
-def test_settings_defaults():
+def test_settings_defaults(monkeypatch):
+    # Tests the code defaults, independent of any deployment env (e.g. a .env
+    # that sets JOURNAL_NOTE_TITLE_FORMAT=localized_long).
+    monkeypatch.delenv("JOURNAL_NOTE_TITLE_FORMAT", raising=False)
     s = Settings()
     assert s.algorithm == "HS256"
     assert s.access_token_expire_days == 7
