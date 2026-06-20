@@ -191,10 +191,26 @@
     "save": "Salva",
     "editValuePlaceholder": "Lascia vuoto per mantenere il valore attuale"
   },
+  "attachmentFolders": {
+    "newFolder": "Nuova cartella",
+    "newSubfolder": "Nuova sottocartella",
+    "rename": "Rinomina cartella",
+    "delete": "Elimina cartella",
+    "download": "Scarica cartella come zip",
+    "deleteConfirm": "Eliminare questa cartella? I suoi allegati verranno spostati fuori e le eventuali sottocartelle salite di un livello.",
+    "unfiled": "Senza cartella",
+    "dropHere": "Trascina qui i file per toglierli dalle cartelle",
+    "folderNamePlaceholder": "Nome cartella...",
+    "sortAlpha": "Ordina alfabeticamente (temporaneo)",
+    "sortAlphaShort": "A–Z",
+    "sortManual": "Torna all'ordine manuale",
+    "sortManualShort": "Manuale"
+  },
   "attachments": {
     "attachments": "Allegati",
     "viewFlat": "Tutti",
     "viewGrouped": "Raggruppati",
+    "viewFolders": "Cartelle",
     "upload": "Carica file",
     "uploading": "Caricamento...",
     "noAttachments": "Nessun allegato per questa nota.",

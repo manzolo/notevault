@@ -68,7 +68,7 @@ export function useAttachments(noteId: number) {
   );
 
   const updateAttachment = useCallback(
-    async (attachmentId: number, data: { filename?: string; description?: string; tag_ids?: number[] }): Promise<Attachment> => {
+    async (attachmentId: number, data: { filename?: string; description?: string; tag_ids?: number[]; folder_id?: number | null }): Promise<Attachment> => {
       const response = await api.patch<Attachment>(`/api/notes/${noteId}/attachments/${attachmentId}`, data);
       setAttachments((prev) => prev.map((a) => (a.id === attachmentId ? response.data : a)));
       return response.data;

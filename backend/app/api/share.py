@@ -13,7 +13,8 @@ from sqlalchemy.orm import selectinload
 
 from app.config import get_settings
 from app.database.connection import get_db
-from app.models.database import Attachment, Bookmark, Event, EventAttachment, Note, NoteField, Secret, ShareToken, Tag, Task, User
+from app.api.attachment_folders import _build_tree as _build_folder_tree, _load_all_folders as _load_attachment_folders
+from app.models.database import Attachment, AttachmentFolder, Bookmark, Event, EventAttachment, Note, NoteField, Secret, ShareToken, Tag, Task, User
 from app.schemas.note import NoteResponse
 from app.security.auth import verify_token
 from app.security.dependencies import get_current_user
@@ -273,9 +274,18 @@ async def get_shared_note(
                 "mime_type": a.mime_type,
                 "size_bytes": a.size_bytes,
                 "description": a.description,
+                "folder_id": a.folder_id,
             }
             for a in attachments
         ]
+
+        # Attachment-folder tree (read-only), with counts derived from shared attachments
+        all_folders = await _load_attachment_folders(db, note.id)
+        counts: dict[int, int] = {}
+        for a in attachments:
+            if a.folder_id is not None:
+                counts[a.folder_id] = counts.get(a.folder_id, 0) + 1
+        response["attachment_folders"] = _build_folder_tree(all_folders, counts)
 
     # Bookmarks section
     if sections.get("bookmarks", False):

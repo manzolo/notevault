@@ -9,6 +9,7 @@ class AttachmentResponse(BaseModel):
 
     id: int
     note_id: int
+    folder_id: Optional[int] = None
     filename: str
     mime_type: str
     size_bytes: int
@@ -31,3 +32,4 @@ class AttachmentUpdate(BaseModel):
     tag_ids: Optional[List[int]] = None
     is_archived: Optional[bool] = None
     archive_note: Optional[str] = None
+    folder_id: Optional[int] = None

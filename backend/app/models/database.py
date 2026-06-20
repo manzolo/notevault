@@ -180,11 +180,39 @@ class SecretAccessLog(Base):
     user = relationship("User")
 
 
+class AttachmentFolder(Base):
+    """Per-note folder for organizing a note's attachments (nested via parent_id)."""
+
+    __tablename__ = "attachment_folders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
+    parent_id = Column(Integer, ForeignKey("attachment_folders.id", ondelete="SET NULL"), nullable=True)
+    position = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("name", "note_id", "parent_id", name="uq_attachment_folder_name_note_parent"),
+    )
+
+    note = relationship("Note")
+    attachments = relationship("Attachment", back_populates="folder")
+    children = relationship(
+        "AttachmentFolder",
+        primaryjoin="AttachmentFolder.parent_id == AttachmentFolder.id",
+        foreign_keys="[AttachmentFolder.parent_id]",
+        lazy="noload",
+    )
+
+
 class Attachment(Base):
     __tablename__ = "attachments"
 
     id = Column(Integer, primary_key=True, index=True)
     note_id = Column(Integer, ForeignKey("notes.id", ondelete="CASCADE"), nullable=False, index=True)
+    folder_id = Column(Integer, ForeignKey("attachment_folders.id", ondelete="SET NULL"), nullable=True)
     filename = Column(String(255), nullable=False)
     stored_filename = Column(String(255), nullable=False)
     mime_type = Column(String(100), nullable=False)
@@ -200,6 +228,7 @@ class Attachment(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     note = relationship("Note", back_populates="attachments")
+    folder = relationship("AttachmentFolder", back_populates="attachments")
     tags = relationship("Tag", secondary="attachment_tags", back_populates="attachments")
 
 

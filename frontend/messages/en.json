@@ -191,10 +191,26 @@
     "save": "Save",
     "editValuePlaceholder": "Leave blank to keep the current value"
   },
+  "attachmentFolders": {
+    "newFolder": "New folder",
+    "newSubfolder": "New subfolder",
+    "rename": "Rename folder",
+    "delete": "Delete folder",
+    "download": "Download folder as zip",
+    "deleteConfirm": "Delete this folder? Its attachments will be moved out and any subfolders moved up one level.",
+    "unfiled": "Unfiled",
+    "dropHere": "Drop files here to unfile them",
+    "folderNamePlaceholder": "Folder name...",
+    "sortAlpha": "Sort alphabetically (temporary)",
+    "sortAlphaShort": "A–Z",
+    "sortManual": "Back to manual order",
+    "sortManualShort": "Manual"
+  },
   "attachments": {
     "attachments": "Attachments",
     "viewFlat": "All",
     "viewGrouped": "Grouped",
+    "viewFolders": "Folders",
     "upload": "Upload File",
     "uploading": "Uploading...",
     "noAttachments": "No attachments for this note.",

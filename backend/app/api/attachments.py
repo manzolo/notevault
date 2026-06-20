@@ -19,7 +19,7 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import get_owned_note
 from app.config import get_settings
 from app.database.connection import get_db
-from app.models.database import Attachment, AttachmentTag, Note, Tag, User
+from app.models.database import Attachment, AttachmentFolder, AttachmentTag, Note, Tag, User
 from app.schemas.attachment import AttachmentResponse, AttachmentTagUpdate, AttachmentUpdate
 from app.security.dependencies import get_current_user
 from app.security.file_validation import sanitize_filename, validate
@@ -646,6 +646,19 @@ async def update_attachment(
     if body.is_archived is not None:
         attachment.is_archived = body.is_archived
         attachment.archive_note = body.archive_note if body.is_archived else None
+
+    # Move to a folder (or unfile with null) if provided
+    if "folder_id" in body.model_fields_set:
+        if body.folder_id is not None:
+            folder_result = await db.execute(
+                select(AttachmentFolder).where(
+                    AttachmentFolder.id == body.folder_id,
+                    AttachmentFolder.note_id == note_id,
+                )
+            )
+            if not folder_result.scalar_one_or_none():
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
+        attachment.folder_id = body.folder_id
 
     # Update tags if provided
     if body.tag_ids is not None:

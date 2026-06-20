@@ -11,6 +11,7 @@ import { useTags } from '@/hooks/useTags';
 import { useCategories } from '@/hooks/useCategories';
 import { useSecrets } from '@/hooks/useSecrets';
 import { useAttachments } from '@/hooks/useAttachments';
+import { useAttachmentFolders } from '@/hooks/useAttachmentFolders';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useTasks } from '@/hooks/useTasks';
 import { Attachment, Bookmark, CalendarEvent, JournalAdjacentResponse, Note } from '@/lib/types';
@@ -20,6 +21,7 @@ import NoteFieldsPanel from '@/components/notes/NoteFieldsPanel';
 import SecretList from '@/components/secrets/SecretList';
 import AttachmentGroupedList from '@/components/attachments/AttachmentGroupedList';
 import AttachmentFlatList from '@/components/attachments/AttachmentFlatList';
+import AttachmentFolderView from '@/components/attachments/AttachmentFolderView';
 import BookmarkList from '@/components/bookmarks/BookmarkList';
 import TaskPanel from '@/components/tasks/TaskPanel';
 import EventPanel from '@/components/events/EventPanel';
@@ -71,6 +73,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const { confirm, dialog: confirmDialog } = useConfirm();
   const { secrets, setSecrets, revealedSecrets, countdown, loading: secretsLoading, fetchSecrets, createSecret, updateSecret, revealSecret, hideSecret, deleteSecret, copySecret, reorderSecrets, archiveSecret, restoreSecret, fetchArchivedSecrets } = useSecrets(noteId);
   const { attachments, setAttachments, loading: attachmentsLoading, fetchAttachments, uploadAttachment, updateAttachment, updateAttachmentContent, fetchTextContent, deleteAttachment, previewAttachment, parseZip, previewZipEntry, downloadZipEntry, parseZipEml, previewZipEmlPart, downloadZipEmlPart, parseEml, previewEmlPart, downloadEmlPart, reorderAttachments, archiveAttachment, restoreAttachment, fetchArchivedAttachments } = useAttachments(noteId);
+  const { folders: attachmentFolders, fetchFolders: fetchAttachmentFolders, createFolder: createAttachmentFolder, updateFolder: updateAttachmentFolder, deleteFolder: deleteAttachmentFolder, reorderFolders: reorderAttachmentFolders } = useAttachmentFolders(noteId);
   const { bookmarks, setBookmarks, loading: bookmarksLoading, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark, reorderBookmarks, archiveBookmark, restoreBookmark, fetchArchivedBookmarks } = useBookmarks(noteId);
   const { tasks, setTasks, loading: tasksLoading, fetchTasks, createTask, updateTask, deleteTask, reorderTasks, archiveTask, restoreTask, fetchArchivedTasks } = useTasks(noteId);
 
@@ -85,9 +88,9 @@ export default function NotePage({ params }: { params: { id: string; locale: str
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showTextFileModal, setShowTextFileModal] = useState(false);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
-  const [attachmentView, setAttachmentView] = useState<'flat' | 'grouped'>(() => {
+  const [attachmentView, setAttachmentView] = useState<'flat' | 'grouped' | 'folders'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('attachmentView') as 'flat' | 'grouped') ?? 'flat';
+      return (localStorage.getItem('attachmentView') as 'flat' | 'grouped' | 'folders') ?? 'flat';
     }
     return 'flat';
   });
@@ -187,6 +190,7 @@ export default function NotePage({ params }: { params: { id: string; locale: str
             } catch { /* ignore */ }
           });
         }
+        await fetchAttachmentFolders();
         await fetchBookmarks();
         await fetchTasks();
         await fetchTags();
@@ -618,10 +622,109 @@ export default function NotePage({ params }: { params: { id: string; locale: str
                 >
                   {tAttachments('viewGrouped')}
                 </button>
+                <button
+                  onClick={() => { setAttachmentView('folders'); localStorage.setItem('attachmentView', 'folders'); }}
+                  className={`px-2.5 py-1.5 transition-colors border-l border-gray-200 dark:border-gray-600 ${attachmentView === 'folders' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                >
+                  {tAttachments('viewFolders')}
+                </button>
               </div>
             </div>
           </div>
-          {attachmentView === 'grouped' ? (
+          {attachmentView === 'folders' ? (
+            <AttachmentFolderView
+              attachments={attachments}
+              folders={attachmentFolders}
+              loading={attachmentsLoading}
+              onPreview={handlePreview}
+              onDownload={handleDownload}
+              onDelete={deleteAttachment}
+              onEdit={(att) => setEditingAttachment(att)}
+              onArchive={async (id, note) => {
+                const att = attachments.find((a) => a.id === id);
+                await archiveAttachment(id, note);
+                if (att) setArchivedAttachments((prev) => [...prev, { ...att, is_archived: true, archive_note: note || null }]);
+              }}
+              emlAttachmentsMap={emlAttachmentsMap}
+              onMoveAttachment={async (attId, folderId) => {
+                try {
+                  await updateAttachment(attId, { folder_id: folderId });
+                } catch (e: any) {
+                  toast.error(e?.response?.data?.detail || 'Move failed');
+                } finally {
+                  await Promise.all([fetchAttachmentFolders(), fetchAttachments()]);
+                }
+              }}
+              onCreateFolder={async (name, parentId) => {
+                try {
+                  await createAttachmentFolder(name, parentId);
+                } catch (e: any) {
+                  toast.error(e?.response?.data?.detail || 'Could not create folder');
+                } finally {
+                  await fetchAttachmentFolders();
+                }
+              }}
+              onRenameFolder={async (id, name) => {
+                try {
+                  await updateAttachmentFolder(id, { name });
+                } catch (e: any) {
+                  toast.error(e?.response?.data?.detail || 'Rename failed');
+                } finally {
+                  await fetchAttachmentFolders();
+                }
+              }}
+              onDeleteFolder={async (id) => {
+                try {
+                  await deleteAttachmentFolder(id);
+                } catch (e: any) {
+                  toast.error(e?.response?.data?.detail || 'Delete failed');
+                } finally {
+                  await Promise.all([fetchAttachmentFolders(), fetchAttachments()]);
+                }
+              }}
+              onMoveFolder={async (id, parentId) => {
+                try {
+                  await updateAttachmentFolder(id, { parent_id: parentId });
+                } catch (e: any) {
+                  toast.error(e?.response?.data?.detail || 'Move failed');
+                } finally {
+                  await fetchAttachmentFolders();
+                }
+              }}
+              onReorderFolders={async (items) => {
+                try {
+                  await reorderAttachmentFolders(items);
+                } catch (e: any) {
+                  toast.error(e?.response?.data?.detail || 'Reorder failed');
+                } finally {
+                  await fetchAttachmentFolders();
+                }
+              }}
+              onReorder={reorderAttachments}
+              setAttachments={setAttachments}
+              onDownloadFolder={async (id, name) => {
+                const toastId = toast.loading(`${name}.zip`);
+                try {
+                  const response = await api.get(
+                    `/api/notes/${noteId}/attachment-folders/${id}/download`,
+                    { responseType: 'blob', params: { _t: Date.now() } },
+                  );
+                  const url = URL.createObjectURL(response.data as Blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${name}.zip`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  setTimeout(() => URL.revokeObjectURL(url), 10000);
+                  toast.dismiss(toastId);
+                } catch {
+                  toast.dismiss(toastId);
+                  toast.error('Failed to download folder');
+                }
+              }}
+            />
+          ) : attachmentView === 'grouped' ? (
             <AttachmentGroupedList
               attachments={attachments}
               loading={attachmentsLoading}

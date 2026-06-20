@@ -29,6 +29,15 @@ interface SharedAttachment {
   mime_type: string;
   size_bytes: number;
   description: string | null;
+  folder_id?: number | null;
+}
+
+interface SharedAttachmentFolder {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  attachment_count: number;
+  children: SharedAttachmentFolder[];
 }
 
 interface SharedBookmark {
@@ -97,6 +106,7 @@ interface SharedNote {
   share_sections: ShareSections;
   tasks?: SharedTask[];
   attachments?: SharedAttachment[];
+  attachment_folders?: SharedAttachmentFolder[];
   bookmarks?: SharedBookmark[];
   secrets?: SharedSecret[];
   events?: SharedEvent[];
@@ -176,12 +186,21 @@ export default function SharePage({ params }: { params: { token: string } }) {
   const [loading, setLoading] = useState(true);
   const [previewAtt, setPreviewAtt] = useState<{ att: SharedAttachment | SharedEventAttachment; url: string } | null>(null);
   const [previewText, setPreviewText] = useState<string | null>(null);
-  const [attachmentView, setAttachmentView] = useState<'flat' | 'grouped'>(() => {
+  const [attachmentView, setAttachmentView] = useState<'flat' | 'grouped' | 'folders'>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('attachmentView') as 'flat' | 'grouped') ?? 'flat';
+      return (localStorage.getItem('attachmentView') as 'flat' | 'grouped' | 'folders') ?? 'flat';
     }
     return 'flat';
   });
+  // Shared folder view: collapsed by default (file-manager style)
+  const [expandedFolders, setExpandedFolders] = useState<Set<number>>(new Set());
+  const toggleFolder = (id: number) =>
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const previewUrlRef = useRef<string | null>(null);
 
   const sharedVirtualBookmarks = useMemo(() => {
@@ -478,6 +497,14 @@ export default function SharePage({ params }: { params: { token: string } }) {
                       >
                         Grouped
                       </button>
+                      {note.attachment_folders && note.attachment_folders.length > 0 && (
+                        <button
+                          onClick={() => { setAttachmentView('folders'); localStorage.setItem('attachmentView', 'folders'); }}
+                          className={`px-2.5 py-1 transition-colors border-l border-gray-200 dark:border-gray-600 ${attachmentView === 'folders' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                        >
+                          Folders
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -510,6 +537,61 @@ export default function SharePage({ params }: { params: { token: string } }) {
                         </div>
                       </li>
                     );
+
+                    if (attachmentView === 'folders' && note.attachment_folders && note.attachment_folders.length > 0) {
+                      const byFolder = new Map<number | null, SharedAttachment[]>();
+                      for (const a of note.attachments!) {
+                        const key = a.folder_id ?? null;
+                        if (!byFolder.has(key)) byFolder.set(key, []);
+                        byFolder.get(key)!.push(a);
+                      }
+                      const renderFolderNode = (folder: SharedAttachmentFolder, depth: number): JSX.Element => {
+                        const items = byFolder.get(folder.id) ?? [];
+                        const isOpen = expandedFolders.has(folder.id);
+                        const hasChildren = items.length > 0 || (folder.children?.length ?? 0) > 0;
+                        return (
+                          <div key={folder.id}>
+                            <button
+                              type="button"
+                              onClick={() => toggleFolder(folder.id)}
+                              style={{ paddingLeft: depth * 14 }}
+                              className="w-full flex items-center gap-1.5 py-1.5 px-1 rounded text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                            >
+                              <svg
+                                className={`w-3 h-3 shrink-0 text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''} ${hasChildren ? '' : 'invisible'}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                              <svg className="w-4 h-4 shrink-0 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                              </svg>
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{folder.name}</span>
+                              {items.length > 0 && <span className="text-xs text-gray-400 dark:text-gray-500">({items.length})</span>}
+                            </button>
+                            {isOpen && (
+                              <div style={{ paddingLeft: depth * 14 + 14 }}>
+                                {/* Subfolders first, then this folder's own files */}
+                                {folder.children?.map((c) => renderFolderNode(c, depth + 1))}
+                                {items.length > 0 && <ul>{items.map(renderAttachment)}</ul>}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      };
+                      const unfiled = byFolder.get(null) ?? [];
+                      return (
+                        <div>
+                          {note.attachment_folders.map((f) => renderFolderNode(f, 0))}
+                          {unfiled.length > 0 && (
+                            <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1">Unfiled</p>
+                              <ul>{unfiled.map(renderAttachment)}</ul>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
 
                     if (attachmentView === 'flat') {
                       return <ul className="divide-y-0">{note.attachments!.map(renderAttachment)}</ul>;

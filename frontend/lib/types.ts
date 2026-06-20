@@ -212,9 +212,22 @@ export interface SecretUpdate {
   public_key?: string;
 }
 
+export interface AttachmentFolder {
+  id: number;
+  name: string;
+  note_id: number;
+  parent_id: number | null;
+  position: number;
+  attachment_count: number;
+  children: AttachmentFolder[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Attachment {
   id: number;
   note_id: number;
+  folder_id?: number | null;
   filename: string;
   mime_type: string;
   size_bytes: number;

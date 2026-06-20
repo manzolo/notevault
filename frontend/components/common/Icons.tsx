@@ -59,6 +59,15 @@ export function ArrowDownTrayIcon({ className = base }: IconProps) {
   );
 }
 
+export function SortAlphaIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M3 7h10M3 12h7M3 17h4M17 5v14m0 0l-3-3m3 3l3-3" />
+    </svg>
+  );
+}
+
 export function PencilIcon({ className = base }: IconProps) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
