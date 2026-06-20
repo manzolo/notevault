@@ -203,9 +203,8 @@ deploy-update:
 			&& sed -i 's/^APP_VERSION=.*/APP_VERSION=$(APP_VERSION)/' .env \
 			|| echo 'APP_VERSION=$(APP_VERSION)' >> .env && \
 		APP_VERSION=$(APP_VERSION) docker compose pull && \
-		APP_VERSION=$(APP_VERSION) docker compose up -d && \
-		docker compose exec backend alembic upgrade head"
-	@echo "Updated to v$(APP_VERSION)."
+		APP_VERSION=$(APP_VERSION) docker compose up -d"
+	@echo "Updated to v$(APP_VERSION). (migrations run automatically by the backend entrypoint on startup)"
 
 # ---------------------------------------------------------------------------
 # Cleanup
